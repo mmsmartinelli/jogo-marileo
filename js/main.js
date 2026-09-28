@@ -465,14 +465,9 @@ class App {
     acts.innerHTML = '';
     const btn = (label, cls, fn) => { const b = document.createElement('button'); b.className = cls; b.textContent = label; b.addEventListener('click', () => { audio.play('confirm'); fn(); }); acts.appendChild(b); };
     if (cfg.online) {
-      if (this.online.isHost) {
-        btn('↩ Voltar para a sala', 'big go', () => this.online.backToLobby(true));
-      } else {
-        const w = document.createElement('p');
-        w.className = 'hint';
-        w.textContent = '⏳ Esperando o anfitrião voltar para a sala...';
-        acts.appendChild(w);
-      }
+      // continua na mesma sala: volta para escolher piloto, pista e dificuldade
+      btn('🔄 Jogar novamente', 'big go', () => this.online.backToLobby(this.online.isHost));
+      if (this.online.isHost) btn('⚡ Revanche: mesma pista', 'mid', () => this.online.rematch());
       btn('🚪 Sair da sala', 'mid ghost', () => this.online.leave());
     } else if (cfg.mode === 'gp') {
       if (this.gp.index < CUP.tracks.length - 1) {

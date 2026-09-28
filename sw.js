@@ -1,5 +1,5 @@
 // Service worker: guarda o jogo no aparelho para abrir rápido e jogar sem internet.
-const CACHE = 'marileo-kart-v4';
+const CACHE = 'marileo-kart-v5';
 const THREE = 'https://cdn.jsdelivr.net/npm/three@0.160.0/';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',

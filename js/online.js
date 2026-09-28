@@ -41,7 +41,12 @@ export class Online {
   _bind() {
     $('#onPrev').addEventListener('click', () => this.changeChar(-1));
     $('#onNext').addEventListener('click', () => this.changeChar(1));
-    $('#onName').addEventListener('input', e => { this.me.name = e.target.value.slice(0, 12); this._saveMe(); });
+    $('#onName').addEventListener('input', e => {
+      this.me.name = e.target.value.slice(0, 12);
+      this._saveMe();
+      clearTimeout(this._nameTimer);
+      this._nameTimer = setTimeout(() => this._sendMe(), 400);
+    });
     $('#onCode').addEventListener('input', e => { e.target.value = normalizeCode(e.target.value); });
     $('#onCode').addEventListener('keydown', e => { if (e.key === 'Enter') this.join(); });
     $('#onCreate').addEventListener('click', () => this.create());
@@ -73,11 +78,26 @@ export class Online {
     this.me.char = (this.me.char + d + CHARACTERS.length) % CHARACTERS.length;
     this._saveMe();
     audio.play('select');
-    if (this.net) {
-      if (this.isHost) { const m = this.members.find(m => m.id === this.net.id); if (m) m.char = this.me.char; this.broadcastLobby(); }
-      else this.net.send({ t: 'me', char: this.me.char, name: this.myName });
-    }
+    this._sendMe();
     this.render();
+  }
+
+  // Avisa a sala sobre o meu piloto e nome.
+  _sendMe() {
+    if (!this.net) return;
+    if (this.isHost) {
+      const m = this.members.find(m => m.id === this.net.id);
+      if (m) { m.char = this.me.char; m.name = this.myName; }
+      this.broadcastLobby();
+    } else {
+      this.net.send({ t: 'me', char: this.me.char, name: this.myName });
+    }
+  }
+
+  // Anfitrião: corre de novo na mesma pista, sem passar pela sala.
+  rematch() {
+    if (!this.isHost) return;
+    this.start();
   }
 
   // ---------- criar / entrar ----------

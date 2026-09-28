@@ -231,6 +231,10 @@ button:disabled { filter: grayscale(.8) brightness(.8); cursor: default; transfo
 .on-choices h3 { font-family: var(--font-title); font-weight: normal; margin: 0; font-size: 24px; }
 .on-choices p { margin: 0; opacity: .85; }
 .on-choices button.big { min-width: 0; width: 100%; }
+#onLobby .actions {
+  position: sticky; bottom: -16px; z-index: 3; margin: 12px -28px -22px; padding: 12px 16px 14px;
+  background: linear-gradient(180deg, rgba(18, 20, 58, 0), rgba(18, 20, 58, .96) 30%); border-radius: 0 0 24px 24px;
+}
 .on-room { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
 .on-room span { font-family: var(--font-title); font-size: 20px; opacity: .85; }
 .on-room b {
