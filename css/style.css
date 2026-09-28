@@ -133,6 +133,14 @@ button.ghost { background: linear-gradient(180deg, #6b6f9c, #484c7a); box-shadow
   max-width: 96vw;
 }
 .panel.wide { width: min(1180px, 96vw); }
+.panel { position: relative; }
+/* botão de voltar sempre visível no alto (no celular deitado o rodapé fica fora da tela) */
+button.back-top {
+  position: absolute; left: 14px; top: 14px; z-index: 2;
+  font-size: 17px; padding: 6px 14px; border-radius: 12px; min-width: 0;
+  background: linear-gradient(180deg, #6b6f9c, #484c7a); box-shadow: 0 4px 0 #2c2f55;
+}
+@media (max-width: 700px) { .panel h2 { padding-top: 34px; } }
 .panel h2 {
   font-family: var(--font-title);
   font-weight: normal;

@@ -47,6 +47,12 @@ export class Online {
     $('#onCreate').addEventListener('click', () => this.create());
     $('#onJoin').addEventListener('click', () => this.join());
     $('#onBack').addEventListener('click', () => { audio.play('back'); this.app.show('title'); });
+    // botão do alto: dentro da sala sai da sala; fora dela volta ao menu
+    $('#onTopBack').addEventListener('click', () => {
+      if (this.connected) { this.leave(); return; }
+      audio.play('back');
+      this.app.show('title');
+    });
     $('#onLeave').addEventListener('click', () => this.leave());
     $('#onGo').addEventListener('click', () => this.start());
     $('#onShare').addEventListener('click', () => this.share());
@@ -277,6 +283,7 @@ export class Online {
   render() {
     const inRoom = !!this.net && (this.isHost || this.members.length > 0);
     $('#onStart').hidden = inRoom;
+    $('#onTopBack').textContent = inRoom ? '🚪 Sair' : '⬅ Menu';
     $('#onLobby').hidden = !inRoom;
     const ch = CHARACTERS[this.me.char];
     $('#onPortrait').src = this.app.portraits[this.me.char] || '';
