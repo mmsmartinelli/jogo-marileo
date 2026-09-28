@@ -8,6 +8,7 @@ import { SOURCES, PlayerInput, onKey, connectedGamepads } from './input.js';
 import { setMaxAnisotropy } from './textures.js';
 import { formatTime } from './utils.js';
 import { PLAYER_COLORS } from './hud.js';
+import { isTouchDevice } from './touch.js';
 
 const POINTS = [15, 12, 10, 8, 6, 4, 2, 1];
 const $ = s => document.querySelector(s);
@@ -28,10 +29,12 @@ class App {
     this.portraits = [];
     this.thumbs = {};
     this.focusIdx = 0;
+    this.touch = isTouchDevice();
+    if (this.touch) document.body.classList.add('touchmode');
     const saved = load('marileo_settings', {});
     this.settings = Object.assign({
-      mode: 'race', nPlayers: 1, trackId: 'vale', laps: 3, difficulty: 1, autoAccel: 0,
-      players: [{ char: 0, source: 'kb1' }, { char: 1, source: 'kb2' }, { char: 2, source: 'gp0' }, { char: 3, source: 'gp1' }],
+      mode: 'race', nPlayers: 1, trackId: 'vale', laps: 3, difficulty: 1, autoAccel: this.touch ? 1 : 0,
+      players: [{ char: 0, source: this.touch ? 'touch' : 'kb1' }, { char: 1, source: 'kb2' }, { char: 2, source: 'gp0' }, { char: 3, source: 'gp1' }],
     }, saved);
     this.stars = load('marileo_stars', {});
     this.records = load('marileo_tt', {});
@@ -274,9 +277,21 @@ class App {
 
   _resetReady() { this.ready = [false, false, false, false]; }
 
+  // No celular: tela cheia e trava na horizontal (quando o navegador permite).
+  _goFullscreen() {
+    if (!this.touch) return;
+    try {
+      const el = document.documentElement;
+      const p = !document.fullscreenElement && el.requestFullscreen ? el.requestFullscreen({ navigationUI: 'hide' }) : null;
+      const lock = () => { try { const q = screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape'); if (q && q.catch) q.catch(() => {}); } catch (e) { /* ignore */ } };
+      if (p && p.then) p.then(lock).catch(() => {}); else lock();
+    } catch (e) { /* ignore */ }
+  }
+
   startFromSetup() {
     audio.init();
     audio.play('confirm');
+    this._goFullscreen();
     const s = this.settings;
     save('marileo_settings', s);
     const players = s.players.slice(0, s.nPlayers).map(p => ({ char: p.char, source: p.source }));
@@ -533,3 +548,26 @@ class App {
 }
 
 window.app = new App();
+
+// iPhone/iPad só aceitam ícone PNG na tela inicial: converte o ícone SVG.
+(() => {
+  const link = document.getElementById('appleIcon');
+  if (!link) return;
+  const img = new Image();
+  img.onload = () => {
+    try {
+      const c = document.createElement('canvas');
+      c.width = c.height = 180;
+      c.getContext('2d').drawImage(img, 0, 0, 180, 180);
+      link.href = c.toDataURL('image/png');
+    } catch (e) { /* ignore */ }
+  };
+  img.src = 'icons/icon.svg';
+})();
+
+// App instalável (PWA): guarda os arquivos para jogar sem internet.
+if ('serviceWorker' in navigator && window.isSecureContext && window.top === window) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => { /* sem suporte: segue normal */ });
+  });
+}
