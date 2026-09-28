@@ -42,6 +42,22 @@ Em tablets dá para ligar controles Bluetooth e jogar em tela dividida.
 
 > Dica: aperte **F11** para tela cheia. Uma TV ligada ao computador + controles USB fica perfeito para a turma.
 
+## 🌐 Online com amigos (até 8 jogadores)
+
+Cada criança joga no **próprio celular, tablet ou computador**, todos na mesma corrida:
+
+1. Uma criança toca em **🌐 Online com Amigos → Criar sala**. Aparece um **código de 4 letras**.
+2. Ela toca em **📨 Convidar amigos** para mandar o código (ou o link) pelo WhatsApp.
+3. Os amigos abrem o jogo, tocam em **Online com Amigos**, digitam o código e tocam em **Entrar**
+   (quem abrir pelo link do convite já chega com o código preenchido).
+4. Quem criou a sala escolhe a pista e as voltas e toca em **CORRER!**. As vagas que sobrarem
+   até 8 são preenchidas por pilotos do computador.
+
+Funciona com todos na mesma sala ou cada um na sua casa, desde que todos tenham internet.
+Os aparelhos se conectam direto entre si (WebRTC); o serviço gratuito PeerJS só ajuda a
+encontrar a sala. Em algumas redes muito fechadas (alguns 4G ou Wi-Fi de empresas) a conexão
+pode não acontecer — nesse caso, usem o mesmo Wi-Fi.
+
 ## 🎮 Controles
 
 | Ação | Jogador 1 | Jogador 2 | Controle (gamepad) |
@@ -100,6 +116,9 @@ js/audio.js       efeitos sonoros e música procedural
 js/hud.js         placar de cada jogador e minimapa
 js/input.js       teclado e controles
 js/touch.js       controles de toque (celular e tablet)
+js/online.js      sala online: criar/entrar com código, lista de jogadores
+js/net.js         conexão entre aparelhos (PeerJS/WebRTC)
+js/netrace.js     sincroniza a corrida online entre os aparelhos
 sw.js             funcionamento offline do app instalado
 manifest.webmanifest  nome, ícone e orientação do app
 ```

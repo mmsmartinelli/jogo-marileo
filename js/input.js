@@ -21,6 +21,7 @@ const PREVENT = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Spa
 let listeners = [];
 
 window.addEventListener('keydown', e => {
+  if (e.target instanceof HTMLInputElement) return;
   if (PREVENT.has(e.code) && !(e.target instanceof HTMLSelectElement)) e.preventDefault();
   if (!e.repeat) for (const l of listeners) l(e.code);
   keys.add(e.code);
@@ -58,6 +59,18 @@ function readGamepad(index) {
 export function readSource(src) {
   if (src.startsWith('gp')) return readGamepad(+src.slice(2));
   if (src === 'touch') return { ...touchState, up: false, down: false };
+  if (src === 'any') {
+    // online no computador: teclado (os dois lados) ou qualquer controle
+    const all = ['kb1', 'kb2', 'gp0', 'gp1', 'gp2', 'gp3'].map(readSource).filter(r => r.connected);
+    const out = { steer: 0, throttle: 0, brake: 0, drift: false, item: false, pause: false, up: false, down: false, back: false, connected: true };
+    for (const r of all) {
+      if (!out.steer && r.steer) out.steer = r.steer;
+      out.throttle = Math.max(out.throttle, r.throttle);
+      out.brake = Math.max(out.brake, r.brake);
+      for (const b of ['drift', 'item', 'pause', 'up', 'down', 'back']) out[b] = out[b] || !!r[b];
+    }
+    return out;
+  }
   const L = LAYOUTS[src];
   const left = any(L.left), right = any(L.right);
   return {

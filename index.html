@@ -48,6 +48,7 @@
       <button class="big" data-mode="gp">🏆 Grande Prêmio</button>
       <button class="big" data-mode="race">🏁 Corrida Rápida</button>
       <button class="big" data-mode="tt">⏱️ Contra o Relógio</button>
+      <button class="big online-btn" id="onlineBtn">🌐 Online com Amigos</button>
       <button class="mid" data-go="howto">❓ Como Jogar</button>
     </div>
     <p class="hint">Até 4 jogadores na mesma tela • Teclado ou controles (gamepad) • <kbd>M</kbd> liga/desliga o som</p>
@@ -101,6 +102,60 @@
       <div class="actions">
         <button class="mid ghost" data-go="title">⬅ Voltar</button>
         <button class="big go" id="startBtn">CORRER! 🏁</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Online com amigos -->
+  <section id="online" class="screen">
+    <div class="panel wide">
+      <h2>🌐 Online com Amigos</h2>
+
+      <div id="onStart" class="on-step">
+        <div class="on-me">
+          <img id="onPortrait" class="on-portrait" alt="">
+          <div class="on-me-fields">
+            <div class="pick"><button id="onPrev" aria-label="Personagem anterior">◀</button><div><div class="cname" id="onCharName"></div><div id="onSpecies" class="on-species"></div></div><button id="onNext" aria-label="Próximo personagem">▶</button></div>
+            <label for="onName">Seu nome</label>
+            <input id="onName" maxlength="12" autocomplete="off" placeholder="Seu nome">
+          </div>
+        </div>
+        <div class="on-choices">
+          <div class="box">
+            <h3>Criar uma sala</h3>
+            <p>Você escolhe a pista e manda o código para os amigos entrarem.</p>
+            <button class="big go" id="onCreate">✨ Criar sala</button>
+          </div>
+          <div class="box">
+            <h3>Entrar numa sala</h3>
+            <p>Digite o código de 4 letras que o amigo mandou.</p>
+            <input id="onCode" class="on-code" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CÓDIGO">
+            <button class="big" id="onJoin">🚪 Entrar</button>
+          </div>
+        </div>
+        <p class="hint">Até 8 amigos, cada um no seu celular, tablet ou computador. Todos precisam estar com internet.</p>
+        <div class="actions"><button class="mid ghost" id="onBack">⬅ Voltar</button></div>
+      </div>
+
+      <div id="onLobby" class="on-step" hidden>
+        <div class="on-room">
+          <span>Código da sala</span>
+          <b id="onRoomCode">----</b>
+          <button class="mid" id="onShare">📨 Convidar amigos</button>
+        </div>
+        <div id="onPlayers" class="on-players"></div>
+        <div id="onHostOpts">
+          <div class="row"><label>Pista</label><div id="onTracks" class="tracks"></div></div>
+          <div class="row options">
+            <div><label>Voltas</label><div class="seg" id="onLaps"><button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button><button data-n="5">5</button></div></div>
+            <div><label>Computador</label><div class="seg" id="onDiff"><button data-n="0">Fácil</button><button data-n="1">Normal</button><button data-n="2">Difícil</button></div></div>
+          </div>
+        </div>
+        <p class="hint" id="onWait"></p>
+        <div class="actions">
+          <button class="mid ghost" id="onLeave">🚪 Sair da sala</button>
+          <button class="big go" id="onGo">CORRER! 🏁</button>
+        </div>
       </div>
     </div>
   </section>

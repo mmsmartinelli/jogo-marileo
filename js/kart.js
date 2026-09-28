@@ -176,8 +176,105 @@ export class Kart {
     this.stuck = 0;
   }
 
+  // Plaquinha com o nome do amigo flutuando sobre o kart.
+  setNameTag(text, color = '#ffd23f') {
+    const c = document.createElement('canvas');
+    c.width = 256; c.height = 64;
+    const ctx = c.getContext('2d');
+    ctx.font = 'bold 34px "Lilita One", Arial Black, sans-serif';
+    const w = Math.min(248, ctx.measureText(text).width + 36);
+    ctx.fillStyle = 'rgba(20,22,60,0.85)';
+    ctx.beginPath();
+    ctx.roundRect((256 - w) / 2, 6, w, 50, 22);
+    ctx.fill();
+    ctx.lineWidth = 4; ctx.strokeStyle = color; ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, 128, 33, 230);
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
+    sp.scale.set(4, 1, 1);
+    sp.position.y = 3.4;
+    sp.renderOrder = 20;
+    this.model.root.add(sp);
+    this.nameTag = sp;
+  }
+
+  // ---------- Modo online ----------
+  // Estado compacto enviado pela rede para os outros aparelhos.
+  netState() {
+    const f = (this.boost > 0 ? 1 : 0) | (this.drifting ? 2 : 0) | (this.shield > 0 ? 4 : 0) | (this.star > 0 ? 8 : 0)
+      | (this.squash > 0 ? 16 : 0) | (this.airborne ? 32 : 0) | (this.finished ? 64 : 0) | (this.respawning > 0 ? 128 : 0);
+    const r = v => Math.round(v * 100) / 100;
+    return [this.id, r(this.pos.x), r(this.pos.y), r(this.pos.z), r(this.heading), r(this.speed), this.lap,
+      r(this.progressTotal), f, r(this.spin), this.drifting ? this.driftDir * (this.driftLevel + 1) : 0, this.coins,
+      this.finished ? r(this.finishTime) : -1, r(this.vy)];
+  }
+
+  applyNetState(s, now) {
+    const [, x, y, z, h, speed, lap, prog, f, spin, drift, coins, finishTime, vy] = s;
+    this.net = { x, y, z, h, speed, vy, at: now };
+    if (!this.netInit) { this.pos.set(x, y, z); this.heading = this.moveAngle = h; this.netInit = true; }
+    this.speed = speed;
+    this.lap = lap;
+    this.progressTotal = prog;
+    this.boost = f & 1 ? Math.max(this.boost, 0.2) : 0;
+    this.drifting = !!(f & 2);
+    this.driftDir = Math.sign(drift);
+    this.driftLevel = Math.max(0, Math.abs(drift) - 1);
+    this.shield = f & 4 ? Math.max(this.shield, 3) : 0;
+    this.star = f & 8 ? Math.max(this.star, 0.5) : 0;
+    this.squash = f & 16 ? Math.max(this.squash, 0.3) : 0;
+    this.airborne = !!(f & 32);
+    this.respawning = f & 128 ? 0.5 : 0;
+    this.spin = spin;
+    this.coins = coins;
+    if (finishTime >= 0 && !this.finished) {
+      this.finished = true;
+      this.finishTime = finishTime;
+      this.finishOrder = ++this.race.finishOrder;
+    }
+  }
+
+  // Kart de outro aparelho: segue a posição recebida, prevendo o movimento entre as mensagens.
+  updateRemote(dt, t) {
+    const n = this.net;
+    const track = this.track;
+    if (n) {
+      const age = Math.min(0.25, (performance.now() - n.at) / 1000);
+      const px = n.x + Math.sin(n.h) * n.speed * age;
+      const pz = n.z + Math.cos(n.h) * n.speed * age;
+      const far = (px - this.pos.x) ** 2 + (pz - this.pos.z) ** 2 > 20 * 20;
+      if (far) this.pos.set(px, n.y, pz);
+      this.pos.x = damp(this.pos.x, px, 14, dt);
+      this.pos.z = damp(this.pos.z, pz, 14, dt);
+      this.pos.y = damp(this.pos.y, n.y + (this.airborne ? n.vy * age : 0), 14, dt);
+      this.heading = dampAngle(this.heading, n.h, 14, dt);
+      this.moveAngle = this.heading;
+    }
+    this.idx = track.findNearest(this.pos.x, this.pos.z, this.idx);
+    track.project(this.pos.x, this.pos.z, this.idx, this.proj);
+    this.offroad = !this.airborne && Math.abs(this.proj.lat) > track.hw + 0.8;
+    this.steerVis = damp(this.steerVis, this.drifting ? this.driftDir * 0.6 : 0, 8, dt);
+    this.spin = Math.max(0, this.spin - dt);
+    this.shield = Math.max(0, this.shield - dt);
+    this.star = Math.max(0, this.star - dt);
+    this.squash = Math.max(0, this.squash - dt);
+    const fx = this.race.effects;
+    if (this.drifting && this.driftLevel > 0 && !this.airborne) {
+      for (const s of [-1, 1]) fx.sparks(this.wheelWorld(-1.1, s * 1.0), DRIFT_COLORS[Math.min(2, this.driftLevel - 1)], 1);
+    }
+    if (this.boost > 0) {
+      const back = new THREE.Vector3(-Math.sin(this.heading), 0, -Math.cos(this.heading));
+      for (const s of [-0.32, 0.32]) fx.boostFlame(this.wheelWorld(-1.85, s, 1.0), back, 1);
+    }
+    if (this.offroad && Math.abs(this.speed) > 8 && Math.random() < 0.5) fx.dust(this.wheelWorld(-1.1, 1), 1);
+    this.updateVisual(dt, t);
+  }
+
   // ---------- Atualização ----------
   update(dt, t) {
+    if (this.remote) { this.updateRemote(dt, t); return; }
     const race = this.race;
     const track = this.track;
     const inp = this.input;
@@ -203,7 +300,7 @@ export class Kart {
     }
 
     // Contagem regressiva: só acumula a largada turbo.
-    if (race.phase === 'countdown' || race.phase === 'intro') {
+    if (race.phase === 'countdown' || race.phase === 'intro' || race.phase === 'waiting') {
       if (race.phase === 'countdown') this.rocketCharge = inp.throttle > 0.5 ? this.rocketCharge + dt : 0;
       this.updateVisual(dt, t);
       return;
@@ -506,6 +603,7 @@ export class Kart {
   }
 
   dispose() {
+    if (this.nameTag) { this.nameTag.material.map.dispose(); this.nameTag.material.dispose(); }
     this.race.scene.remove(this.model.root);
     this.model.paint.dispose();
     this.model.accent.dispose();

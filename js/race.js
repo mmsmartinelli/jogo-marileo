@@ -9,6 +9,7 @@ import { Effects } from './effects.js';
 import { HUD, Minimap, layoutViewports } from './hud.js';
 import { PlayerInput } from './input.js';
 import { mountTouch, unmountTouch } from './touch.js';
+import { NetSync } from './netrace.js';
 import { CHARACTERS } from './characters.js';
 import { getTrack } from './tracks.js';
 import { audio } from './audio.js';
@@ -35,7 +36,9 @@ export class Race {
 
     this.time = 0;
     this.raceTime = 0;
-    this.phase = 'intro';
+    this.online = cfg.online || null;
+    // online: todos esperam os amigos terminarem de carregar a pista
+    this.phase = this.online ? 'waiting' : 'intro';
     this.phaseTime = 0;
     this.finishOrder = 0;
     this.doneTimer = -1;
@@ -56,9 +59,16 @@ export class Race {
         entries.push({ char: pool.shift(), human: false });
       }
     }
-    // ordem de largada: IA na frente, jogadores atrás (ou ordem do GP)
+    // ordem de largada: IA na frente, jogadores atrás (ou ordem do GP / da sala online)
     let order;
-    if (cfg.gridOrder) {
+    if (this.online) {
+      const on = this.online;
+      order = on.entries.map(e => ({
+        char: e.char, name: e.name, owner: e.owner,
+        human: e.owner === on.myId, playerIndex: 0, source: on.source,
+        remote: e.owner !== on.myId && !(e.owner === 'ai' && on.role === 'host'),
+      }));
+    } else if (cfg.gridOrder) {
       order = [...entries].sort((a, b) => cfg.gridOrder.indexOf(a.human ? 'P' + a.playerIndex : a.char) - cfg.gridOrder.indexOf(b.human ? 'P' + b.playerIndex : b.char));
     } else {
       const ai = entries.filter(e => !e.human).sort(() => Math.random() - 0.5);
@@ -75,7 +85,15 @@ export class Race {
       k.charIndex = e.char;
       k.gridSlot = slot;
       this.karts.push(k);
-      if (e.human) {
+      if (this.online && e.owner !== 'ai') {
+        k.netName = e.name;
+        k.netHuman = true;
+        if (e.owner !== this.online.myId) k.setNameTag(e.name);
+      }
+      if (e.remote) {
+        k.remote = true;
+        k.netOwner = e.owner === 'ai' ? null : e.owner;
+      } else if (e.human) {
         k.controller = new PlayerInput(e.source);
         this.humans.push(k);
         if (cfg.mode === 'tt') { k.item = 'turbo3'; k.itemCount = 3; }
@@ -108,6 +126,9 @@ export class Race {
     // controles de toque (celular/tablet)
     const tk = this.humans.find(k => k.controller && k.controller.source === 'touch');
     if (tk) mountTouch(this.rects[this.humans.indexOf(tk)], () => app.pause());
+
+    this.netSync = this.online ? new NetSync(this, this.online) : null;
+    if (this.online && this.hud) this.hud.messageAll('ESPERANDO OS AMIGOS...', 60);
 
     this.engines = cfg.mode === 'demo' ? [] : this.humans.map(() => audio.createEngine());
     if (cfg.mode !== 'demo') audio.startMusic(this.def.music);
@@ -197,7 +218,7 @@ export class Race {
 
   _rank() {
     const sorted = [...this.karts].sort((a, b) => {
-      if (a.finished && b.finished) return a.finishOrder - b.finishOrder;
+      if (a.finished && b.finished) return a.finishTime - b.finishTime || a.finishOrder - b.finishOrder;
       if (a.finished) return -1;
       if (b.finished) return 1;
       return b.progressTotal - a.progressTotal;
@@ -215,6 +236,7 @@ export class Race {
 
     // fases
     if (this.phase === 'intro') {
+      if (this.hud && this.online && !this.introShown) { this.introShown = true; this.hud.messageAll('', 0.01); }
       if (this.phaseTime > (this.cfg.mode === 'demo' ? 0 : 2.6)) { this.phase = 'countdown'; this.phaseTime = 0; }
     }
     if (this.phase === 'countdown') {
@@ -235,6 +257,7 @@ export class Race {
             this.phaseTime = 0;
             // largada turbo
             for (const k of this.karts) {
+              if (k.remote) continue;
               if (k.human) {
                 if (k.rocketCharge > 0.4 && k.rocketCharge < 2.1) { k.giveBoost(1.3, 'boost'); this.hud.message(k, 'LARGADA TURBO!', 1.2); }
               } else if (Math.random() < 0.4) k.giveBoost(0.8, null);
@@ -259,7 +282,7 @@ export class Race {
     }
     if (pause) this.app.pause();
     for (const [k, d] of this.drivers) {
-      if (this.phase === 'countdown' || this.phase === 'intro') { k.input.throttle = 0; k.input.steer = 0; continue; }
+      if (this.phase === 'countdown' || this.phase === 'intro' || this.phase === 'waiting') { k.input.throttle = 0; k.input.steer = 0; continue; }
       d.update(dt);
     }
     // ajuste de velocidade da IA (dificuldade + "elástico")
@@ -267,7 +290,8 @@ export class Race {
 
     for (const k of this.karts) k.update(dt, t);
     this._collisions();
-    if (this.phase !== 'intro') {
+    if (this.netSync) this.netSync.update(dt);
+    if (this.phase !== 'intro' && this.phase !== 'waiting') {
       this.items.update(dt, t);
       this.obstacles.update(dt, t);
     }
@@ -323,12 +347,14 @@ export class Race {
         const d2 = dx * dx + dz * dz;
         const R = 2.3;
         if (d2 > R * R || Math.abs(a.pos.y - b.pos.y) > 2) continue;
-        if (a.star > 0 && b.star <= 0) { b.hit('launch', a); continue; }
-        if (b.star > 0 && a.star <= 0) { a.hit('launch', b); continue; }
+        if (a.remote && b.remote) continue;
+        if (a.star > 0 && b.star <= 0) { if (!b.remote) b.hit('launch', a); continue; }
+        if (b.star > 0 && a.star <= 0) { if (!a.remote) a.hit('launch', b); continue; }
         const d = Math.sqrt(d2) || 0.01;
         const nx = dx / d, nz = dz / d;
         const overlap = R - d;
-        const wa = b.weight / (a.weight + b.weight), wb = 1 - wa;
+        let wa = b.weight / (a.weight + b.weight), wb = 1 - wa;
+        if (a.remote) { wa = 0; wb = 1; } else if (b.remote) { wa = 1; wb = 0; }
         a.pos.x -= nx * overlap * wa; a.pos.z -= nz * overlap * wa;
         b.pos.x += nx * overlap * wb; b.pos.z += nz * overlap * wb;
         const rel = Math.abs(a.speed - b.speed);
@@ -355,7 +381,7 @@ export class Race {
       }
       if (v.cinematic) { this._cinematic(v, dt); continue; }
       const k = v.k;
-      const intro = this.phase === 'intro';
+      const intro = this.phase === 'intro' || this.phase === 'waiting';
       const finished = k.finished;
       // direção da câmera acompanha o kart suavemente
       const targetH = k.heading + k.bodyYaw * 0.4;
@@ -374,7 +400,7 @@ export class Race {
       }
       if (intro) {
         // voo de apresentação: começa na frente e gira para trás do kart
-        const f = Math.min(1, this.phaseTime / 2.6);
+        const f = this.phase === 'waiting' ? 0 : Math.min(1, this.phaseTime / 2.6);
         const e = f * f * (3 - 2 * f);
         const ang = k.heading + Math.PI * (1 - e) + (1 - e) * 0.8;
         const rr = lerp(10, dist, e);
@@ -465,7 +491,7 @@ export class Race {
       }
       return { kart: k, time, estimated: !k.finished };
     }).sort((a, b) => {
-      if (a.kart.finished && b.kart.finished) return a.kart.finishOrder - b.kart.finishOrder;
+      if (a.kart.finished && b.kart.finished) return a.kart.finishTime - b.kart.finishTime || a.kart.finishOrder - b.kart.finishOrder;
       if (a.kart.finished) return -1;
       if (b.kart.finished) return 1;
       return a.time - b.time;
@@ -473,6 +499,7 @@ export class Race {
   }
 
   dispose() {
+    if (this.netSync) this.netSync.dispose();
     for (const e of this.engines) if (e) e.stop();
     audio.stopMusic();
     for (const k of this.karts) k.dispose();

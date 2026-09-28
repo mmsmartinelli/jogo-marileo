@@ -9,9 +9,11 @@ import { setMaxAnisotropy } from './textures.js';
 import { formatTime } from './utils.js';
 import { PLAYER_COLORS } from './hud.js';
 import { isTouchDevice } from './touch.js';
+import { Online } from './online.js';
 
 const POINTS = [15, 12, 10, 8, 6, 4, 2, 1];
 const $ = s => document.querySelector(s);
+const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const $$ = s => [...document.querySelectorAll(s)];
 
 function load(key, def) {
@@ -43,6 +45,7 @@ class App {
 
     this._initRenderer();
     this._bindUI();
+    this.online = new Online(this);
     this._boot();
   }
 
@@ -76,6 +79,11 @@ class App {
     await step(100, 'Pronto!');
     this.show('title');
     this._loop();
+    // convite: ?sala=CODIGO abre direto a tela online com o código preenchido
+    try {
+      const sala = new URLSearchParams(location.search).get('sala');
+      if (sala) this.online.open(sala);
+    } catch (e) { /* ignore */ }
   }
 
   // ---------- Retratos dos personagens ----------
@@ -177,10 +185,21 @@ class App {
     $$('#difficulty button').forEach(b => b.addEventListener('click', () => { this.settings.difficulty = +b.dataset.n; audio.play('select'); this._renderSetup(); }));
     $$('#autoAccel button').forEach(b => b.addEventListener('click', () => { this.settings.autoAccel = +b.dataset.n; audio.play('select'); this._renderSetup(); }));
     $('#startBtn').addEventListener('click', () => this.startFromSetup());
+    $('#onlineBtn').addEventListener('click', () => {
+      audio.init();
+      // dentro de outra página (ex.: pré-visualização) a conexão entre aparelhos é bloqueada
+      if (window.top !== window) { this.toast('O modo online funciona no app: mmsmartinelli.github.io/jogo-marileo'); return; }
+      audio.play('confirm');
+      this.online.open();
+    });
 
     $('#resumeBtn').addEventListener('click', () => this.resume());
     $('#restartBtn').addEventListener('click', () => { this.paused = false; this.startRace(this.lastCfg); });
-    $('#quitBtn').addEventListener('click', () => { this.paused = false; this.toMenu(); });
+    $('#quitBtn').addEventListener('click', () => {
+      this.paused = false;
+      if (this.race && this.race.online) this.online.leave();
+      else this.toMenu();
+    });
     $('#podiumMenu').addEventListener('click', () => this.toMenu());
 
     onKey(code => {
@@ -189,6 +208,7 @@ class App {
       else if (this.screen === 'pause' && (code === 'Escape' || code === 'KeyP')) this.resume();
       else if (code === 'Escape') {
         if (this.screen === 'setup' || this.screen === 'howto') { audio.play('back'); this.show('title'); }
+        else if (this.screen === 'online' && !this.online.connected) { audio.play('back'); this.show('title'); }
       }
     });
 
@@ -344,9 +364,24 @@ class App {
     this.show('race');
   }
 
+  // Corrida online: cada aparelho monta a mesma corrida com o seu kart.
+  startOnlineRace(cfg, online) {
+    this._goFullscreen();
+    const source = this.touch ? 'touch' : 'any';
+    this.startRace({
+      ...cfg, autoAccel: !!this.settings.autoAccel,
+      players: [{ char: this.online.me.char, source }],
+      online: { ...online, entries: cfg.entries, source },
+    });
+  }
+
   pause() {
     if (this.screen !== 'race') return;
-    this.paused = true;
+    const online = !!(this.race && this.race.online);
+    // online a corrida continua para os amigos: só mostra o menu
+    this.paused = !online;
+    $('#restartBtn').hidden = online;
+    $('#quitBtn').textContent = online ? '🚪 Sair da sala' : '🏠 Sair para o menu';
     audio.play('back');
     this.show('pause');
   }
@@ -360,6 +395,7 @@ class App {
   toMenu() {
     this.paused = false;
     this.gp = null;
+    if (this.online.connected) this.online.leave(true);
     this.startDemo();
     this.show('title');
   }
@@ -382,7 +418,7 @@ class App {
       save('marileo_stars', this.stars);
       chalHTML = `<h3>⭐ Desafios — ${def.name}</h3>` + now.map(n => `
         <div class="chal ${n.done ? 'done' : ''}"><span class="star">⭐</span><div>${n.c.text}
-        <div style="font-size:13px;opacity:.8">${n.done ? 'Conseguiu: ' + n.who.map(k => 'J' + (k.playerIndex + 1)).join(', ') : (n.wasDone ? 'Já conquistado antes' : 'Ainda não...')}</div></div></div>`).join('');
+        <div style="font-size:13px;opacity:.8">${n.done ? 'Conseguiu: ' + n.who.map(k => k.netName ? esc(k.netName) : 'J' + (k.playerIndex + 1)).join(', ') : (n.wasDone ? 'Já conquistado antes' : 'Ainda não...')}</div></div></div>`).join('');
       const total = Object.values(this.stars).reduce((a, s) => a + s.filter(Boolean).length, 0);
       chalHTML += `<p class="hint">Total de estrelas: <b>${total} / ${TRACKS.length * 3}</b></p>`;
     } else {
@@ -414,9 +450,11 @@ class App {
     // tabela
     const rows = res.map((r, i) => {
       const k = r.kart;
-      const tag = k.human ? `<span class="tag" style="background:${PLAYER_COLORS[k.playerIndex]}">J${k.playerIndex + 1}</span>` : '';
+      const tag = cfg.online
+        ? (k.netHuman ? `<span class="tag" style="background:${k.human ? '#ffb020' : '#7c3aed'}">${k.human ? 'você' : '🌐'}</span>` : '')
+        : (k.human ? `<span class="tag" style="background:${PLAYER_COLORS[k.playerIndex]}">J${k.playerIndex + 1}</span>` : '');
       const pts = cfg.mode === 'gp' ? `<td class="pts">+${r.points} • ${this.gp.points[r.key]} pts</td>` : '';
-      return `<tr class="${k.human ? 'human' : ''}"><td>${i + 1}º</td><td><img src="${this.portraits[k.charIndex]}">${k.ch.name}${tag}</td>
+      return `<tr class="${k.human ? 'human' : ''}"><td>${i + 1}º</td><td><img src="${this.portraits[k.charIndex]}">${esc(k.netName || k.ch.name)}${tag}</td>
         <td>${r.estimated ? '~' : ''}${formatTime(r.time)}</td>${pts}</tr>`;
     }).join('');
     $('#resultsTable').innerHTML = rows;
@@ -426,7 +464,17 @@ class App {
     const acts = $('#resultsActions');
     acts.innerHTML = '';
     const btn = (label, cls, fn) => { const b = document.createElement('button'); b.className = cls; b.textContent = label; b.addEventListener('click', () => { audio.play('confirm'); fn(); }); acts.appendChild(b); };
-    if (cfg.mode === 'gp') {
+    if (cfg.online) {
+      if (this.online.isHost) {
+        btn('↩ Voltar para a sala', 'big go', () => this.online.backToLobby(true));
+      } else {
+        const w = document.createElement('p');
+        w.className = 'hint';
+        w.textContent = '⏳ Esperando o anfitrião voltar para a sala...';
+        acts.appendChild(w);
+      }
+      btn('🚪 Sair da sala', 'mid ghost', () => this.online.leave());
+    } else if (cfg.mode === 'gp') {
       if (this.gp.index < CUP.tracks.length - 1) {
         const next = getTrack(CUP.tracks[this.gp.index + 1]);
         btn(`▶ Próxima: ${next.name}`, 'big go', () => { this.gp.index++; this.startGPRace(); });

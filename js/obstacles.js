@@ -135,7 +135,7 @@ export class Obstacles {
     mesh.traverse(o => { if (o.isMesh) o.castShadow = true; });
     this.group.add(mesh);
     const fr = this._frame(i);
-    const b = { mesh, idx: i, fr, radius, speed: f.speed || 1, phase: Math.random() * 6, lat: 0, roll: 0, pos: new THREE.Vector3(), kind };
+    const b = { mesh, idx: i, fr, radius, speed: f.speed || 1, phase: this.barrels.length * 2.3 + f.t * 7, lat: 0, roll: 0, pos: new THREE.Vector3(), kind };
     this.barrels.push(b);
     this.danger.push(b);
   }
@@ -231,7 +231,8 @@ export class Obstacles {
 
   update(dt, t) {
     const race = this.race;
-    const karts = race.karts;
+    // no modo online cada aparelho só cuida dos karts que ele mesmo controla
+    const karts = race.karts.filter(k => !k.remote);
     const fx = race.effects;
     const track = this.track;
 

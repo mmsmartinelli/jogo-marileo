@@ -200,6 +200,53 @@ button.ghost { background: linear-gradient(180deg, #6b6f9c, #484c7a); box-shadow
 .keys th { text-align: left; opacity: .8; }
 .keys td, .keys th { padding: 4px 4px; }
 
+/* ---------- Online ---------- */
+[hidden] { display: none !important; }
+button.online-btn { background: linear-gradient(180deg, #b36bff, #7c3aed); box-shadow: 0 6px 0 #4c1d95, 0 10px 18px rgba(0, 0, 0, .3); }
+button:disabled { filter: grayscale(.8) brightness(.8); cursor: default; transform: none; }
+.on-me { display: flex; gap: 18px; align-items: center; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
+.on-portrait { width: 150px; aspect-ratio: 1; border-radius: 20px; background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, .35), rgba(255, 255, 255, 0) 70%); }
+.on-me-fields { display: flex; flex-direction: column; gap: 6px; min-width: 240px; }
+.on-me-fields .pick { display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: center; }
+.on-me-fields .pick button { font-size: 20px; padding: 4px 14px; border-radius: 10px; }
+.on-me-fields .cname { font-family: var(--font-title); font-size: 24px; }
+.on-species { font-size: 14px; opacity: .8; }
+.on-me-fields label { font-family: var(--font-title); font-size: 16px; margin-top: 4px; }
+#online input {
+  font-family: var(--font-title); font-size: 22px; padding: 8px 14px; border-radius: 12px;
+  border: 3px solid rgba(255, 255, 255, .3); background: rgba(255, 255, 255, .95); color: var(--ink); width: 100%;
+}
+#online input:focus { outline: none; border-color: var(--yellow); }
+.on-code { text-align: center; letter-spacing: 10px; text-transform: uppercase; font-size: 34px !important; }
+.on-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.on-choices .box { background: rgba(255, 255, 255, .07); border-radius: 18px; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center; }
+.on-choices h3 { font-family: var(--font-title); font-weight: normal; margin: 0; font-size: 24px; }
+.on-choices p { margin: 0; opacity: .85; }
+.on-choices button.big { min-width: 0; width: 100%; }
+.on-room { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
+.on-room span { font-family: var(--font-title); font-size: 20px; opacity: .85; }
+.on-room b {
+  font-family: var(--font-title); font-weight: normal; font-size: 56px; letter-spacing: 10px; color: var(--yellow);
+  background: rgba(0, 0, 0, .3); padding: 0 18px 0 28px; border-radius: 16px; border: 3px dashed rgba(255, 210, 63, .6);
+}
+.on-players { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 8px 0; }
+.on-player { display: flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, .08); border-radius: 14px; padding: 6px 10px; border: 3px solid transparent; }
+.on-player.me { border-color: var(--yellow); }
+.on-player.empty { opacity: .35; justify-content: center; min-height: 64px; font-family: var(--font-title); }
+.on-player img { width: 52px; height: 52px; }
+.on-player .n { font-family: var(--font-title); font-size: 18px; line-height: 1.1; overflow-wrap: anywhere; }
+.on-player .s { font-size: 12px; opacity: .8; }
+.on-player .arrows { margin-left: auto; display: flex; gap: 4px; }
+.on-player .arrows button { font-size: 14px; padding: 2px 8px; border-radius: 8px; box-shadow: 0 3px 0 #1b3a99; }
+@media (max-width: 900px) { .on-players { grid-template-columns: repeat(2, 1fr); } }
+@media (max-height: 520px) {
+  .on-portrait { width: 90px; }
+  .on-room b { font-size: 38px; }
+  .on-players { grid-template-columns: repeat(4, 1fr); }
+  .on-player img { width: 38px; height: 38px; }
+  .on-player .n { font-size: 15px; }
+}
+
 /* ---------- Resultados ---------- */
 .resultsgrid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; }
 .standings { width: 100%; border-collapse: separate; border-spacing: 0 5px; font-size: 18px; }

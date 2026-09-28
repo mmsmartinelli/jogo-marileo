@@ -82,7 +82,7 @@ export class ItemSystem {
       mesh.position.set(p.x, p.y + 1.5, p.z);
       mesh.rotation.set(0.5, Math.random() * 6, 0.3);
       this.group.add(mesh);
-      this.boxes.push({ mesh, pos: new THREE.Vector3(p.x, p.y, p.z), active: true, timer: 0, phase: Math.random() * 6 });
+      this.boxes.push({ mesh, pos: new THREE.Vector3(p.x, p.y, p.z), active: true, timer: 0, phase: Math.random() * 6, index: this.boxes.length });
     }
   }
 
@@ -117,30 +117,46 @@ export class ItemSystem {
       case 'foguete':
         this.fireMissile(k);
         break;
-      case 'tinta': {
-        const victims = race.karts.filter(o => o !== k && !o.finished && o.place < k.place);
-        const list = victims.length ? victims : race.karts.filter(o => o !== k && !o.finished);
-        for (const o of list) {
-          if (o.star > 0) continue;
-          if (o.shield > 0) { o.shield = 0; o.sfx('shieldBreak'); continue; }
-          o.ink = 4.5;
-          if (o.human) race.hudEvent(o, 'ink');
-        }
-        race.sfxAll('ink');
-        k.stats.hits += Math.min(1, list.length);
+      case 'tinta':
+        this.applyInk(k, true);
         break;
-      }
+    }
+  }
+
+  // Tinta de lula: suja a tela de quem está à frente de `k`.
+  applyInk(k, local) {
+    const race = this.race;
+    const victims = race.karts.filter(o => o !== k && !o.finished && o.place < k.place);
+    const list = victims.length ? victims : race.karts.filter(o => o !== k && !o.finished);
+    for (const o of list) {
+      if (o.remote || o.star > 0) continue;
+      if (o.shield > 0) { o.shield = 0; o.sfx('shieldBreak'); continue; }
+      o.ink = 4.5;
+      if (o.human) race.hudEvent(o, 'ink');
+    }
+    race.sfxAll('ink');
+    if (local) {
+      k.stats.hits += Math.min(1, list.length);
+      if (race.netSync) race.netSync.event({ e: 'ink', owner: k.id });
     }
   }
 
   dropHazard(k, type) {
-    const track = this.race.track;
+    const race = this.race;
+    const track = race.track;
     const back = 3.0;
     const x = k.pos.x - Math.sin(k.heading) * back;
     const z = k.pos.z - Math.cos(k.heading) * back;
     const idx = track.findNearest(x, z, k.idx);
     const pr = track.project(x, z, idx, {});
-    const pos = new THREE.Vector3(x, pr.y, z);
+    const id = race.netSync ? race.netSync.newId() : null;
+    this.addHazard(type, x, pr.y, z, k, id);
+    if (race.netSync) race.netSync.event({ e: 'haz', id, type, x, y: pr.y, z, owner: k.id });
+  }
+
+  // Cria uma armadilha (local ou vinda de outro aparelho).
+  addHazard(type, x, y, z, owner, id = null) {
+    const pos = new THREE.Vector3(x, y, z);
     let mesh, radius;
     if (type === 'banana') {
       mesh = new THREE.Group();
@@ -163,7 +179,25 @@ export class ItemSystem {
     mesh.position.copy(pos);
     if (type === 'caixa') mesh.position.y += 1.5;
     this.group.add(mesh);
-    this.hazards.push({ type, mesh, pos, radius, owner: k, arm: 0.6, life: type === 'oleo' ? 25 : 60, drop: type !== 'oleo' ? 0.35 : 0 });
+    this.hazards.push({ id, type, mesh, pos, radius, owner, arm: 0.6, life: type === 'oleo' ? 25 : 60, drop: type !== 'oleo' ? 0.35 : 0 });
+  }
+
+  removeHazard(id) {
+    const i = this.hazards.findIndex(h => h.id === id);
+    if (i < 0) return;
+    this.group.remove(this.hazards[i].mesh);
+    this.hazards.splice(i, 1);
+  }
+
+  _hazardGone(h) {
+    if (h.id && this.race.netSync) this.race.netSync.event({ e: 'hazX', id: h.id });
+  }
+
+  takeBox(i) {
+    const b = this.boxes[i];
+    if (!b || !b.active) return;
+    b.active = false; b.timer = 2.2; b.mesh.visible = false;
+    this.race.effects.burst(b.mesh.position, new THREE.Color().setHSL(Math.random(), 1, 0.6), 18, 8, 0.7, 0.6);
   }
 
   fireMissile(k) {
@@ -171,6 +205,21 @@ export class ItemSystem {
     // alvo: quem está logo à frente
     let target = null;
     if (k.place > 1) target = race.karts.find(o => o.place === k.place - 1) || null;
+    const r = v => Math.round(v * 100) / 100;
+    const e = {
+      id: race.netSync ? race.netSync.newId() : null, owner: k.id, target: target ? target.id : -1,
+      x: r(k.pos.x + Math.sin(k.heading) * 2.5), y: r(k.pos.y + 1.2), z: r(k.pos.z + Math.cos(k.heading) * 2.5),
+      h: r(k.heading), speed: r(Math.max(70, k.speed + 30)), idx: k.idx,
+    };
+    this.spawnMissile(e, true);
+    if (race.netSync) race.netSync.event({ e: 'mis', ...e });
+  }
+
+  // Cria o foguete (local ou vindo de outro aparelho).
+  spawnMissile(e, local) {
+    const race = this.race;
+    const owner = race.karts[e.owner];
+    const target = e.target >= 0 ? race.karts[e.target] : null;
     const g = new THREE.Group();
     const body = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 1.6, 12).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xff3b3b, roughness: 0.3, metalness: 0.3 }));
     const nose = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.6, 12).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 }));
@@ -186,11 +235,22 @@ export class ItemSystem {
       fin.position.x = Math.cos(i * Math.PI / 2) * 0.3; fin.position.y = Math.sin(i * Math.PI / 2) * 0.3;
       g.add(fin);
     }
-    const pos = k.pos.clone().add(new THREE.Vector3(Math.sin(k.heading) * 2.5, 1.2, Math.cos(k.heading) * 2.5));
+    const pos = new THREE.Vector3(e.x, e.y, e.z);
     g.position.copy(pos);
     this.group.add(g);
-    this.missiles.push({ mesh: g, pos, owner: k, target, idx: k.idx, heading: k.heading, life: 8, speed: Math.max(70, k.speed + 30) });
-    k.sfx('missile');
+    this.missiles.push({ id: e.id, mesh: g, pos, owner, target, idx: e.idx, heading: e.h, life: 8, speed: e.speed });
+    if (owner) owner.sfx('missile');
+  }
+
+  removeMissile(id, x, y, z) {
+    const i = this.missiles.findIndex(m => m.id === id);
+    if (i < 0) return;
+    const m = this.missiles[i];
+    m.pos.set(x, y, z);
+    this.race.effects.explosion(m.pos);
+    this.race.sfxAt('explosion', m);
+    this.group.remove(m.mesh);
+    this.missiles.splice(i, 1);
   }
 
   // ---------- Atualização ----------
@@ -214,11 +274,11 @@ export class ItemSystem {
       b.mesh.position.y = b.pos.y + 1.5 + Math.sin(t * 2.5 + b.phase) * 0.25;
       b.mesh.children[0].rotation.y -= dt * 3;
       for (const k of karts) {
-        if (k.respawning > 0 || k.falling) continue;
+        if (k.remote || k.respawning > 0 || k.falling) continue;
         const dx = k.pos.x - b.pos.x, dz = k.pos.z - b.pos.z;
         if (dx * dx + dz * dz < 2.4 * 2.4 && Math.abs(k.pos.y - b.pos.y) < 3.5) {
-          b.active = false; b.timer = 2.2; b.mesh.visible = false;
-          fx.burst(b.mesh.position, new THREE.Color().setHSL(Math.random(), 1, 0.6), 18, 8, 0.7, 0.6);
+          this.takeBox(b.index);
+          if (race.netSync) race.netSync.event({ e: 'box', i: b.index });
           if (!k.item && k.roulette <= 0 && !k.finished) {
             k.pendingItem = rollItem(k.place, karts.length);
             k.roulette = k.human ? 1.3 : 0.6;
@@ -241,6 +301,7 @@ export class ItemSystem {
       let remove = h.life <= 0;
       if (!remove) {
         for (const k of karts) {
+          if (k.remote) continue;
           if (k === h.owner && h.arm > 0) continue;
           if (k.airborne && k.pos.y - h.pos.y > 1.5) continue;
           const dx = k.pos.x - h.pos.x, dz = k.pos.z - h.pos.z;
@@ -264,6 +325,7 @@ export class ItemSystem {
       if (remove) {
         this.group.remove(h.mesh);
         this.hazards.splice(i, 1);
+        if (h.life > 0) this._hazardGone(h);
       }
     }
 
@@ -300,11 +362,14 @@ export class ItemSystem {
       fx.boostFlame(m.pos.clone().addScaledVector(new THREE.Vector3(Math.sin(m.heading), 0, Math.cos(m.heading)), -1), new THREE.Vector3(-Math.sin(m.heading), 0, -Math.cos(m.heading)), 2);
       if (Math.random() < 0.5) fx.smoke(m.pos.clone(), 1);
       let boom = m.life <= 0;
+      let sendBoom = false;
       for (const k of karts) {
+        if (k.remote) continue;
         if (k === m.owner && m.life > 7.5) continue;
         if (k.pos.distanceToSquared(m.pos) < 2.6 * 2.6) {
           k.hit('launch', m.owner);
           boom = true;
+          sendBoom = true;
           break;
         }
       }
@@ -314,10 +379,13 @@ export class ItemSystem {
         if (h.type !== 'oleo' && h.pos.distanceToSquared(m.pos) < 4) {
           this.group.remove(h.mesh);
           this.hazards.splice(j, 1);
+          this._hazardGone(h);
           boom = true;
+          sendBoom = true;
         }
       }
       if (boom) {
+        if (sendBoom && m.id && race.netSync) race.netSync.event({ e: 'misX', id: m.id, x: m.pos.x, y: m.pos.y, z: m.pos.z });
         fx.explosion(m.pos);
         race.sfxAt('explosion', m);
         this.group.remove(m.mesh);

@@ -32,7 +32,7 @@ export class HUD {
         <div class="boost"></div>
         <div class="ink"><img src="${inkImg}" style="width:100%;height:100%;object-fit:cover"></div>
         <div class="item"><span class="icon"></span><span class="count"></span></div>
-        <div class="pname" style="color:${PLAYER_COLORS[k.playerIndex]}">J${k.playerIndex + 1} • ${k.ch.name}</div>
+        <div class="pname" style="color:${PLAYER_COLORS[k.playerIndex]}">${k.netName || `J${k.playerIndex + 1} • ${k.ch.name}`}</div>
         <div class="time"></div>
         <div class="coins"><span class="coinIco"></span><span class="cv">0</span></div>
         <div class="lap"></div>
@@ -180,14 +180,14 @@ export class Minimap {
     const c = this.ctx;
     c.clearRect(0, 0, this.canvas.width, this.canvas.height);
     c.drawImage(this.bg, 0, 0);
-    const sorted = [...karts].sort((a, b) => (a.human ? 1 : 0) - (b.human ? 1 : 0));
+    const sorted = [...karts].sort((a, b) => (a.human ? 2 : a.netHuman ? 1 : 0) - (b.human ? 2 : b.netHuman ? 1 : 0));
     for (const k of sorted) {
       const [x, y] = this.map(k.pos.x, k.pos.z);
       c.beginPath();
-      c.arc(x, y, k.human ? 8 : 5.5, 0, Math.PI * 2);
+      c.arc(x, y, k.human ? 8 : k.netHuman ? 7 : 5.5, 0, Math.PI * 2);
       c.fillStyle = k.ch.color;
       c.fill();
-      c.lineWidth = k.human ? 3 : 2;
+      c.lineWidth = k.human || k.netHuman ? 3 : 2;
       c.strokeStyle = k.human ? PLAYER_COLORS[k.playerIndex] : '#fff';
       c.stroke();
       if (k.human) {
