@@ -58,7 +58,9 @@ export class AIDriver {
       if (h._idx === undefined) { h._idx = tr.findNearest(h.pos.x, h.pos.z, k.idx); h._lat = tr.project(h.pos.x, h.pos.z, h._idx, {}).lat; }
       checkDanger(h._idx, h._lat, h.radius);
     }
-    const target = clamp(this.laneTarget + avoid * 0.9 * (0.5 + this.skill), -0.8, 0.8);
+    // na pista de lava (sem muros) fica mais perto do meio
+    const laneMax = tr.def.lava ? 0.5 : 0.8;
+    const target = clamp(this.laneTarget + avoid * 0.9 * (0.5 + this.skill), -laneMax, laneMax);
     this.lane += (target - this.lane) * Math.min(1, dt * 2.5);
 
     // ponto-alvo à frente
@@ -83,7 +85,12 @@ export class AIDriver {
 
     // derrapagem em curvas longas (pilotos habilidosos)
     let drift = false, driftPressed = false;
-    if (this.skill > 0.45 && Math.abs(curve) > 0.55 && k.speed > 22 && !k.offroad) {
+    if (tr.def.lava) {
+      // sem muros: freia antes das curvas fechadas e perto da beirada
+      if (Math.abs(curve) > 0.6 && k.speed > 30) throttle = Math.min(throttle, 0.4);
+      if (Math.abs(k.proj.lat || 0) > tr.hw * 0.8) steer = clamp(steer + Math.sign(k.proj.lat) * 0.6, -1, 1);
+    }
+    if (!tr.def.lava && this.skill > 0.45 && Math.abs(curve) > 0.55 && k.speed > 22 && !k.offroad) {
       drift = true;
       if (!this.wasDrifting) driftPressed = true;
       if (k.drifting) steer = clamp(-diff * 2.0, -1, 1);

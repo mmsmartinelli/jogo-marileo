@@ -549,22 +549,6 @@ class App {
 
 window.app = new App();
 
-// iPhone/iPad só aceitam ícone PNG na tela inicial: converte o ícone SVG.
-(() => {
-  const link = document.getElementById('appleIcon');
-  if (!link) return;
-  const img = new Image();
-  img.onload = () => {
-    try {
-      const c = document.createElement('canvas');
-      c.width = c.height = 180;
-      c.getContext('2d').drawImage(img, 0, 0, 180, 180);
-      link.href = c.toDataURL('image/png');
-    } catch (e) { /* ignore */ }
-  };
-  img.src = 'icons/icon.svg';
-})();
-
 // App instalável (PWA): guarda os arquivos para jogar sem internet.
 if ('serviceWorker' in navigator && window.isSecureContext && window.top === window) {
   window.addEventListener('load', () => {

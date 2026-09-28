@@ -122,7 +122,7 @@ export class Race {
     const s = el.style;
     s.left = s.right = s.top = s.bottom = s.transform = '';
     const touch = this.humans.some(k => k.controller && k.controller.source === 'touch');
-    if (touch && n === 1) { s.left = '50%'; s.bottom = '6px'; s.transform = 'translateX(-50%)'; s.width = s.height = '120px'; }
+    if (touch && n === 1) { s.left = '8px'; s.top = 'calc(3% + 112px)'; s.transform = 'none'; s.width = s.height = '96px'; }
     else if (n === 1) { s.right = '14px'; s.top = '50%'; s.transform = 'translateY(-50%)'; s.width = s.height = '210px'; }
     else if (n === 2) { s.right = '14px'; s.top = '50%'; s.transform = 'translateY(-50%)'; s.width = s.height = '180px'; }
     else if (n === 3) { s.left = '75%'; s.top = '75%'; s.transform = 'translate(-50%,-50%)'; s.width = s.height = 'min(40vh, 40vw)'; }

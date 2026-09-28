@@ -1,8 +1,10 @@
 // Service worker: guarda o jogo no aparelho para abrir rápido e jogar sem internet.
-const CACHE = 'marileo-kart-v1';
+const CACHE = 'marileo-kart-v2';
 const THREE = 'https://cdn.jsdelivr.net/npm/three@0.160.0/';
 const FILES = [
-  './', 'index.html', 'manifest.webmanifest', 'icons/icon.svg', 'css/style.css',
+  './', 'index.html', 'manifest.webmanifest', 'css/style.css',
+  'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-192.png', 'icons/maskable-512.png',
+  'icons/apple-touch-icon.png', 'icons/favicon-32.png',
   'js/main.js', 'js/race.js', 'js/kart.js', 'js/track.js', 'js/tracks.js', 'js/items.js',
   'js/obstacles.js', 'js/ai.js', 'js/characters.js', 'js/effects.js', 'js/audio.js',
   'js/hud.js', 'js/input.js', 'js/touch.js', 'js/textures.js', 'js/utils.js',

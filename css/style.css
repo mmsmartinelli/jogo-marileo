@@ -303,6 +303,11 @@ button.ghost { background: linear-gradient(180deg, #6b6f9c, #484c7a); box-shadow
 }
 #toast.show { opacity: 1; }
 
+.cover {
+  width: min(340px, 52vh, 70vw); aspect-ratio: 1; border-radius: 22%;
+  border: 6px solid #fff; box-shadow: 0 12px 0 rgba(0, 0, 0, .3), 0 24px 50px rgba(0, 0, 0, .5);
+  animation: bob 3s ease-in-out infinite;
+}
 .loadbar { width: min(420px, 80vw); height: 18px; border-radius: 10px; background: rgba(255, 255, 255, .15); margin-top: 30px; overflow: hidden; }
 .loadbar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ffd23f, #ff6b2c); transition: width .2s; }
 
@@ -380,6 +385,7 @@ body.touchmode #title .hint { display: none; }
   .card .portrait { max-width: 90px; }
   .card .stats { display: none; }
   .card .cname { font-size: 17px; }
+  .card .pnum { font-size: 14px; white-space: nowrap; }
   .track { width: 120px; font-size: 13px; }
   .track canvas { height: 60px; }
   .row { margin: 6px 0; }
