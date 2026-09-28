@@ -8,6 +8,7 @@ import { Obstacles } from './obstacles.js';
 import { Effects } from './effects.js';
 import { HUD, Minimap, layoutViewports } from './hud.js';
 import { PlayerInput } from './input.js';
+import { mountTouch, unmountTouch } from './touch.js';
 import { CHARACTERS } from './characters.js';
 import { getTrack } from './tracks.js';
 import { audio } from './audio.js';
@@ -104,6 +105,10 @@ export class Race {
       this.minimap = new Minimap(app.minimapEl, this.track);
       this._placeMinimap();
     }
+    // controles de toque (celular/tablet)
+    const tk = this.humans.find(k => k.controller && k.controller.source === 'touch');
+    if (tk) mountTouch(this.rects[this.humans.indexOf(tk)], () => app.pause());
+
     this.engines = cfg.mode === 'demo' ? [] : this.humans.map(() => audio.createEngine());
     if (cfg.mode !== 'demo') audio.startMusic(this.def.music);
     this.phaseTime = 0;
@@ -116,7 +121,9 @@ export class Race {
     const n = this.humans.length;
     const s = el.style;
     s.left = s.right = s.top = s.bottom = s.transform = '';
-    if (n === 1) { s.right = '14px'; s.top = '50%'; s.transform = 'translateY(-50%)'; s.width = s.height = '210px'; }
+    const touch = this.humans.some(k => k.controller && k.controller.source === 'touch');
+    if (touch && n === 1) { s.left = '50%'; s.bottom = '6px'; s.transform = 'translateX(-50%)'; s.width = s.height = '120px'; }
+    else if (n === 1) { s.right = '14px'; s.top = '50%'; s.transform = 'translateY(-50%)'; s.width = s.height = '210px'; }
     else if (n === 2) { s.right = '14px'; s.top = '50%'; s.transform = 'translateY(-50%)'; s.width = s.height = '180px'; }
     else if (n === 3) { s.left = '75%'; s.top = '75%'; s.transform = 'translate(-50%,-50%)'; s.width = s.height = 'min(40vh, 40vw)'; }
     else { s.left = '50%'; s.top = '50%'; s.transform = 'translate(-50%,-50%)'; s.width = s.height = '150px'; }
@@ -474,6 +481,7 @@ export class Race {
     this.effects.dispose();
     this.track.dispose();
     if (this.hud) this.hud.clear();
+    unmountTouch();
     this.app.minimapEl.style.display = 'none';
   }
 }
