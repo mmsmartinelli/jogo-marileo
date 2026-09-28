@@ -160,6 +160,9 @@ class App {
 
   _bindUI() {
     document.addEventListener('pointerdown', () => audio.init(), { once: false });
+    // iPhone/iPad: o Safari só libera o som quando o dedo solta a tela
+    document.addEventListener('touchend', () => audio.init(), { passive: true });
+    document.addEventListener('click', () => audio.init());
     document.addEventListener('keydown', () => audio.init());
 
     $$('[data-mode]').forEach(b => b.addEventListener('click', () => {
