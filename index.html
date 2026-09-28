@@ -2,8 +2,16 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Marileo Kart</title>
+  <meta name="theme-color" content="#16163a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Marileo Kart">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" id="appleIcon" href="icons/icon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Lilita+One&display=swap" rel="stylesheet">
@@ -114,6 +122,7 @@
             <tr><td>Pausar</td><td colspan="2"><kbd>Esc</kbd> ou <kbd>P</kbd></td><td>Start</td></tr>
           </table>
           <p>Jogadores 3 e 4 usam controles (gamepads) USB ou Bluetooth. Aperte qualquer botão do controle para ele ser reconhecido.</p>
+          <p><b>📱 No celular:</b> arraste o dedo no lado esquerdo da tela para virar e use os botões do lado direito para acelerar, frear, derrapar e usar itens.</p>
         </div>
         <div class="box">
           <h3>🎁 Caixas Surpresa</h3>
@@ -182,6 +191,7 @@
   </section>
 
   <div id="toast"></div>
+  <div id="rotate"><b>📱</b>Gire o celular para jogar deitado</div>
 
   <script type="module" src="js/main.js"></script>
 </body>

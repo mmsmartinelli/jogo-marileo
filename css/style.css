@@ -310,3 +310,81 @@ button.ghost { background: linear-gradient(180deg, #6b6f9c, #484c7a); box-shadow
   .cards { grid-template-columns: repeat(2, 1fr); }
   .howgrid, .resultsgrid { grid-template-columns: 1fr; }
 }
+
+/* ---------- Celular / tablet ---------- */
+#game, #touch { touch-action: none; }
+html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+
+#touch { position: fixed; z-index: 15; pointer-events: none; user-select: none; -webkit-user-select: none; }
+#touch > * { pointer-events: auto; }
+.t-steer { position: absolute; left: 0; bottom: 0; width: 46%; height: 62%; }
+.t-steer > span {
+  position: absolute; left: 50%; bottom: 10%; transform: translateX(-50%);
+  font-family: var(--font-title); font-size: 14px; opacity: .55; white-space: nowrap; text-shadow: 0 2px 3px #000;
+}
+.t-ring {
+  position: absolute; left: 30%; top: 60%; width: 120px; height: 120px; margin: -60px 0 0 -60px;
+  border-radius: 50%; border: 3px solid rgba(255, 255, 255, .45); background: rgba(10, 12, 40, .25);
+  display: flex; align-items: center; justify-content: center; opacity: .55; transition: opacity .15s;
+}
+.t-ring.on { opacity: .9; }
+.t-knob { width: 56px; height: 56px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #bfc6ff); box-shadow: 0 4px 10px rgba(0, 0, 0, .4); }
+.t-btn {
+  position: absolute; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 26px; line-height: 1; padding: 0; opacity: .8; min-width: 0;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, .35); border: 3px solid rgba(255, 255, 255, .7);
+}
+.t-btn small { font-family: var(--font-body); font-size: 11px; font-weight: 800; margin-top: 2px; }
+.t-btn.down { transform: scale(.92); opacity: 1; filter: brightness(1.25); }
+.t-gas { right: 4%; bottom: 8%; width: 96px; height: 96px; background: linear-gradient(180deg, #4be38f, #1fae5c); }
+.t-brake { right: calc(4% + 108px); bottom: 5%; width: 70px; height: 70px; background: linear-gradient(180deg, #ff6b6b, #c92a2a); font-size: 20px; }
+.t-item { right: calc(4% + 8px); bottom: calc(8% + 108px); width: 78px; height: 78px; background: linear-gradient(180deg, #ffd23f, #ff9f1a); }
+.t-drift { right: calc(4% + 100px); bottom: calc(5% + 86px); width: 70px; height: 70px; background: linear-gradient(180deg, #b48cff, #7c4dff); }
+.t-pause {
+  position: absolute; left: 50%; top: 8px; transform: translateX(-50%);
+  width: 46px; height: 38px; border-radius: 12px; font-size: 16px; padding: 0; min-width: 0; opacity: .75;
+}
+
+/* HUD reorganizado para deixar espaço aos polegares */
+body.touchmode .vp .pos { bottom: auto; top: calc(3% + 30px); right: 3%; font-size: calc(var(--s) * 90px); }
+body.touchmode .vp .lap { bottom: auto; top: calc(3% + var(--s) * 110px); }
+body.touchmode .vp .coins { bottom: auto; top: calc(3% + var(--s) * 145px); }
+body.touchmode .vp .drift { bottom: auto; top: 18%; }
+body.touchmode #title .hint { display: none; }
+
+#rotate { display: none; }
+@media (orientation: portrait) {
+  body.touchmode #rotate {
+    display: flex; position: fixed; inset: 0; z-index: 100; flex-direction: column; gap: 16px;
+    align-items: center; justify-content: center; text-align: center; padding: 24px;
+    background: radial-gradient(circle at 50% 40%, #2d3aa8, #0b0d24 70%);
+    font-family: var(--font-title); font-size: 26px;
+  }
+  body.touchmode #rotate b { font-size: 72px; font-weight: normal; animation: turn 1.8s ease-in-out infinite; }
+}
+@keyframes turn { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+
+/* telas baixas (celular deitado): menus mais compactos */
+@media (max-height: 520px) {
+  .panel { padding: 12px 16px; border-radius: 18px; }
+  .panel h2 { font-size: 26px; margin-bottom: 6px; }
+  .logo span { font-size: 64px; -webkit-text-stroke-width: 4px; }
+  .logo b { font-size: 40px; border-width: 4px; }
+  .tagline { margin: 8px 0 4px; font-size: 18px; }
+  .menu { gap: 8px; margin-top: 8px; }
+  button.big { font-size: 20px; padding: 8px 24px; min-width: 260px; }
+  button.mid { font-size: 16px; padding: 6px 18px; min-width: 180px; }
+  .screen { justify-content: flex-start; padding-block: 10px; }
+  #title, #loading { justify-content: center; }
+  .cards { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .card .portrait { max-width: 90px; }
+  .card .stats { display: none; }
+  .card .cname { font-size: 17px; }
+  .track { width: 120px; font-size: 13px; }
+  .track canvas { height: 60px; }
+  .row { margin: 6px 0; }
+  .howgrid { grid-template-columns: 1fr 1fr 1fr; font-size: 13px; }
+  #countdown { font-size: 110px; }
+  .podium .step img { width: 80px; height: 80px; }
+  .podium .p1 .block { height: 90px; } .podium .p2 .block { height: 65px; } .podium .p3 .block { height: 45px; }
+}

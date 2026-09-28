@@ -26,6 +26,20 @@ npx serve .
 **Opção 3 — GitHub Pages:** em *Settings → Pages* do repositório, publique a branch principal.
 O jogo fica disponível num link para abrir em qualquer computador.
 
+## 📱 Instalar no celular (app)
+
+O jogo funciona como aplicativo instalável (PWA), com os mesmos gráficos 3D e controles de toque:
+
+1. Publique o jogo no **GitHub Pages** (Settings → Pages → escolha a branch e a pasta `/ (root)`).
+2. No celular, abra o link do GitHub Pages:
+   - **Android (Chrome):** menu ⋮ → **Instalar app** (ou “Adicionar à tela inicial”).
+   - **iPhone/iPad (Safari):** botão Compartilhar → **Adicionar à Tela de Início**.
+3. Abra pelo ícone: o jogo fica em tela cheia, na horizontal, e funciona sem internet depois da primeira vez.
+
+Controles de toque: arraste o dedo no **lado esquerdo** da tela para virar; os botões do **lado direito**
+aceleram, freiam, derrapam e usam o item. A opção “Acelerar sozinho” já vem ligada no celular.
+Em tablets dá para ligar controles Bluetooth e jogar em tela dividida.
+
 > Dica: aperte **F11** para tela cheia. Uma TV ligada ao computador + controles USB fica perfeito para a turma.
 
 ## 🎮 Controles
@@ -66,7 +80,7 @@ O jogo fica disponível num link para abrir em qualquer computador.
 
 ## 🛠️ Tecnologia
 
-- [three.js](https://threejs.org/) r160, carregado da CDN jsDelivr (precisa de internet ao abrir o jogo)
+- [three.js](https://threejs.org/) r160, carregado da CDN jsDelivr (precisa de internet na primeira abertura; o app instalado guarda uma cópia)
 - Todos os modelos, texturas, músicas e sons são gerados por código — não há arquivos de imagem ou áudio.
 
 ```
@@ -85,4 +99,7 @@ js/effects.js     partículas e clima (neve, poeira, brasas)
 js/audio.js       efeitos sonoros e música procedural
 js/hud.js         placar de cada jogador e minimapa
 js/input.js       teclado e controles
+js/touch.js       controles de toque (celular e tablet)
+sw.js             funcionamento offline do app instalado
+manifest.webmanifest  nome, ícone e orientação do app
 ```
