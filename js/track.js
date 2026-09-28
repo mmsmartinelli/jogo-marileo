@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { rng, makeNoise2D, fbm, smoothstep, lerp, clamp } from './utils.js';
 import * as TX from './textures.js';
+import { buildCity } from './city.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
 
@@ -23,6 +24,7 @@ export class Track {
     scene.add(this.group);
 
     this._sample();
+    this._findBridge();
     this._buildLights();
     this._buildSky();
     this._buildRoad();
@@ -77,6 +79,23 @@ export class Track {
     this.center = new THREE.Vector3((minX + maxX) / 2, 0, (minZ + maxZ) / 2);
     this.radius = Math.max(maxX - minX, maxZ - minZ) / 2;
     this.lavaLevel = minY - 1.6;
+  }
+
+  // Ponte: trecho onde o chão fica lá embaixo (a pista passa por cima de uma avenida).
+  _findBridge() {
+    const b = this.def.bridge;
+    if (!b) return;
+    let best = 0, bd = Infinity;
+    for (let i = 0; i < this.N; i++) {
+      const d = (this.px[i] - b.at[0]) ** 2 + (this.pz[i] - b.at[1]) ** 2;
+      if (d < bd) { bd = d; best = i; }
+    }
+    this.bridgeIdx = best;
+    this.bridgeK = new Float32Array(this.N);
+    for (let i = 0; i < this.N; i++) {
+      let di = Math.abs(i - best); di = Math.min(di, this.N - di);
+      this.bridgeK[i] = smoothstep(b.span + 16, b.span, di * this.spacing);
+    }
   }
 
   wrap(i) { const N = this.N; return ((i % N) + N) % N; }
@@ -162,12 +181,20 @@ export class Track {
 
   groundHeight(x, z) {
     const n = this._nearestCoarse(x, z);
-    return this._heightFrom(x, z, n.d, n.y);
+    return this._heightFrom(x, z, n.d, n.y, n.i);
   }
 
-  _heightFrom(x, z, d, ty) {
+  _heightFrom(x, z, d, ty, i = 0) {
     const e = this.edge;
     const nz = fbm(this.noise, x * 0.012, z * 0.012, 4);
+    if (this.def.city) {
+      // cidade: chão plano, morros só lá no horizonte
+      const gl = this.def.groundY;
+      const base = gl + smoothstep(e + 330, e + 520, d) * 45 * (0.4 + nz);
+      const k = this.bridgeK ? this.bridgeK[i] : 0;
+      const tyE = lerp(ty, gl + 1.6, k);
+      return lerp(tyE - 1.6, base, smoothstep(e + 8, e + 34, d));
+    }
     if (this.def.lava) {
       const rocky = this.lavaLevel + 1 + nz * 26 * smoothstep(e + 40, e + 160, d) + smoothstep(e + 150, e + 320, d) * 50;
       return lerp(this.lavaLevel - 3, rocky, smoothstep(e + 26, e + 70, d));
@@ -312,7 +339,7 @@ export class Track {
     this._strip(-hw - 1.3, -hw + 0.25, 0.07, 0.07, 0, 1, this.length / cReps, curbMat);
     this._strip(hw - 0.25, hw + 1.3, 0.07, 0.07, 1, 0, this.length / cReps, curbMat);
 
-    const shTex = TX.groundTexture(th.shoulder, 9, !this.def.lava && this.def.id !== 'deserto');
+    const shTex = TX.groundTexture(th.shoulder, 9, !this.def.lava && !this.def.city && this.def.id !== 'deserto');
     const shMat = new THREE.MeshStandardMaterial({ map: shTex, roughness: 0.95 });
     const sw = this.shoulder + 0.8;
     this._strip(-hw - sw, -hw, -0.01, -0.01, 0, sw / 10, 10, shMat);
@@ -373,7 +400,7 @@ export class Track {
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i), z = pos.getZ(i);
       const n = this._nearestCoarse(x, z);
-      const h = this._heightFrom(x, z, n.d, n.y);
+      const h = this._heightFrom(x, z, n.d, n.y, n.i);
       pos.setY(i, h);
       uv.setXY(i, x / 22, z / 22);
       const k = smoothstep(this.edge + 60, this.edge + 320, n.d);
@@ -384,7 +411,7 @@ export class Track {
     }
     g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     g.computeVertexNormals();
-    const tex = TX.groundTexture(th.ground, 4, !this.def.lava && this.def.id !== 'deserto' && this.def.id !== 'neve');
+    const tex = TX.groundTexture(th.ground, 4, !this.def.lava && !this.def.city && this.def.id !== 'deserto' && this.def.id !== 'neve');
     const mat = new THREE.MeshStandardMaterial({ map: tex, vertexColors: true, roughness: 0.95 });
     const terrain = new THREE.Mesh(g, mat);
     terrain.receiveShadow = true;
@@ -455,7 +482,7 @@ export class Track {
       const z = lerp(b.minZ - maxD, b.maxZ + maxD, r());
       const n = this._nearestCoarse(x, z);
       if (n.d >= minD && n.d <= maxD) {
-        return { x, z, y: this._heightFrom(x, z, n.d, n.y), d: n.d, i: n.i };
+        return { x, z, y: this._heightFrom(x, z, n.d, n.y, n.i), d: n.d, i: n.i };
       }
     }
     return null;
@@ -591,6 +618,7 @@ export class Track {
       this._instance(parts, this._scatter(sc.gumdrops, e + 4, e + 120, 0.6, 1.8));
     }
     if (sc.props) for (const p of sc.props) this._prop(p);
+    if (this.def.city) buildCity(this);
   }
 
   _placeProp(obj, minD, maxD) {

@@ -292,3 +292,26 @@ export function inkDataURL(seed) {
   }
   return c.toDataURL();
 }
+
+// Cocô de pombo na tela (pegadinha dos pombos de Osasco): algumas manchas brancas.
+export function poopDataURL(seed) {
+  const c = canvas(512, 288);
+  const ctx = c.getContext('2d');
+  const r = rng(seed);
+  const spots = [[120, 80], [390, 190], [300, 60]];
+  for (const [x, y] of spots) {
+    const rad = 26 + r() * 16;
+    ctx.fillStyle = 'rgba(250,250,240,0.96)';
+    ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI * 2); ctx.fill();
+    for (let k = 0; k < 9; k++) {
+      const a = r() * Math.PI * 2, d = rad * (0.8 + r() * 0.6);
+      ctx.beginPath(); ctx.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, 5 + r() * 11, 0, Math.PI * 2); ctx.fill();
+    }
+    // escorrido
+    ctx.fillRect(x - 6, y, 12, rad + 30 + r() * 30);
+    ctx.beginPath(); ctx.arc(x, y + rad + 40, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(110,110,90,0.85)';
+    for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.arc(x + (r() - 0.5) * rad, y + (r() - 0.5) * rad, 5 + r() * 8, 0, Math.PI * 2); ctx.fill(); }
+  }
+  return c.toDataURL();
+}

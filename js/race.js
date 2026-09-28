@@ -171,6 +171,7 @@ export class Race {
     if (!this.hud) return;
     if (type === 'hit') this.shake(k, 0.3);
     if (type === 'ink') this.hud.message(k, 'SPLASH!', 1.2, 'warn');
+    if (type === 'poop') this.hud.message(k, 'ECA! COCÔ DE POMBO!', 1.6, 'warn');
     if (type === 'trick') this.hud.message(k, 'MANOBRA!', 1.0);
   }
 

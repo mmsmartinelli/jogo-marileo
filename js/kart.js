@@ -57,6 +57,7 @@ export class Kart {
     this.shield = 0;
     this.star = 0;
     this.ink = 0;
+    this.poop = 0;
     this.squash = 0;
     this.invuln = 0;
     this.slip = 0;
@@ -68,7 +69,7 @@ export class Kart {
     this.wrongWay = 0;
     this.lapStart = 0;
     this.lapTimes = [];
-    this.stats = { hits: 0, miniTurbos: 0, tricks: 0, falls: 0, barrelHits: 0, crushed: 0, itemsUsed: 0, maxCoins: 0 };
+    this.stats = { hits: 0, miniTurbos: 0, tricks: 0, falls: 0, barrelHits: 0, crushed: 0, itemsUsed: 0, maxCoins: 0, pigeons: 0 };
     this.input = { steer: 0, throttle: 0, brake: 0, drift: false, driftPressed: false, itemPressed: false };
     this.steerVis = 0;
     this.bodyYaw = 0;
@@ -285,6 +286,7 @@ export class Kart {
     this.shield = Math.max(0, this.shield - dt);
     this.star = Math.max(0, this.star - dt);
     this.ink = Math.max(0, this.ink - dt);
+    this.poop = Math.max(0, this.poop - dt);
     this.squash = Math.max(0, this.squash - dt);
     this.invuln = Math.max(0, this.invuln - dt);
     this.slip = Math.max(0, this.slip - dt);

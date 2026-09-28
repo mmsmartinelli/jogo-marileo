@@ -124,6 +124,8 @@ export class AudioSys {
       case 'ink': this.noise(0.5, 0.4, 900, 0, 'lowpass', 150, 4); this.tone(200, 0.4, 'sine', 0.3, 0, 60); break;
       case 'crush': this.noise(0.5, 0.6, 600, 0, 'lowpass', 60); this.tone(140, 0.5, 'square', 0.25, 0, 40); break;
       case 'geyser': this.noise(1.0, 0.35, 700, 0, 'bandpass', 2000, 1.5); break;
+      case 'pigeons': for (let i = 0; i < 7; i++) this.noise(0.06, 0.22, 1800 + Math.random() * 900, i * 0.055, 'bandpass', 900, 2); this.tone(620, 0.12, 'sine', 0.08, 0.05, 480); this.tone(560, 0.14, 'sine', 0.07, 0.22, 430); break;
+      case 'poop': this.noise(0.25, 0.45, 700, 0, 'lowpass', 120, 3); this.tone(900, 0.25, 'sine', 0.15, 0.05, 200); break;
       case 'splash': this.noise(0.5, 0.4, 1500, 0, 'bandpass', 300, 1); break;
       case 'wrong': this.tone(220, 0.15, 'square', 0.15); this.tone(220, 0.15, 'square', 0.15, 0.2); break;
       case 'select': this.tone(660, 0.07, 'square', 0.12); break;

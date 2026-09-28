@@ -78,8 +78,12 @@ pode não acontecer — nesse caso, usem o mesmo Wi-Fi.
 
 ## 🌟 O que tem no jogo
 
-- **3 modos:** Grande Prêmio (copa com 5 corridas e pódio), Corrida Rápida e Contra o Relógio (com recorde salvo).
-- **5 fases:** Vale Verdejante 🌳, Deserto Dourado 🏜️, Pico Nevado ❄️, Reino Doce 🍭 e Vulcão Flamejante 🌋.
+- **3 modos:** Grande Prêmio (copa com 6 corridas e pódio), Corrida Rápida e Contra o Relógio (com recorde salvo).
+- **6 fases:** Vale Verdejante 🌳, Deserto Dourado 🏜️, Pico Nevado ❄️, Reino Doce 🍭, Vulcão Flamejante 🌋 e a **Super Osasco 🌭**.
+- **Super Osasco:** a maior pista do jogo, no fim de tarde com as janelas acesas. Tem o Dogão gigante na largada,
+  bandos de pombos na pista (saem voando quando o kart chega — e às vezes deixam um “presente” na tela!),
+  Osasco Plaza e Shopping União, Condomínio Jardins do Brasil, Cidade de Deus (Bradesco), a Ponte Metálica
+  com os arcos rosa por cima da avenida, a Estação Osasco com o trem passando e a Praça dos Pombos.
 - **8 personagens** com atributos diferentes: Leo (Leão), Mari (Gatinha), Pipo (Panda), Tuti (Sapo),
   Fifi (Raposa), Bento (Coelho), Pingo (Pinguim) e Rex (Dino).
 - **Tela dividida** para 1 a 4 jogadores + 8 karts na pista (o computador completa as vagas).
@@ -106,6 +110,8 @@ js/main.js        fluxo do jogo, menus, Grande Prêmio, resultados
 js/race.js        a corrida: regras, câmeras, tela dividida
 js/kart.js        física do kart (derrapagem, saltos, colisões)
 js/track.js       construção 3D das pistas, terreno, céu e cenário
+js/city.js        cenário da Super Osasco (prédios, pontos da cidade, ponte, trem)
+js/pigeons.js     os pombos (desenho e animação)
 js/tracks.js      definição das 5 fases (traçado, tema, obstáculos, desafios)
 js/items.js       caixas surpresa e itens
 js/obstacles.js   moedas, turbos, rampas, barris, pilões, gêiseres, poças

@@ -336,6 +336,7 @@ button:disabled { filter: grayscale(.8) brightness(.8); cursor: default; transfo
 .vp .msg.show { opacity: 1; transform: scale(1); }
 .vp .msg.warn { color: #ff5252; -webkit-text-stroke-color: #fff; }
 .vp .ink { position: absolute; inset: 0; opacity: 0; transition: opacity .6s; }
+.vp .poop { position: absolute; inset: 0; opacity: 0; transition: opacity .8s; pointer-events: none; }
 .vp .boost { position: absolute; inset: 0; opacity: 0; transition: opacity .25s; background: radial-gradient(ellipse at center, transparent 55%, rgba(255, 170, 40, .35) 100%); }
 .vp .pname { position: absolute; top: 3%; left: calc(2.5% + var(--s) * 110px); font-size: calc(var(--s) * 22px); -webkit-text-stroke: calc(var(--s) * 3px) #1b1b48; paint-order: stroke fill; }
 .vp .drift { position: absolute; left: 50%; bottom: 3%; transform: translateX(-50%); width: calc(var(--s) * 160px); height: calc(var(--s) * 10px); border-radius: 6px; background: rgba(0, 0, 0, .35); overflow: hidden; opacity: 0; transition: opacity .2s; }

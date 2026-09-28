@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import * as TX from './textures.js';
 import { damp } from './utils.js';
 import { COLORS } from './effects.js';
+import { PigeonMeshes } from './pigeons.js';
 
 export class Obstacles {
   constructor(race) {
@@ -18,6 +19,7 @@ export class Obstacles {
     this.crushers = [];
     this.geysers = [];
     this.puddles = [];
+    this.flocks = [];
     this.danger = []; // lista para a IA desviar
 
     this.coinGeo = new THREE.CylinderGeometry(0.75, 0.75, 0.16, 20).rotateX(Math.PI / 2);
@@ -36,8 +38,32 @@ export class Obstacles {
         case 'crusher': this.addCrusher(f); break;
         case 'geyser': this.addGeyser(f); break;
         case 'puddle': this.addPuddle(f); break;
+        case 'pigeons': this.addPigeons(f); break;
       }
     }
+    if (this.flocks.length) {
+      this.pigeonMeshes = new PigeonMeshes(this.group, this.flocks.reduce((a, f) => a + f.birds.length, 0), 1.35);
+      // já aparecem ciscando durante a apresentação da pista
+      let n = 0;
+      for (const f of this.flocks) for (const b of f.birds) this.pigeonMeshes.set(n++, b.pos.x, b.home.y + 0.05, b.pos.z, b.yaw);
+      this.pigeonMeshes.commit();
+    }
+  }
+
+  // Bando de pombos ciscando na pista: saem voando quando um kart chega perto.
+  addPigeons(f) {
+    const t = this.track;
+    const start = Math.floor(f.t * t.N);
+    const birds = [];
+    let seed = Math.floor(f.t * 9973) + 11;
+    const r = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    for (let k = 0; k < (f.count || 10); k++) {
+      const i = t.wrap(start + Math.round((r() - 0.5) * 14 / t.spacing));
+      const p = t.pointAtIdx(i, (r() * 1.6 - 0.8) * t.hw);
+      birds.push({ home: p, pos: p.clone(), vel: new THREE.Vector3(), yaw: r() * 6.28, ph: r() * 6.28, walk: r() < 0.5 ? 1 : -1 });
+    }
+    const c = t.pointAtIdx(start);
+    this.flocks.push({ birds, center: c, idx: start, state: 'ground', timer: 0 });
   }
 
   _frame(i) {
@@ -123,6 +149,25 @@ export class Obstacles {
         mesh.add(r);
       }
       radius = 1.5;
+    } else if (kind === 'dogcart') {
+      // carrinho de cachorro-quente atravessando a rua
+      mesh = new THREE.Group();
+      const red = new THREE.MeshStandardMaterial({ color: 0xe8262a, roughness: 0.5 });
+      const yel = new THREE.MeshStandardMaterial({ color: 0xffc81a, roughness: 0.5 });
+      const cart = new THREE.Mesh(new THREE.BoxGeometry(3.4, 1.6, 1.8), red); cart.position.y = 1.5; mesh.add(cart);
+      const band = new THREE.Mesh(new THREE.BoxGeometry(3.45, 0.35, 1.85), yel); band.position.y = 1.9; mesh.add(band);
+      const top = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.15, 1.9), new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.7, roughness: 0.3 })); top.position.y = 2.35; mesh.add(top);
+      for (const x of [-1.1, 1.1]) for (const z of [-0.95, 0.95]) {
+        const w = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.25, 14).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+        w.position.set(x, 0.45, z); mesh.add(w);
+      }
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.6, 6), new THREE.MeshStandardMaterial({ color: 0xcccccc })); pole.position.y = 3.6; mesh.add(pole);
+      const um = new THREE.Mesh(new THREE.ConeGeometry(2.2, 1, 8), yel); um.position.y = 5; mesh.add(um);
+      const hd = new THREE.Group(); hd.position.y = 2.75;
+      const bun = new THREE.Mesh(new THREE.CapsuleGeometry(0.35, 1.6, 4, 8).rotateZ(Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xe0a050 }));
+      const sau = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 2.0, 4, 8).rotateZ(Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xc0462a }));
+      sau.position.y = 0.25; hd.add(bun, sau); mesh.add(hd);
+      radius = 2.0;
     } else {
       const col = { boulder: 0x8a6a4a, snowball: 0xffffff, gumball: 0xff4fa3 }[kind] || 0x888888;
       const mat = kind === 'gumball'
@@ -212,7 +257,7 @@ export class Obstacles {
     const p = t.pointAt(f.t, f.lat || 0);
     const fr = this._frame(p.idx);
     const kind = f.kind || 'mud';
-    const col = { mud: 0x5a3a1e, quicksand: 0xc99a50, ice: 0xbfeaff, syrup: 0xff5fa8 }[kind];
+    const col = { mud: 0x5a3a1e, quicksand: 0xc99a50, ice: 0xbfeaff, syrup: 0xff5fa8, poop: 0xf3f0e4 }[kind];
     const mat = new THREE.MeshPhysicalMaterial({ color: col, roughness: kind === 'ice' ? 0.05 : 0.4, clearcoat: kind === 'mud' ? 0.3 : 1, transparent: kind === 'ice', opacity: 0.85, polygonOffset: true, polygonOffsetFactor: -2 });
     const m = new THREE.Mesh(new THREE.CircleGeometry(4, 24).rotateX(-Math.PI / 2), mat);
     m.scale.set(1, 1, 1.6);
@@ -220,6 +265,17 @@ export class Obstacles {
     m.rotation.y = fr.heading;
     m.receiveShadow = true;
     this.group.add(m);
+    if (kind === 'poop') {
+      // cocô de pombo: manchas brancas com miolo cinza
+      m.material.color.set(0xf3f0e4); m.material.clearcoat = 0.6;
+      const dot = new THREE.MeshStandardMaterial({ color: 0x6a6a5a, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -3 });
+      for (let k = 0; k < 6; k++) {
+        const d = new THREE.Mesh(new THREE.CircleGeometry(0.4 + (k % 3) * 0.25, 10).rotateX(-Math.PI / 2), dot);
+        d.position.set(Math.sin(k * 2.4) * 2.2, 0.02, Math.cos(k * 1.7) * 2.2);
+        m.add(d);
+      }
+      m.scale.set(1, 1, 1.6);
+    }
     this.puddles.push({ pos: new THREE.Vector3(p.x, p.y, p.z), fr, kind, half: [4, 6.4], mesh: m });
   }
 
@@ -288,10 +344,16 @@ export class Obstacles {
       b.lat = Math.sin(t * b.speed * 0.8 + b.phase) * span;
       const p = track.pointAtIdx(b.idx, b.lat);
       b.pos.copy(p);
-      b.mesh.position.set(p.x, p.y + b.radius, p.z);
-      b.mesh.rotation.y = b.fr.heading;
-      b.roll += (b.lat - prev) / b.radius;
-      b.mesh.rotation.z = -b.roll;
+      if (b.kind === 'dogcart') {
+        b.mesh.position.set(p.x, p.y, p.z);
+        b.mesh.rotation.y = b.fr.heading + Math.PI / 2;
+        b.mesh.rotation.z = Math.sin(t * 9) * 0.03;
+      } else {
+        b.mesh.position.set(p.x, p.y + b.radius, p.z);
+        b.mesh.rotation.y = b.fr.heading;
+        b.roll += (b.lat - prev) / b.radius;
+        b.mesh.rotation.z = -b.roll;
+      }
       for (const k of karts) {
         const dx = k.pos.x - p.x, dz = k.pos.z - p.z;
         const r = b.radius + 1.2;
@@ -366,6 +428,8 @@ export class Obstacles {
       }
     }
 
+    if (this.flocks.length) this._updatePigeons(dt, t, karts);
+
     for (const p of this.puddles) {
       for (const k of karts) {
         if (k.airborne || k.star > 0) continue;
@@ -379,6 +443,85 @@ export class Obstacles {
           }
         }
       }
+    }
+  }
+
+  _updatePigeons(dt, t, karts) {
+    const race = this.race, fx = race.effects;
+    const all = race.karts;
+    const pm = this.pigeonMeshes;
+    let n = 0;
+    for (const f of this.flocks) {
+      f.timer += dt;
+      if (f.state === 'ground') {
+        // qualquer kart assusta o bando (também os de outros aparelhos, para todo mundo ver)
+        let scarer = null;
+        for (const k of all) {
+          if (Math.abs(k.speed) < 4) continue;
+          for (const b of f.birds) {
+            const dx = k.pos.x - b.pos.x, dz = k.pos.z - b.pos.z;
+            if (dx * dx + dz * dz < 13 * 13) { scarer = k; break; }
+          }
+          if (scarer) break;
+        }
+        if (scarer) this._scare(f, scarer, fx, karts);
+      } else if (f.state === 'fly') {
+        let near = false;
+        for (const k of all) if (k.pos.distanceToSquared(f.center) < 55 * 55) { near = true; break; }
+        if (f.timer > 7 && !near) { f.state = 'land'; f.timer = 0; }
+      } else if (f.state === 'land' && f.timer > 2.2) {
+        f.state = 'ground'; f.timer = 0;
+      }
+      for (const b of f.birds) {
+        if (f.state === 'ground') {
+          // anda devagarinho bicando o chão
+          const wob = Math.sin(t * 0.8 + b.ph);
+          b.yaw += dt * 0.6 * b.walk * (wob > 0.3 ? 1 : 0);
+          const stepV = Math.max(0, Math.sin(t * 7 + b.ph)) * 0.5 * (wob > 0.3 ? 1 : 0);
+          b.pos.x += Math.sin(b.yaw) * stepV * dt; b.pos.z += Math.cos(b.yaw) * stepV * dt;
+          if (b.pos.distanceToSquared(b.home) > 9) b.yaw = Math.atan2(b.home.x - b.pos.x, b.home.z - b.pos.z);
+          const peck = wob <= 0.3 ? Math.max(0, Math.sin(t * 6 + b.ph)) ** 5 : 0;
+          pm.set(n++, b.pos.x, b.home.y + 0.05, b.pos.z, b.yaw, { peck });
+        } else if (f.state === 'fly') {
+          b.vel.y = Math.max(3, b.vel.y - dt * 3);
+          b.pos.addScaledVector(b.vel, dt);
+          if (b.pos.y > b.home.y + 60) { pm.hide(n++); continue; }
+          pm.set(n++, b.pos.x, b.pos.y, b.pos.z, Math.atan2(b.vel.x, b.vel.z), { fly: true, flap: Math.sin(t * 24 + b.ph) * 1.0, pitch: -0.35 });
+        } else {
+          // voltando para o chão
+          const k = Math.min(1, f.timer / 2.2), e = 1 - (1 - k) * (1 - k);
+          const x = b.home.x + Math.sin(b.ph) * 20 * (1 - e), z = b.home.z + Math.cos(b.ph) * 20 * (1 - e);
+          const y = b.home.y + 0.05 + 22 * (1 - e);
+          b.pos.set(x, y, z);
+          pm.set(n++, x, y, z, b.ph + Math.PI, { fly: k < 0.95, flap: Math.sin(t * 20 + b.ph) * 0.8, pitch: 0.2 });
+          if (k >= 1) b.pos.copy(b.home);
+        }
+      }
+    }
+    pm.commit();
+  }
+
+  _scare(f, k, fx, localKarts) {
+    const race = this.race;
+    f.state = 'fly'; f.timer = 0;
+    let close = false;
+    for (const b of f.birds) {
+      const dx = b.pos.x - k.pos.x, dz = b.pos.z - k.pos.z;
+      const d = Math.hypot(dx, dz) || 1;
+      if (d < 4.5) close = true;
+      const sp = 5 + Math.random() * 5;
+      b.vel.set(dx / d * sp + Math.sin(k.heading) * 6, 7 + Math.random() * 5, dz / d * sp + Math.cos(k.heading) * 6);
+    }
+    fx.burst(f.birds[0].pos.clone().setY(f.center.y + 1.2), new THREE.Color(0xd6dae3), 18, 6, 0.5, 1.1);
+    race.sfxAt('pigeons', f.birds[0], 45);
+    if (!localKarts.includes(k)) return;
+    k.stats.pigeons = (k.stats.pigeons || 0) + 1;
+    // passou bem no meio do bando: um pombo "presenteia" a tela!
+    if (close && k.human && k.star <= 0 && Math.random() < 0.6) {
+      if (k.shield > 0) return;
+      k.poop = 3.2;
+      race.hudEvent(k, 'poop');
+      k.sfx('poop');
     }
   }
 

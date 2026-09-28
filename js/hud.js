@@ -1,7 +1,7 @@
 // HUD por jogador (tela dividida) + minimapa.
 import { ITEMS, ITEM_KEYS } from './items.js';
 import { formatTime } from './utils.js';
-import { inkDataURL } from './textures.js';
+import { inkDataURL, poopDataURL } from './textures.js';
 
 export const PLAYER_COLORS = ['#ff3b3b', '#2f7bff', '#35d07f', '#ffb020'];
 
@@ -14,7 +14,7 @@ export function layoutViewports(n) {
   ];
 }
 
-let inkImg = null;
+let inkImg = null, poopImg = null;
 
 export class HUD {
   constructor(root, race, humans, rects) {
@@ -23,6 +23,7 @@ export class HUD {
     this.views = [];
     root.innerHTML = '';
     if (!inkImg) inkImg = inkDataURL(42);
+    if (!poopImg) poopImg = poopDataURL(7);
     humans.forEach((k, i) => {
       const r = rects[i];
       const el = document.createElement('div');
@@ -31,6 +32,7 @@ export class HUD {
       el.innerHTML = `
         <div class="boost"></div>
         <div class="ink"><img src="${inkImg}" style="width:100%;height:100%;object-fit:cover"></div>
+        <div class="poop"><img src="${poopImg}" style="width:100%;height:100%;object-fit:cover"></div>
         <div class="item"><span class="icon"></span><span class="count"></span></div>
         <div class="pname" style="color:${PLAYER_COLORS[k.playerIndex]}">${k.netName || `J${k.playerIndex + 1} • ${k.ch.name}`}</div>
         <div class="time"></div>
@@ -44,7 +46,7 @@ export class HUD {
       this.views.push({
         k, el, rect: r,
         item: q('.item'), icon: q('.icon'), count: q('.count'), time: q('.time'), coins: q('.cv'),
-        lap: q('.lap'), pos: q('.pos'), msg: q('.msg'), ink: q('.ink'), boost: q('.boost'), drift: q('.drift'), driftBar: q('.drift i'),
+        lap: q('.lap'), pos: q('.pos'), msg: q('.msg'), ink: q('.ink'), poop: q('.poop'), boost: q('.boost'), drift: q('.drift'), driftBar: q('.drift i'),
         last: {}, msgTimer: 0, rouletteTick: 0,
       });
     });
@@ -114,6 +116,7 @@ export class HUD {
         v.pos.className = 'pos bump' + (x <= 3 ? ' p' + x : '');
       });
       this.set(v, 'ink', k.ink > 0.3, x => v.ink.style.opacity = x ? '0.95' : '0');
+      this.set(v, 'poop', k.poop > 0.4, x => v.poop.style.opacity = x ? '1' : '0');
       this.set(v, 'boost', k.boost > 0, x => v.boost.style.opacity = x ? '1' : '0');
       // barra de derrapagem
       const dl = k.drifting ? k.driftLevel : -1;

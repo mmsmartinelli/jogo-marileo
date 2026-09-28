@@ -209,8 +209,65 @@ export const TRACKS = [
       { type: 'hits', value: 3, text: 'Acerte 3 adversários com itens' },
     ],
   },
+  {
+    id: 'osasco',
+    name: 'Super Osasco',
+    emoji: '🌭',
+    difficulty: 3,
+    halfWidth: 13,
+    shoulder: 7,
+    walls: true,
+    city: true,
+    groundY: -1.4,
+    points: [
+      [0, 0, -140], [0, 0, 0], [0, 0, 150], [25, 0, 240], [100, 0, 290], [200, 0, 290], [290, 0, 250],
+      [320, 0, 160], [300, 0, 70], [300, 2, 0], [345, 7, -60], [390, 10, -120], [435, 7, -180], [455, 2, -250],
+      [410, 0, -320], [310, 0, -330], [200, 0, -300], [130, 0, -240], [50, 0, -250], [5, 0, -215],
+    ],
+    // Ponte Metálica: arcos rosa por cima da pista, avenida com trânsito embaixo
+    bridge: { at: [390, -120], span: 36, archHeight: 22 },
+    rail: { x: -80, z0: -380, z1: 460, station: -60 },
+    landmarks: {
+      dogao: { t: 0.03, side: 1, off: 5 },
+      praca: { t: 0.8, side: -1, off: 6 },
+      shoppings: [
+        { name: 'OSASCO PLAZA', t: 0.205, side: -1, off: 10, wall: 0xe9e2d6, accent: 0x1f5fbf, signBg: '#1f5fbf', signFg: '#ffffff' },
+        { name: 'SHOPPING UNIÃO', t: 0.4, side: 1, off: 8, wall: 0xefe6dc, accent: 0xe8262a, signBg: '#ffffff', signFg: '#e8262a' },
+      ],
+      jardins: { t: 0.3, side: 1, off: 6 },
+      bradesco: { t: 0.67, side: 1, off: 6 },
+    },
+    theme: {
+      skyTop: '#2b2f7a', skyHorizon: '#ff9e6b', skyBottom: '#5a4a5e', sun: '#ffc48a', sunDir: [-0.55, 0.28, -0.6],
+      fog: '#b98a95', fogNear: 170, fogFar: 760, hemiSky: '#c7b8ff', hemiGround: '#6a5a55',
+      road: '#4a4b53', roadSpeckle: ['#5a5b63', '#3c3d44', '#6a6a72'],
+      curbA: '#ff3fbf', curbB: '#ffffff', wallA: '#ffffff', wallB: '#8a8f9a',
+      ground: ['#9a9a9c', '#8e8e91', '#a6a6a6', '#86868a', '#b0aea8'],
+      shoulder: ['#b8b4ac', '#aca89f', '#c4c0b6'],
+      terrainColor: '#a19e98', mountainColor: '#5f8a4f', mountainSnow: false,
+      clouds: true, weather: null,
+    },
+    scenery: { props: ['grandstand'] },
+    music: { tempo: 138, root: 58, scale: 'major', seed: 71 },
+    features: [
+      { type: 'items', t: 0.1 }, { type: 'items', t: 0.28 }, { type: 'items', t: 0.46 }, { type: 'items', t: 0.64 }, { type: 'items', t: 0.86 },
+      { type: 'coins', t: 0.13, lat: -0.4, count: 6 }, { type: 'coins', t: 0.37, lat: 0.4, count: 6 },
+      { type: 'coins', t: 0.49, lat: 0, count: 6 }, { type: 'coins', t: 0.74, lat: -0.4, count: 6 }, { type: 'coins', t: 0.95, lat: 0, count: 6 },
+      { type: 'boost', t: 0.2, lat: 0 }, { type: 'boost', t: 0.44, lat: 0 }, { type: 'boost', t: 0.71, lat: 0.4 }, { type: 'boost', t: 0.9, lat: -0.4 },
+      { type: 'ramp', t: 0.54, lat: 0 },
+      { type: 'pigeons', t: 0.055, count: 12 }, { type: 'pigeons', t: 0.25, count: 12 }, { type: 'pigeons', t: 0.7, count: 12 },
+      { type: 'barrel', t: 0.16, speed: 0.8, kind: 'dogcart' }, { type: 'barrel', t: 0.83, speed: 1.0, kind: 'dogcart' },
+      { type: 'geyser', t: 0.34, lat: -0.4, kind: 'water' }, { type: 'geyser', t: 0.6, lat: 0.35, kind: 'water', phase: 1.4 },
+      { type: 'puddle', t: 0.31, lat: 0.45, kind: 'poop' }, { type: 'puddle', t: 0.77, lat: -0.45, kind: 'poop' },
+    ],
+    challenges: [
+      { type: 'place', value: 2, text: 'Termine em 1º ou 2º' },
+      { type: 'pigeons', value: 3, text: 'Espante 3 bandos de pombos' },
+      { type: 'coins', value: 10, text: 'Termine com 10 moedas' },
+    ],
+  },
 ];
 
-export const CUP = { name: 'Copa Marileo', tracks: ['vale', 'deserto', 'neve', 'doce', 'vulcao'] };
+export const CUP = { name: 'Copa Marileo', tracks: ['vale', 'deserto', 'neve', 'doce', 'vulcao', 'osasco'] };
 
 export const getTrack = id => TRACKS.find(t => t.id === id);

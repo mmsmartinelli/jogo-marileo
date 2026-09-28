@@ -496,6 +496,7 @@ class App {
       case 'tricks': return st.tricks >= c.value;
       case 'nosquash': return st.crushed === 0;
       case 'nofall': return st.falls === 0;
+      case 'pigeons': return (st.pigeons || 0) >= c.value;
     }
     return false;
   }
