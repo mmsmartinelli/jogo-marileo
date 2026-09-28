@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a8bff"/>
+      <stop offset="1" stop-color="#16163a"/>
+    </linearGradient>
+    <linearGradient id="kart" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff5a5a"/>
+      <stop offset="1" stop-color="#c8182a"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <path d="M0 360 L512 300 L512 512 L0 512 Z" fill="#2e9e4a"/>
+  <path d="M120 512 L250 300 L300 300 L420 512 Z" fill="#55565e"/>
+  <path d="M268 330 L282 330 L290 380 L262 380 Z M258 410 L292 410 L300 470 L250 470 Z" fill="#fff"/>
+  <g transform="translate(256 250)">
+    <rect x="-150" y="-10" width="300" height="80" rx="34" fill="url(#kart)" stroke="#fff" stroke-width="10"/>
+    <rect x="-70" y="-60" width="140" height="70" rx="26" fill="#ffd23f" stroke="#fff" stroke-width="10"/>
+    <circle cx="-95" cy="80" r="42" fill="#1a1a1f" stroke="#fff" stroke-width="8"/>
+    <circle cx="95" cy="80" r="42" fill="#1a1a1f" stroke="#fff" stroke-width="8"/>
+    <circle cx="-95" cy="80" r="15" fill="#ddd"/>
+    <circle cx="95" cy="80" r="15" fill="#ddd"/>
+    <circle cx="0" cy="-95" r="48" fill="#f6b93b" stroke="#b35a17" stroke-width="12"/>
+    <circle cx="-16" cy="-100" r="7" fill="#111"/>
+    <circle cx="16" cy="-100" r="7" fill="#111"/>
+  </g>
+  <text x="256" y="92" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="64" fill="#ffd23f" stroke="#7a2300" stroke-width="6" paint-order="stroke">MARILEO</text>
+</svg>

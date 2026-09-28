@@ -1,0 +1,16 @@
+{
+  "name": "Marileo Kart",
+  "short_name": "Marileo Kart",
+  "description": "Corrida de karts 3D para jogar com a família e os amigos.",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0b0d24",
+  "theme_color": "#16163a",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

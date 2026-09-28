@@ -1,6 +1,8 @@
-// Entrada: dois jogadores no teclado + até 4 controles (gamepads).
+// Entrada: dois jogadores no teclado + até 4 controles (gamepads) + toque na tela.
+import { touchState } from './touch.js';
 
 export const SOURCES = [
+  { id: 'touch', label: 'Toque na tela' },
   { id: 'kb1', label: 'Teclado W A S D' },
   { id: 'kb2', label: 'Teclado Setas' },
   { id: 'gp0', label: 'Controle 1' },
@@ -55,6 +57,7 @@ function readGamepad(index) {
 
 export function readSource(src) {
   if (src.startsWith('gp')) return readGamepad(+src.slice(2));
+  if (src === 'touch') return { ...touchState, up: false, down: false };
   const L = LAYOUTS[src];
   const left = any(L.left), right = any(L.right);
   return {
