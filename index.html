@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Marileo Kart</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Lilita+One&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="game"></div>
+
+  <!-- HUD de corrida (uma área por jogador) -->
+  <div id="hud"></div>
+  <canvas id="minimap" width="260" height="260"></canvas>
+  <div id="countdown"></div>
+
+  <!-- Carregando -->
+  <section id="loading" class="screen active">
+    <div class="logo small"><span>MARILEO</span><b>KART</b></div>
+    <div class="loadbar"><i id="loadfill"></i></div>
+    <p id="loadtext">Preparando as pistas...</p>
+  </section>
+
+  <!-- Tela inicial -->
+  <section id="title" class="screen">
+    <div class="logo"><span>MARILEO</span><b>KART</b></div>
+    <p class="tagline">Corrida maluca para toda a turma!</p>
+    <div class="menu">
+      <button class="big" data-mode="gp">🏆 Grande Prêmio</button>
+      <button class="big" data-mode="race">🏁 Corrida Rápida</button>
+      <button class="big" data-mode="tt">⏱️ Contra o Relógio</button>
+      <button class="mid" data-go="howto">❓ Como Jogar</button>
+    </div>
+    <p class="hint">Até 4 jogadores na mesma tela • Teclado ou controles (gamepad) • <kbd>M</kbd> liga/desliga o som</p>
+  </section>
+
+  <!-- Configuração da corrida -->
+  <section id="setup" class="screen">
+    <div class="panel wide">
+      <h2 id="setupTitle">Corrida Rápida</h2>
+
+      <div class="row">
+        <label>Jogadores</label>
+        <div class="seg" id="playerCount">
+          <button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button><button data-n="4">4</button>
+        </div>
+      </div>
+
+      <div id="playerCards" class="cards"></div>
+      <p class="hint">Cada jogador troca de personagem com os <b>próprios controles</b> (esquerda/direita) ou clicando nas setas.</p>
+
+      <div class="row" id="trackRow">
+        <label>Pista</label>
+        <div id="trackList" class="tracks"></div>
+      </div>
+      <div class="row" id="cupRow">
+        <label>Copa</label>
+        <div id="cupList" class="tracks cup"></div>
+      </div>
+
+      <div class="row options">
+        <div>
+          <label>Voltas</label>
+          <div class="seg" id="lapCount">
+            <button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button><button data-n="5">5</button>
+          </div>
+        </div>
+        <div id="diffBox">
+          <label>Dificuldade</label>
+          <div class="seg" id="difficulty">
+            <button data-n="0">Fácil</button><button data-n="1">Normal</button><button data-n="2">Difícil</button>
+          </div>
+        </div>
+        <div>
+          <label>Acelerar sozinho</label>
+          <div class="seg" id="autoAccel">
+            <button data-n="1">Sim</button><button data-n="0">Não</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="mid ghost" data-go="title">⬅ Voltar</button>
+        <button class="big go" id="startBtn">CORRER! 🏁</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Como jogar -->
+  <section id="howto" class="screen">
+    <div class="panel wide">
+      <h2>Como Jogar</h2>
+      <div class="howgrid">
+        <div class="box">
+          <h3>🎮 Controles</h3>
+          <table class="keys">
+            <tr><th></th><th>Jogador 1</th><th>Jogador 2</th><th>Controle</th></tr>
+            <tr><td>Acelerar</td><td><kbd>W</kbd></td><td><kbd>↑</kbd></td><td>A / RT</td></tr>
+            <tr><td>Frear / Ré</td><td><kbd>S</kbd></td><td><kbd>↓</kbd></td><td>B / LT</td></tr>
+            <tr><td>Virar</td><td><kbd>A</kbd> <kbd>D</kbd></td><td><kbd>←</kbd> <kbd>→</kbd></td><td>Analógico / Direcional</td></tr>
+            <tr><td>Usar item</td><td><kbd>Espaço</kbd></td><td><kbd>Enter</kbd></td><td>X / LB</td></tr>
+            <tr><td>Derrapar</td><td><kbd>Shift</kbd> esq.</td><td><kbd>Shift</kbd> dir. ou <kbd>0</kbd></td><td>RB / Y</td></tr>
+            <tr><td>Pausar</td><td colspan="2"><kbd>Esc</kbd> ou <kbd>P</kbd></td><td>Start</td></tr>
+          </table>
+          <p>Jogadores 3 e 4 usam controles (gamepads) USB ou Bluetooth. Aperte qualquer botão do controle para ele ser reconhecido.</p>
+        </div>
+        <div class="box">
+          <h3>🎁 Caixas Surpresa</h3>
+          <ul class="items">
+            <li><b>⚡ Turbo</b> — dispara para frente!</li>
+            <li><b>⚡⚡⚡ Turbo Triplo</b> — três turbos seguidos.</li>
+            <li><b>🛡️ Escudo</b> — protege de uma pegadinha.</li>
+            <li><b>⭐ Estrela</b> — fica invencível e super rápido.</li>
+            <li><b>🍌 Banana</b> — pegadinha deixada para trás.</li>
+            <li><b>🛢️ Óleo</b> — poça escorregadia.</li>
+            <li><b>🎁 Caixa Falsa</b> — parece surpresa, mas é pegadinha!</li>
+            <li><b>🚀 Foguete</b> — persegue quem está na sua frente.</li>
+            <li><b>🦑 Tinta de Lula</b> — suja a tela de quem está na frente.</li>
+          </ul>
+        </div>
+        <div class="box">
+          <h3>🏁 Dicas de Piloto</h3>
+          <ul>
+            <li><b>Derrape</b> nas curvas segurando o botão de derrapar: as faíscas ficam <span style="color:#5cf">azuis</span>, <span style="color:#fa3">laranjas</span> e <span style="color:#d6f">roxas</span>. Solte para ganhar um turbo!</li>
+            <li><b>Largada turbo:</b> acelere quando aparecer o <b>2</b> na contagem.</li>
+            <li><b>Moedas 🪙</b> deixam seu kart mais rápido (até 10).</li>
+            <li>Passe pelas <b>setas amarelas</b> para um turbo e pelas <b>rampas</b> para voar. Aperte derrapar no ar para uma <b>manobra</b>!</li>
+            <li>Cuidado com os <b>obstáculos</b>: barris rolando, pilões esmagadores, gêiseres e lava!</li>
+            <li>Cada pista tem <b>3 desafios ⭐</b>. Complete todos!</li>
+          </ul>
+        </div>
+      </div>
+      <div class="actions"><button class="big" data-go="title">Entendi! 👍</button></div>
+    </div>
+  </section>
+
+  <!-- Pausa -->
+  <section id="pause" class="screen overlay">
+    <div class="panel">
+      <h2>Pausado</h2>
+      <div class="menu">
+        <button class="big" id="resumeBtn">▶ Continuar</button>
+        <button class="mid" id="restartBtn">🔄 Reiniciar corrida</button>
+        <button class="mid ghost" id="quitBtn">🏠 Sair para o menu</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Resultados -->
+  <section id="results" class="screen overlay">
+    <div class="panel wide">
+      <h2 id="resultsTitle">Resultado</h2>
+      <div class="resultsgrid">
+        <table id="resultsTable" class="standings"></table>
+        <div id="challenges"></div>
+      </div>
+      <div class="actions" id="resultsActions"></div>
+    </div>
+  </section>
+
+  <!-- Pódio -->
+  <section id="podium" class="screen overlay">
+    <div class="panel wide">
+      <h2 id="podiumTitle">🏆 Campeões da Copa! 🏆</h2>
+      <div id="podiumBox" class="podium"></div>
+      <table id="podiumTable" class="standings"></table>
+      <div class="actions">
+        <button class="big" id="podiumMenu">🏠 Menu principal</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="toast"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
