@@ -128,3 +128,15 @@ js/netrace.js     sincroniza a corrida online entre os aparelhos
 sw.js             funcionamento offline do app instalado
 manifest.webmanifest  nome, ícone e orientação do app
 ```
+
+## App para Android (APK)
+
+No Android, a tela inicial do jogo mostra o botão **📱 Baixar o app para Android**, que leva à página
+`baixar.html` com o arquivo `download/marileo-kart.apk` e o passo a passo para instalar.
+
+- O app (pasta `android/`) é feito para o Android atual (*targetSdk 35*, funciona do Android 7 em diante).
+- Ele abre o jogo do site em tela cheia e deitado, então as novidades do jogo chegam sem reinstalar.
+- O botão **voltar** do celular pausa a corrida ou volta uma tela; no menu, dois toques fecham o app.
+- Convites das salas online abrem a janela de compartilhar do Android (WhatsApp etc.).
+- Para gerar de novo: `ANDROID_HOME=... KEYSTORE=... KS_PASS=... ./android/build.sh`
+  (precisa de `platforms;android-35` e `build-tools;35.0.0`).

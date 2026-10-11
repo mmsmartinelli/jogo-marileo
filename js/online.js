@@ -231,6 +231,8 @@ export class Online {
     if (!code) return;
     const url = `${location.origin}${location.pathname}?sala=${code}`;
     const text = `Vem correr comigo no Marileo Kart! 🏁 Código da sala: ${code}`;
+    // dentro do app Android: abre a janela de compartilhar do celular (WhatsApp etc.)
+    if (window.AndroidApp && window.AndroidApp.share) { window.AndroidApp.share(`${text}\n${url}`); return; }
     try {
       if (navigator.share) { await navigator.share({ title: 'Marileo Kart', text, url }); return; }
     } catch (e) { return; }

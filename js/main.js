@@ -185,6 +185,9 @@ class App {
     $$('#difficulty button').forEach(b => b.addEventListener('click', () => { this.settings.difficulty = +b.dataset.n; audio.play('select'); this._renderSetup(); }));
     $$('#autoAccel button').forEach(b => b.addEventListener('click', () => { this.settings.autoAccel = +b.dataset.n; audio.play('select'); this._renderSetup(); }));
     $('#startBtn').addEventListener('click', () => this.startFromSetup());
+    // no Android (fora do app) oferece o app de verdade
+    if (/Android/i.test(navigator.userAgent) && !window.AndroidApp) $('#apkBtn').hidden = false;
+    $('#apkBtn').addEventListener('click', () => { location.href = 'baixar.html'; });
     $('#onlineBtn').addEventListener('click', () => {
       audio.init();
       // dentro de outra página (ex.: pré-visualização) a conexão entre aparelhos é bloqueada
@@ -211,6 +214,19 @@ class App {
         else if (this.screen === 'online' && !this.online.connected) { audio.play('back'); this.show('title'); }
       }
     });
+
+    // botão "voltar" do app Android: pausa a corrida ou volta uma tela; false = pode fechar o app
+    window.androidBack = () => {
+      const sc = this.screen;
+      if (sc === 'race') { this.pause(); return true; }
+      if (sc === 'pause') { this.resume(); return true; }
+      if (this.online.connected && (sc === 'online' || sc === 'results')) { this.online.leave(); return true; }
+      if (sc === 'title') return false;
+      audio.play('back');
+      if (sc === 'results' || sc === 'podium') this.toMenu();
+      else this.show('title');
+      return true;
+    };
 
     window.addEventListener('gamepadconnected', e => this.toast(`🎮 Controle ${e.gamepad.index + 1} conectado!`));
     window.addEventListener('gamepaddisconnected', e => this.toast(`Controle ${e.gamepad.index + 1} desconectado`));
