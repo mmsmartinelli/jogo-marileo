@@ -454,3 +454,29 @@ body.touchmode #title .hint { display: none; }
   .podium .step img { width: 80px; height: 80px; }
   .podium .p1 .block { height: 90px; } .podium .p2 .block { height: 65px; } .podium .p3 .block { height: 45px; }
 }
+
+/* Menu inicial no celular deitado: logo à esquerda e botões à direita, tudo cabendo na tela sem rolar */
+@media (max-height: 520px) and (orientation: landscape) {
+  #title.active {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    grid-template-rows: 1fr auto auto 1fr;
+    grid-template-areas: ". menu" "logo menu" "tag menu" ". menu";
+    align-items: center; justify-items: center;
+    column-gap: 3vw; padding: max(8px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 8px max(16px, env(safe-area-inset-left));
+    overflow: hidden;
+  }
+  #title .logo { grid-area: logo; }
+  #title .logo span { font-size: min(64px, 16vh, 9vw); }
+  #title .logo b { font-size: min(40px, 10vh, 6vw); padding: 0 18px 4px; }
+  #title .tagline { grid-area: tag; text-align: center; font-size: min(18px, 4.6vh); margin: 10px 0 0; }
+  #title .menu {
+    grid-area: menu; align-self: center; width: 100%; max-width: 520px; margin: 0;
+    display: grid; grid-template-columns: 1fr 1fr; gap: min(10px, 2.4vh) 10px;
+  }
+  #title .menu button { min-width: 0; width: 100%; font-size: min(18px, 4.6vh); padding: min(10px, 2.6vh) 8px; white-space: nowrap; }
+  #title .menu button.online-btn, #title .menu #apkBtn { grid-column: 1 / -1; }
+  #title .menu button.online-btn { order: 1; }
+  #title .menu #apkBtn { order: 2; }
+  #title .hint { display: none; }
+}
