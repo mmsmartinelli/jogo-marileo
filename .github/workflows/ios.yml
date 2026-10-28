@@ -17,7 +17,7 @@ on:
 
 jobs:
   ios:
-    runs-on: macos-26
+    runs-on: macos-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -25,6 +25,8 @@ jobs:
       - name: Ferramentas
         run: |
           brew install xcodegen
+          # usa o Xcode mais novo instalado (a Apple exige o SDK mais recente)
+          sudo xcode-select -s "$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)"
           xcodebuild -version
 
       - name: Copia o jogo para dentro do app
