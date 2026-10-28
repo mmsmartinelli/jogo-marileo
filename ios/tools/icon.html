@@ -1,0 +1,77 @@
+<!doctype html>
+<!-- Desenha o ícone 1024×1024 da App Store (Leo e Mari nos karts). Abrir servido a partir da raiz do jogo. -->
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap" rel="stylesheet">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<style>html,body{margin:0;background:#000}#c{width:1024px;height:1024px;display:block}</style></head>
+<body><canvas id="c" width="1024" height="1024"></canvas>
+<script type="module">
+import * as THREE from 'three';
+import { CHARACTERS, buildKart } from '../../js/characters.js';
+await document.fonts.load('100px "Lilita One"');
+const S = 1024;
+// fundo: raios azuis
+const bg = document.createElement('canvas'); bg.width = bg.height = S;
+const b = bg.getContext('2d');
+const gr = b.createRadialGradient(S / 2, S * 0.42, 40, S / 2, S * 0.42, S * 0.8);
+gr.addColorStop(0, '#6fb8ff'); gr.addColorStop(1, '#1d3fb8');
+b.fillStyle = gr; b.fillRect(0, 0, S, S);
+b.save(); b.translate(S / 2, S * 0.42);
+for (let i = 0; i < 24; i++) { b.rotate(Math.PI / 12); if (i % 2) continue; b.fillStyle = 'rgba(255,255,255,0.10)'; b.beginPath(); b.moveTo(0, 0); b.lineTo(S, -S * 0.14); b.lineTo(S, S * 0.14); b.fill(); }
+b.restore();
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(S, S, false);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+const scene = new THREE.Scene();
+const bgTex = new THREE.CanvasTexture(bg); bgTex.colorSpace = THREE.SRGBColorSpace; scene.background = bgTex;
+scene.add(new THREE.HemisphereLight(0xffffff, 0x6a8a5a, 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, 2.6); sun.position.set(4, 9, 7); sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8 }); scene.add(sun);
+// grama e pista
+const grass = new THREE.Mesh(new THREE.PlaneGeometry(60, 30).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x3fbf3a, roughness: 1 }));
+grass.position.set(0, 0, -10); grass.receiveShadow = true; scene.add(grass);
+const rc = document.createElement('canvas'); rc.width = 512; rc.height = 512; const r = rc.getContext('2d');
+r.fillStyle = '#4a4b55'; r.fillRect(0, 0, 512, 512);
+for (let i = 0; i < 4000; i++) { r.fillStyle = Math.random() < .5 ? '#55565f' : '#3f4048'; r.fillRect(Math.random() * 512, Math.random() * 512, 2, 2); }
+r.fillStyle = '#fff'; r.fillRect(250, 0, 12, 200);
+const rt = new THREE.CanvasTexture(rc); rt.colorSpace = THREE.SRGBColorSpace;
+const road = new THREE.Mesh(new THREE.PlaneGeometry(9, 30).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: rt, roughness: .85 }));
+road.position.set(0, 0.01, -8); road.receiveShadow = true; scene.add(road);
+for (const s of [-1, 1]) for (let k = 0; k < 14; k++) {
+  const cb = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 1), new THREE.MeshStandardMaterial({ color: k % 2 ? 0xffffff : 0xff3b3b }));
+  cb.position.set(s * 4.75, 0.03, 6 - k); scene.add(cb);
+}
+for (const [id, x, rot] of [['leo', -1.95, 0.42], ['mari', 1.95, -0.42]]) {
+  const k = buildKart(CHARACTERS.find(c => c.id === id));
+  const o = k.group || k.root || k;
+  o.position.set(x, 0, 2.6); o.rotation.y = rot;
+  o.traverse(m => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
+  scene.add(o);
+}
+const cam = new THREE.PerspectiveCamera(36, 1, 0.1, 200);
+cam.position.set(0, 3.1, 13.2); cam.lookAt(0, 2.45, 0);
+renderer.render(scene, cam);
+// título por cima
+const out = document.createElement('canvas'); out.width = out.height = S;
+const o = out.getContext('2d');
+o.drawImage(renderer.domElement, 0, 0);
+o.textAlign = 'center'; o.textBaseline = 'middle';
+o.font = '180px "Lilita One"';
+o.lineJoin = 'round'; o.lineWidth = 34; o.strokeStyle = '#7a2300'; o.strokeText('MARILEO', S / 2, 172);
+o.fillStyle = '#ffd23f'; o.fillText('MARILEO', S / 2, 164);
+o.save(); o.translate(S / 2, 300); o.rotate(-0.03);
+o.fillStyle = '#7d0d18'; o.beginPath(); o.roundRect(-170, -62, 340, 136, 34); o.fill();
+o.fillStyle = '#fff'; o.beginPath(); o.roundRect(-170, -72, 340, 136, 34); o.fill();
+const kg = o.createLinearGradient(0, -60, 0, 60); kg.addColorStop(0, '#ff5a5a'); kg.addColorStop(1, '#d11a2a');
+o.fillStyle = kg; o.beginPath(); o.roundRect(-156, -58, 312, 108, 26); o.fill();
+o.font = '104px "Lilita One"'; o.fillStyle = '#fff'; o.fillText('KART', 0, -2);
+o.restore();
+// brilhos
+o.fillStyle = '#fff';
+for (const [x, y, s] of [[150, 430, 16], [880, 410, 13], [90, 640, 11], [930, 600, 14]]) { o.save(); o.translate(x, y); o.beginPath(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4, d = i % 2 ? s * 0.3 : s; o.lineTo(Math.cos(a) * d, Math.sin(a) * d); } o.fill(); o.restore(); }
+window.ICON = out.toDataURL('image/png');
+document.body.innerHTML = ''; out.style.cssText = 'width:1024px;height:1024px;display:block'; document.body.appendChild(out);
+window.DONE = true;
+</script></body></html>

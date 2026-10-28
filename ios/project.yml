@@ -1,0 +1,57 @@
+# Projeto Xcode do Marileo Kart para iPhone/iPad (gerado com XcodeGen: `xcodegen generate`).
+name: MarileoKart
+options:
+  bundleIdPrefix: com.martinelli
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+targets:
+  MarileoKart:
+    type: application
+    platform: iOS
+    sources:
+      - path: MarileoKart
+      - path: www
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.martinelli.marileokart
+        PRODUCT_NAME: Marileo Kart
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_BITCODE: NO
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: MarileoKart/Info.plist
+    info:
+      path: MarileoKart/Info.plist
+      properties:
+        CFBundleDisplayName: Marileo Kart
+        CFBundleName: Marileo Kart
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleDevelopmentRegion: pt-BR
+        LSRequiresIPhoneOS: true
+        LSApplicationCategoryType: public.app-category.racing-games
+        ITSAppUsesNonExemptEncryption: false
+        UIRequiresFullScreen: true
+        UIStatusBarHidden: true
+        UIViewControllerBasedStatusBarAppearance: false
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationLandscapeRight
+          - UIInterfaceOrientationLandscapeLeft
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationLandscapeRight
+          - UIInterfaceOrientationLandscapeLeft
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        GCSupportsControllerUserInteraction: true
+        NSLocalNetworkUsageDescription: O modo Online com Amigos conecta os celulares que estão jogando juntos.

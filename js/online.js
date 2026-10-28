@@ -229,10 +229,13 @@ export class Online {
   async share() {
     const code = this.net && this.net.code;
     if (!code) return;
-    const url = `${location.origin}${location.pathname}?sala=${code}`;
+    // no app de iPhone o jogo roda de dentro do aparelho: o convite usa o endereço do site
+    const site = /^https?:$/.test(location.protocol) ? `${location.origin}${location.pathname}` : 'https://mmsmartinelli.github.io/jogo-marileo/';
+    const url = `${site}?sala=${code}`;
     const text = `Vem correr comigo no Marileo Kart! 🏁 Código da sala: ${code}`;
     // dentro do app Android: abre a janela de compartilhar do celular (WhatsApp etc.)
     if (window.AndroidApp && window.AndroidApp.share) { window.AndroidApp.share(`${text}\n${url}`); return; }
+    if (window.IOSApp && window.IOSApp.share) { window.IOSApp.share(`${text}\n${url}`); return; }
     try {
       if (navigator.share) { await navigator.share({ title: 'Marileo Kart', text, url }); return; }
     } catch (e) { return; }

@@ -1,0 +1,67 @@
+# Compila o app de iPhone num Mac do GitHub.
+# - A cada mudança no jogo: confere se o app compila (sem precisar de conta Apple).
+# - "Run workflow" (Actions → iOS → Run workflow): gera o app assinado e envia para o
+#   App Store Connect / TestFlight. Precisa dos segredos do repositório:
+#   APPLE_TEAM_ID, ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 (conteúdo do arquivo AuthKey_XXXX.p8)
+name: iOS
+
+on:
+  push:
+    paths: ['ios/**', 'js/**', 'css/**', 'icons/**', 'index.html', '.github/workflows/ios.yml']
+  workflow_dispatch:
+    inputs:
+      enviar:
+        description: 'Enviar para o App Store Connect (TestFlight)'
+        type: boolean
+        default: true
+
+jobs:
+  ios:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ferramentas
+        run: |
+          brew install xcodegen
+          xcodebuild -version
+
+      - name: Copia o jogo para dentro do app
+        run: node ios/build-web.mjs
+
+      - name: Gera o projeto Xcode
+        run: cd ios && xcodegen generate
+
+      - name: Compila (simulador, sem assinatura)
+        if: github.event_name == 'push'
+        run: |
+          xcodebuild -project ios/MarileoKart.xcodeproj -scheme MarileoKart -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO -quiet build
+
+      - name: Gera e envia para o App Store Connect
+        if: github.event_name == 'workflow_dispatch' && inputs.enviar
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          set -e
+          if [ -z "$TEAM_ID" ] || [ -z "$KEY_ID" ] || [ -z "$ISSUER_ID" ] || [ -z "$KEY_P8" ]; then
+            echo "::error::Faltam segredos: APPLE_TEAM_ID, ASC_KEY_ID, ASC_ISSUER_ID e ASC_KEY_P8 (veja ios/LEIA-ME.md)"; exit 1
+          fi
+          KEY_PATH="$RUNNER_TEMP/AuthKey_$KEY_ID.p8"
+          printf '%s\n' "$KEY_P8" > "$KEY_PATH"
+          AUTH="-allowProvisioningUpdates -authenticationKeyPath $KEY_PATH -authenticationKeyID $KEY_ID -authenticationKeyIssuerID $ISSUER_ID"
+          BUILD=$(( GITHUB_RUN_NUMBER + 100 ))
+          xcodebuild -project ios/MarileoKart.xcodeproj -scheme MarileoKart -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/MarileoKart.xcarchive" \
+            DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic CURRENT_PROJECT_VERSION="$BUILD" \
+            $AUTH -quiet archive
+          sed "s/TEAM_ID/$TEAM_ID/" ios/ExportOptions.plist > "$RUNNER_TEMP/ExportOptions.plist"
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/MarileoKart.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export" $AUTH
+          echo "### ✅ Versão (build $BUILD) enviada para o App Store Connect" >> "$GITHUB_STEP_SUMMARY"
+          rm -f "$KEY_PATH"
