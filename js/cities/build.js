@@ -128,10 +128,12 @@ export class CityCtx {
   }
 
   // Confere o terreno do marco (retângulo w x d com a frente virada para a pista).
-  _footprintOK(cx, cz, rot, w, d, minRoad) {
+  _footprintOK(cx, cz, rot, w, d, minRoad, dense = false) {
     const c = Math.cos(rot), s = Math.sin(rot);
-    for (let a = 0; a <= 4; a++) for (let b = 0; b <= 4; b++) {
-      const lx = lerp(-w / 2, w / 2, a / 4), lz = lerp(-d / 2, d / 2, b / 4);
+    // marcos enormes: terreno conferido de ~24 em 24 m (a pista não passa escondida entre os pontos)
+    const na = dense ? Math.max(4, Math.ceil(w / 24)) : 4, nb = dense ? Math.max(4, Math.ceil(d / 24)) : 4;
+    for (let a = 0; a <= na; a++) for (let b = 0; b <= nb; b++) {
+      const lx = lerp(-w / 2, w / 2, a / na), lz = lerp(-d / 2, d / 2, b / nb);
       const x = cx + lx * c + lz * s, z = cz - lx * s + lz * c;
       if (this.near(x, z).d < minRoad) return false;
     }
@@ -165,14 +167,14 @@ export class CityCtx {
             if (!spec.water && s > -shore.beachW - R * 0.6) continue;
           } else if (spec.water === 'in' || spec.water === 'shore') continue;
           const rot = Math.atan2(-side * tr.rx[i], -side * tr.rz[i]);
-          if (!this._footprintOK(cx, cz, rot, w, d, e + (far ? 25 : 3))) continue;
+          if (!this._footprintOK(cx, cz, rot, w, d, e + (far ? 25 : 3), !!spec.dense)) continue;
           const vis = this._visibility(cx, cz, hero, maxD);
           let score = vis.v + this.rand() * 1.5 - off * 0.02;
           if (hero) {
             // o marco principal fica bem na frente da reta de largada, nem perto nem longe demais
             const v0 = this.views[0], dx = cx - v0.x, dz = cz - v0.z;
             const along = dx * v0.tx + dz * v0.tz, lat = Math.abs(dx * v0.tz - dz * v0.tx);
-            const target = (far ? 300 : 170) + d * 0.3;
+            const target = spec.heroAlong ?? ((far ? 300 : 170) + d * 0.3);
             if (along > 60) score += 80 * Math.exp(-(((along - target) / 110) ** 2)) * Math.max(0, 1 - Math.atan2(lat, along) / 0.62) ** 0.7;
           }
           // espalha os marcos pela volta
@@ -233,9 +235,11 @@ export class CityCtx {
     const id = typeof entry === 'string' ? entry : entry.id;
     const base = LANDMARKS[id];
     if (!base) { this.warn.push(`marco desconhecido: ${id}`); return; }
-    const sc = base.scale || 1;
-    const spec = sc === 1 ? base : { ...base, w: base.w * sc, d: base.d * sc };
     const tr = this.track, e = this.e;
+    // marcos grandes podem encolher (base.fit) quando a pista não deixa espaço para o tamanho cheio
+    const fits = base.fit || [1];
+    let fitIdx = 0, sc = base.scale || 1, spec = sc === 1 ? base : { ...base, w: base.w * sc, d: base.d * sc };
+    const rescale = () => { sc = (base.scale || 1) * fits[fitIdx]; spec = sc === 1 ? base : { ...base, w: base.w * sc, d: base.d * sc }; };
     const hero = typeof entry === 'string' ? idx === 0 : !!entry.hero;
     const g = new THREE.Group();
     let info;
@@ -260,12 +264,15 @@ export class CityCtx {
         const i = tr.wrap(Math.floor(entry.t * this.N));
         const lat = e + entry.off + spec.d / 2;
         s = { i, side: entry.side, off: entry.off, x: tr.px[i] + tr.rx[i] * entry.side * lat, z: tr.pz[i] + tr.rz[i] * entry.side * lat, rot: Math.atan2(-entry.side * tr.rx[i], -entry.side * tr.rz[i]), R: Math.hypot(spec.w, spec.d) / 2, view: -1 };
-      } else s = this.findSpot(spec, hero);
+      } else {
+        s = this.findSpot(spec, hero);
+        while (!s && fitIdx < fits.length - 1) { fitIdx++; rescale(); s = this.findSpot(spec, hero); }
+      }
       if (!s) { this.warn.push(`sem lugar para ${id}`); return; }
       const y = spec.water === 'in' ? this.gl - 2.5 : this.gl;
       g.position.set(s.x, y, s.z);
       g.rotation.y = s.rot;
-      info = { id, i: s.i, x: s.x, z: s.z, R: s.R, side: s.side, off: s.off };
+      info = { id, i: s.i, x: s.x, z: s.z, R: s.R, side: s.side, off: s.off, rot: s.rot, scale: sc, hero };
       this.reserve(s.x, s.z, s.R * 0.95 + 4);
       this.footprints.push({ x: s.x, z: s.z, rot: s.rot, w: spec.w, d: spec.d, id });
       // corredores de visão (do melhor ponto de vista e, para o principal, da largada)
@@ -283,6 +290,7 @@ export class CityCtx {
     g.updateMatrixWorld(true);
     spec.build(this, g, entry.opts || {}, info);
     info.baked = this.bake(g);
+    info.baked.userData.landmark = id;
     this.placed.push(info);
   }
 
@@ -695,6 +703,7 @@ export function buildCity(track) {
     trees: ctx.treeCount || 0, lamps: ctx.lampCount || 0,
     landmarks: ctx.placed.map(p => p.id),
     landmarkPos: ctx.placed.map(p => [p.id, Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10]),
+    landmarkInfo: ctx.placed.map(p => ({ id: p.id, x: p.x, z: p.z, rot: p.rot ?? 0, scale: p.scale ?? 1, span: !!p.span, hero: !!p.hero })),
     audit, geomAudit: geom, warn: ctx.warn,
   };
 }

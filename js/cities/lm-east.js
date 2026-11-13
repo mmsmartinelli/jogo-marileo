@@ -64,7 +64,7 @@ export const LANDMARKS_B = {
     },
   },
   mesquita: {
-    w: 56, d: 44,
+    w: 56, d: 44, scale: 1.3,
     build(ctx, g) {
       const white = 0xf2e6cc;
       g.add(box(36, 14, 26, ctx.P(white), 0, 7, -4));
@@ -77,7 +77,7 @@ export const LANDMARKS_B = {
     },
   },
   obelisco: {
-    w: 14, d: 14,
+    w: 14, d: 14, scale: 1.5,
     build(ctx, g) {
       g.add(box(8, 3, 8, ctx.P(0xc8a878), 0, 1.5, 0));
       g.add(geo(frustumGeo(3.6, 3.6, 30, 0.62), ctx.P(0xd8b078), 0, 18, 0));
@@ -294,6 +294,15 @@ export const LANDMARKS_B = {
       eastRoof(ctx, g, 2 * px + 12, 7, 3.2, 21.4, green);
       g.add(box(2 * px + 4, 1, 1, gold, 0, 24.8, 0));
       for (const s of [-1, 1]) g.add(sphere(0.9, gold, s * (px + 2), 25.5, 0, 8, 6));
+      // lanternas vermelhas penduradas bem no alto do vão (sempre acima de 9 m) e nos beirais
+      for (let k = -3; k <= 3; k++) {
+        const x = (k * (px - 1.4)) / 3;
+        g.add(cyl(0.05, 0.05, 2.2, ctx.P(0x3a2a20), x, 16, 0, 4));
+        const lan = sphere(1.15, ctx.P(0xff2a1a, 'neon'), x, 14.4, 0, 8, 6); lan.scale.set(1, 1.25, 1); g.add(lan);
+        g.add(cyl(0.55, 0.55, 0.25, gold, x, 15.8, 0, 6)); g.add(cyl(0.55, 0.55, 0.25, gold, x, 13, 0, 6));
+        g.add(cone(0.2, 1.6, ctx.P(0xff2a1a), x, 12, 0, 4));
+      }
+      for (const s of [-1, 1]) for (const z of [-3.4, 3.4]) { const lan = sphere(0.8, ctx.P(0xff2a1a, 'neon'), s * (px + 6.2), 21.2, z, 8, 6); lan.scale.y = 1.2; g.add(lan); }
     },
   },
 
