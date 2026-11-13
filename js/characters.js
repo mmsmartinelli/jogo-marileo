@@ -1,6 +1,7 @@
 // Personagens e construção procedural dos karts 3D.
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { blobShadowTexture } from './textures.js';
 
 export const CHARACTERS = [
@@ -19,7 +20,7 @@ function geo(key, make) {
   if (!geoCache.has(key)) geoCache.set(key, make());
   return geoCache.get(key);
 }
-const rbox = (w, h, d, r) => geo(`rb${w},${h},${d},${r}`, () => new RoundedBoxGeometry(w, h, d, 4, r));
+const rbox = (w, h, d, r) => geo(`rb${w},${h},${d},${r}`, () => new RoundedBoxGeometry(w, h, d, 3, r));
 const sphere = (r, ws = 20, hs = 14) => geo(`s${r},${ws}`, () => new THREE.SphereGeometry(r, ws, hs));
 const cyl = (rt, rb, h, s = 16) => geo(`c${rt},${rb},${h},${s}`, () => new THREE.CylinderGeometry(rt, rb, h, s));
 const cone = (r, h, s = 12) => geo(`k${r},${h},${s}`, () => new THREE.ConeGeometry(r, h, s));
@@ -183,6 +184,38 @@ function buildHead(ch) {
   return g;
 }
 
+// Junta as malhas filhas diretas de um grupo que usam o mesmo material (e a mesma
+// sombra) numa malha só, com a posição/rotação/escala de cada uma já aplicada.
+// Só mexe nas filhas diretas: subgrupos que se mexem (rodas, piloto, cabeça) ficam.
+function mergeStatic(group) {
+  const byKey = new Map();
+  for (const o of group.children) {
+    if (!o.isMesh || o.children.length) continue;
+    const k = o.material.uuid + (o.castShadow ? 'c' : '') + (o.receiveShadow ? 'r' : '') + o.renderOrder + (o.visible ? '' : 'h');
+    if (!byKey.has(k)) byKey.set(k, []);
+    byKey.get(k).push(o);
+  }
+  for (const list of byKey.values()) {
+    if (list.length < 2) continue;
+    const geos = list.map(o => {
+      o.updateMatrix();
+      let g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+      for (const a of Object.keys(g.attributes)) if (a !== 'position' && a !== 'normal' && a !== 'uv') g.deleteAttribute(a);
+      if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
+      if (!g.attributes.normal) g.computeVertexNormals();
+      return g.applyMatrix4(o.matrix);
+    });
+    const merged = mergeGeometries(geos);
+    geos.forEach(g => g.dispose());
+    if (!merged) continue;
+    const first = list[0];
+    const m = new THREE.Mesh(merged, first.material);
+    m.castShadow = first.castShadow; m.receiveShadow = first.receiveShadow; m.renderOrder = first.renderOrder;
+    for (const o of list) group.remove(o);
+    group.add(m);
+  }
+}
+
 // Monta o kart completo. O grupo `root` fica no chão e aponta para +Z.
 export function buildKart(ch) {
   const s = sharedMats();
@@ -290,6 +323,13 @@ export function buildKart(ch) {
   root.add(shield);
 
   root.traverse(o => { if (o.isMesh && o !== shadow) o.receiveShadow = false; });
+
+  // Junta as peças paradas de cada grupo por material (o desenho fica igual, mas o
+  // celular faz bem menos chamadas de desenho: ~60 peças por kart viram ~25).
+  mergeStatic(body);
+  mergeStatic(driver);
+  mergeStatic(head);
+  for (const sp of spinners) mergeStatic(sp.g);
 
   return { root, body, driver, head, spinners, steerPivots, flames, shield, shadow, paint, accent, exhaustTips };
 }

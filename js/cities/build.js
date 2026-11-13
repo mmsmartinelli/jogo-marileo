@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { lerp, smoothstep, clamp } from '../utils.js';
 import { KITS } from './kits.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { makeMaterials, paint, box, cyl, cone, sphere, geo as geoMesh, Bag, SignAtlas, facadeTextures, isGlassFacade, buildingGeo, bakeObject, frustumGeo, gableGeo, UP } from './common.js';
+import { makeMaterials, paint, box, cyl, cone, sphere, geo as geoMesh, Bag, SignAtlas, facadeTextures, isGlassFacade, buildingGeo, bakeObject, frustumGeo, gableGeo, UP, splitByGrid } from './common.js';
 import { LANDMARKS } from './landmarks.js';
 import { PROPS } from './props.js';
 import { PigeonMeshes } from '../pigeons.js';
@@ -511,7 +511,7 @@ export class CityCtx {
       parts = [
         { geo: new THREE.CylinderGeometry(0.12, 0.18, 6.5, 6).translate(0, 3.25, 0), mat: pole },
         { geo: new THREE.BoxGeometry(1.6, 0.14, 0.14).translate(0.7, 6.4, 0), mat: pole },
-        { geo: new THREE.SphereGeometry(0.55, 8, 6).scale(1, 1.3, 1).translate(1.3, 5.6, 0), mat: new THREE.MeshBasicMaterial({ color: this.kitId === 'pequim' ? 0xff3a2a : 0xffb050 }) },
+        { geo: new THREE.SphereGeometry(0.55, 7, 4).scale(1, 1.3, 1).translate(1.3, 5.6, 0), mat: new THREE.MeshBasicMaterial({ color: this.kitId === 'pequim' ? 0xff3a2a : 0xffb050 }) },
       ];
     } else {
       parts = [
@@ -718,6 +718,20 @@ function buildWater(ctx) {
   });
 }
 
+// ---------- Peso para o celular ----------
+// O chão da cidade é uma malha só de ~70 mil triângulos que o celular desenhava inteira
+// em todo quadro (até a parte atrás da câmera). Cortado em quadrados, só os pedaços que
+// aparecem na tela são desenhados. Nada muda na aparência.
+// O mesmo vale para os telhados e enfeites juntados (que também entram na sombra do sol:
+// cortados, só os pedaços perto do kart entram na conta da sombra).
+export const TERRAIN_CELL = 400;
+function tileCity(ctx) {
+  const g = ctx.group;
+  const terrain = g.children.find(o => o.isMesh && o.geometry.type === 'PlaneGeometry' && o.material.vertexColors && o.material.map && !o.castShadow);
+  ctx.tiles = { terrain: terrain ? splitByGrid(terrain, TERRAIN_CELL) : 0, bags: 0 };
+  for (const o of g.children.filter(c => c.isMesh && c.userData.bag)) ctx.tiles.bags += splitByGrid(o, TERRAIN_CELL, 6000);
+}
+
 // ---------- Montagem completa ----------
 export function buildCity(track) {
   const ctx = new CityCtx(track);
@@ -743,6 +757,7 @@ export function buildCity(track) {
   ctx.buildStreet();
   for (const p of ctx.kit.props || []) if (PROPS[p]) PROPS[p](ctx);
   ctx.bag.flush(track.group);
+  tileCity(ctx);
   if (ctx.atlas.full) ctx.warn.push('atlas de placas cheio');
   const audit = ctx.audit();
   const geom = ctx.geomAudit();
