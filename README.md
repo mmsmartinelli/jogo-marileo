@@ -172,6 +172,7 @@ js/cities/lm-west.js   marcos do Rio, Nova York, Londres, Paris e Roma
 js/cities/lm-east.js   marcos do Cairo, Dubai, Agra, Pequim, Tóquio e Sydney
 js/cities/landmarks.js lista de todos os marcos
 js/cities/props.js     enfeites de rua (cafés, cabines, neons, lanternas...)
+js/cities/roma.js      bairros de Roma (Fórum, praça, fonte, aqueduto, escadaria, feira) e vida da rua
 js/cities/vehicles.js  veículos e bichos que atravessam a rua
 js/pigeons.js          os pombos (desenho e animação)
 js/items.js            caixas surpresa e itens

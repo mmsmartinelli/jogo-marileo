@@ -179,11 +179,12 @@ export const KITS = {
     },
     theme: {
       road: '#5a5658', roadSpeckle: ['#686466', '#4a4648', '#767274'], curbA: '#1f9e4a', curbB: '#ffffff', wallA: '#ffffff', wallB: '#e8262a',
-      ground: ['#b8a68e', '#ac9a82', '#c4b29a', '#a08e76', '#ccbaa2'], shoulder: ['#c9b9a0', '#bcad94', '#d4c4aa'], sidewalk: 'cobble',
-      terrainColor: '#b0a088', mountainColor: '#6f8a4a', clouds: true, hills: [280, 480, 50],
+      ground: ['#e2d8c4', '#d6cab4', '#ece2ce', '#cbbfa8', '#f0e8d6'], shoulder: ['#c9b9a0', '#bcad94', '#d4c4aa'], sidewalk: 'cobble',
+      terrainColor: '#e4dac6', mountainColor: '#5f8a42', clouds: true, hills: [300, 540, 95],
     },
-    buildings: { types: ['terracotta', 'terracotta2'], heights: [[10, 18], [12, 22], [14, 26]], far: [12, 26], roof: 'tiles', density: 1.1, tints: ['#e8a066', '#f0c080', '#d98a5a', '#f2d29a', '#e6b07a', '#cf7a4a'] },
-    trees: 'pine', lamps: 'classic', props: ['cafes'],
+    // ocre, terracota, creme, rosa antigo, amarelo e vermelho pompeiano; alturas bem variadas
+    buildings: { types: ['terracotta', 'terracotta2', 'romano', 'romano2'], heights: [[8, 20], [12, 28], [16, 30]], far: [12, 30], roof: 'tiles', density: 1.1, tints: ['#e8a066', '#f0c080', '#d98a5a', '#f6e2bc', '#f2d29a', '#e8b8a0', '#c8664a', '#f4ead6', '#e6c070'] },
+    trees: 'pine', lamps: 'classic', props: ['cafes', 'romaRua'], preProps: ['romaBairros'],
     obstacles: { barrel: ['vespa'], puddle: ['gelato', 'water'], geyser: 'water', pigeons: 2 },
     landmarks: [{ id: 'coliseu', hero: true }, { id: 'colunaTriunfal' }, { id: 'arcoRomano' }, { id: 'domo' }],
     names: ['Circuito do Coliseu', 'Volta dos Gladiadores', 'Via das Fontes', 'Grande Prêmio da Pizza', 'Corrida dos Imperadores'],

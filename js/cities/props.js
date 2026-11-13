@@ -2,6 +2,7 @@
 // Tudo vai para o "saco" da cidade e vira poucas malhas no fim.
 import * as THREE from 'three';
 import { box, cyl, cone, sphere, geo, person, SKINS, SHIRTS } from './common.js';
+import { ROMA_PROPS } from './roma.js';
 
 function put(ctx, obj, s) {
   obj.position.set(s.x, ctx.track.groundHeight(s.x, s.z), s.z);
@@ -170,3 +171,6 @@ export const PROPS = {
     });
   },
 };
+
+// Roma tem os seus próprios enfeites (bairros temáticos e vida da rua): js/cities/roma.js
+Object.assign(PROPS, ROMA_PROPS);

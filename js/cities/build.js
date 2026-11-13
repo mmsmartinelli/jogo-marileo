@@ -390,7 +390,21 @@ export class CityCtx {
       g.add(geoMesh(gableGeo(b.w + 0.6, b.d + 0.6, Math.min(7, b.d * 0.4)), P(rand() < 0.5 ? 0x4a4a52 : 0x6a4a3a)));
       if (rand() < 0.6) g.add(box(1.2, 3, 1.2, P(0x8a4a36), b.w * 0.3, 2.8, 0));
     } else if (style === 'tiles') {
-      g.add(geoMesh(frustumGeo(b.w + 1.2, b.d + 1.2, 3, 0.25).translate(0, 1.5, 0), P(rand() < 0.5 ? 0xc0502a : 0xb04a28)));
+      const r = rand(), tile = P([0xc0502a, 0xb04a28, 0xcc6236, 0xa8442a][Math.floor(rand() * 4)]);
+      if (r < 0.2 && b.h < 24) {
+        // terraço com parapeito, pérgola e plantas
+        g.add(box(b.w + 0.4, 1.1, b.d + 0.4, P(0xeadcc2), 0, 0.55, 0));
+        g.add(box(b.w * 0.45, 0.25, b.d * 0.35, P(0x7a5a3a), b.w * 0.15, 3.2, 0));
+        for (const [x, z] of [[-0.25, 0.25], [0.3, -0.3], [-0.3, -0.25]]) g.add(geoMesh(new THREE.IcosahedronGeometry(1.1, 0), P(0x4f8a3a), x * b.w, 1.7, z * b.d));
+      } else {
+        g.add(geoMesh(frustumGeo(b.w + 1.2, b.d + 1.2, 3, 0.25).translate(0, 1.5, 0), tile));
+        if (r > 0.9) {
+          // torre sineira (campanário)
+          g.add(box(3.4, 9, 3.4, P(0xeadcc2), b.w * 0.28, 4.5, b.d * 0.2));
+          g.add(box(3.6, 2.2, 3.6, P(0x3a3030), b.w * 0.28, 7.4, b.d * 0.2));
+          g.add(geoMesh(frustumGeo(4.2, 4.2, 2.6, 0.05).translate(0, 10.3, 0), tile, b.w * 0.28, 0, b.d * 0.2));
+        } else if (r > 0.8) g.add(box(1.2, 2.2, 1.2, P(0xd8c8b0), b.w * 0.3, 2.4, -b.d * 0.2)); // chaminé
+      }
     } else if (style === 'spire') {
       if (b.h > 45) {
         g.add(box(b.w * 0.7, b.h * 0.12, b.d * 0.7, P(glass ? 0x9aaabb : 0xc8c4bc), 0, b.h * 0.06, 0));
@@ -678,6 +692,8 @@ export function buildCity(track) {
 
   const lms = def.landmarks || [];
   lms.forEach((L, k) => ctx.placeLandmark(L, k));
+  // conjuntos grandes que precisam de chão livre antes dos prédios (ex.: bairros de Roma)
+  for (const p of ctx.kit.preProps || []) if (PROPS[p]) PROPS[p](ctx);
 
   ctx.buildBuildings();
   ctx.buildStreet();

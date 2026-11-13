@@ -298,8 +298,11 @@ const FACADES = {
   tokyo: { wall: '#dcdad6', win: '#2c3644', lit: 0.5, bands: true },
   adobe: { wall: '#fff6e6', win: '#4a3a2a', lit: 0.35, small: true, arch: true },
   adobe2: { wall: '#fbf0dc', win: '#3a2e24', lit: 0.3, small: true, shutters: '#3f7a9e' },
-  terracotta: { wall: '#fff4e8', win: '#3a3030', lit: 0.35, shutters: '#3f7a4a', sill: true },
-  terracotta2: { wall: '#fff8ee', win: '#3a3030', lit: 0.35, shutters: '#8a4a2a', sill: true },
+  // Roma: janelas altas com persianas (algumas fechadas), floreiras, varais e sacadas
+  terracotta: { wall: '#fff4e8', win: '#3a3030', lit: 0.35, tall: true, shutters: '#3f7a4a', sill: true, closed: 0.3, flowers: 0.4, laundry: 0.12 },
+  terracotta2: { wall: '#fff8ee', win: '#3a3030', lit: 0.35, tall: true, shutters: '#8a4a2a', sill: true, closed: 0.25, flowers: 0.3 },
+  romano: { wall: '#fffaf2', win: '#2f2a2a', lit: 0.38, tall: true, shutters: '#5a8a5a', frame: '#f6efe2', balcony: '#3a3434', rail: true, closed: 0.2, flowers: 0.5, laundry: 0.1 },
+  romano2: { wall: '#fff6ea', win: '#352e2a', lit: 0.32, arch: true, small: true, shutters: '#9a5a32', frame: '#fbf3e4', closed: 0.15, flowers: 0.25, laundry: 0.18 },
   indian: { wall: '#ffffff', win: '#3a2a2a', lit: 0.35, arch: true, frame: '#ffffff' },
   chinese: { wall: '#9a9690', win: '#7a1a1a', lit: 0.45, frame: '#c8202a', small: true },
 };
@@ -338,6 +341,20 @@ export function facadeTextures(kind, seed) {
       a.fillStyle = 'rgba(0,0,0,0.35)'; for (let k = 0; k < 7; k++) a.fillRect(x + 6 + k * 8, wy + wh - 12, 2, 10);
     }
     if (F.sill) { a.fillStyle = '#ffffff'; a.fillRect(wx - 4, wy + wh, ww + 8, 4); }
+    if (F.closed && r() < F.closed) { // persiana fechada (não acende)
+      a.fillStyle = F.shutters; a.fillRect(wx, wy, ww, wh);
+      a.fillStyle = 'rgba(0,0,0,0.25)'; for (let k = 4; k < wh; k += 5) a.fillRect(wx, wy + k, ww, 1);
+      a.fillRect(wx + ww / 2 - 0.5, wy, 1, wh);
+      continue;
+    }
+    if (F.flowers && r() < F.flowers) { // floreira com gerânios
+      a.fillStyle = '#8a4a2a'; a.fillRect(wx - 2, wy + wh - 6, ww + 4, 6);
+      for (let k = 0; k < 6; k++) { a.fillStyle = k % 2 ? '#3f8a3a' : ['#e8263a', '#ff5fa0', '#ff8a1a'][Math.floor(r() * 3)]; a.beginPath(); a.arc(wx + 2 + k * (ww - 4) / 5, wy + wh - 8, 3.5, 0, Math.PI * 2); a.fill(); }
+    }
+    if (F.laundry && r() < F.laundry) { // varal com roupas
+      a.fillStyle = '#555'; a.fillRect(x, wy + wh + 3, 64, 1);
+      for (let k = 0; k < 4; k++) { a.fillStyle = ['#ffffff', '#2f7bff', '#ff5fb0', '#ffd23f', '#e8262a', '#35d07f'][Math.floor(r() * 6)]; a.fillRect(x + 4 + k * 15, wy + wh + 4, 10, 9 + (k % 2) * 4); }
+    }
     if (F.glass) {
       a.fillStyle = F.gold ? 'rgba(255,210,120,0.22)' : 'rgba(255,190,160,0.18)'; a.fillRect(wx, wy + wh * 0.5, ww, wh * 0.5);
       if (r() < F.lit) { e.fillStyle = '#6a86a8'; e.fillRect(wx, wy, ww, wh); }
