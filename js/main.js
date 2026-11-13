@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { CHARACTERS, buildKart } from './characters.js';
 import { TRACKS, CUP, getTrack } from './tracks.js';
+import { infiniteCup, randomSeed, isGenId, GEN_PREFIX } from './trackgen.js';
 import { Race } from './race.js';
 import { audio } from './audio.js';
 import { SOURCES, PlayerInput, onKey, connectedGamepads } from './input.js';
@@ -10,6 +11,7 @@ import { formatTime } from './utils.js';
 import { PLAYER_COLORS } from './hud.js';
 import { isTouchDevice } from './touch.js';
 import { Online } from './online.js';
+import { ads } from './ads.js';
 
 const POINTS = [15, 12, 10, 8, 6, 4, 2, 1];
 const $ = s => document.querySelector(s);
@@ -39,6 +41,11 @@ class App {
       players: [{ char: 0, source: this.touch ? 'touch' : 'kb1' }, { char: 1, source: 'kb2' }, { char: 2, source: 'gp0' }, { char: 3, source: 'gp1' }],
     }, saved);
     this.stars = load('marileo_stars', {});
+    // Copa Infinita: copa mais alta liberada e melhor colocação em cada copa
+    this.infinite = Object.assign({ unlocked: 1, best: {} }, load('marileo_infinite', {}));
+    if (!this.settings.cup) this.settings.cup = 'marileo';
+    this.settings.infCup = Math.max(1, Math.min(this.settings.infCup || this.infinite.unlocked, this.infinite.unlocked));
+    if (!isGenId(this.settings.surpriseId)) this.settings.surpriseId = isGenId(this.settings.trackId) ? this.settings.trackId : GEN_PREFIX + randomSeed();
     this.records = load('marileo_tt', {});
     this.menuInputs = ['kb1', 'kb2', 'gp0', 'gp1', 'gp2', 'gp3'].map(s => new PlayerInput(s));
     this.ready = [false, false, false, false];
@@ -173,6 +180,17 @@ class App {
     document.addEventListener('click', () => audio.init());
     document.addEventListener('keydown', () => audio.init());
 
+    // intervalo comercial entre as corridas (desligado até ser ativado em js/ads-config.js)
+    ads.onPause = () => { if (audio.ctx) audio.ctx.suspend(); };
+    ads.onResume = () => { if (audio.ctx) audio.ctx.resume(); };
+    ads.isSoundOn = () => !audio.muted;
+    ads.onOpenUrl = url => {
+      if (window.AndroidApp && window.AndroidApp.openUrl) window.AndroidApp.openUrl(url);
+      else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.openurl) window.webkit.messageHandlers.openurl.postMessage(url);
+      else window.open(url, '_blank', 'noopener,noreferrer');
+    };
+    ads.init();
+
     $$('[data-mode]').forEach(b => b.addEventListener('click', () => {
       audio.play('confirm');
       this.settings.mode = b.dataset.mode;
@@ -203,7 +221,10 @@ class App {
       if (this.race && this.race.online) this.online.leave();
       else this.toMenu();
     });
-    $('#podiumMenu').addEventListener('click', () => this.toMenu());
+    // Grande Prêmio: Copa Marileo ou Copa Infinita (◀ ▶ escolhe entre as copas já liberadas)
+    $$('#cupMode button').forEach(b => b.addEventListener('click', () => { this.settings.cup = b.dataset.c; audio.play('select'); this._renderSetup(); }));
+    $('#infPrev').addEventListener('click', () => { this.settings.infCup = Math.max(1, this.settings.infCup - 1); audio.play('select'); this._renderSetup(); });
+    $('#infNext').addEventListener('click', () => { this.settings.infCup = Math.min(this.infinite.unlocked, this.settings.infCup + 1); audio.play('select'); this._renderSetup(); });
 
     onKey(code => {
       if (code === 'KeyM') { const m = audio.toggleMute(); this.toast(m ? '🔇 Som desligado' : '🔊 Som ligado'); }
@@ -236,13 +257,15 @@ class App {
   _renderSetup() {
     const s = this.settings;
     const mode = s.mode;
-    $('#setupTitle').textContent = { gp: `🏆 Grande Prêmio — ${CUP.name}`, race: '🏁 Corrida Rápida', tt: '⏱️ Contra o Relógio' }[mode];
+    const cupDef = this._activeCup();
+    $('#setupTitle').textContent = { gp: '🏆 Grande Prêmio', race: '🏁 Corrida Rápida', tt: '⏱️ Contra o Relógio' }[mode];
     const segOn = (sel, val) => $$(sel + ' button').forEach(b => b.classList.toggle('on', +b.dataset.n === val));
     segOn('#playerCount', s.nPlayers);
     segOn('#lapCount', s.laps);
     segOn('#difficulty', s.difficulty);
     segOn('#autoAccel', s.autoAccel);
-    $('#diffBox').style.visibility = mode === 'tt' ? 'hidden' : 'visible';
+    // na Copa Infinita o computador fica mais esperto sozinho a cada copa
+    $('#diffBox').style.visibility = mode === 'tt' || (mode === 'gp' && cupDef.infinite) ? 'hidden' : 'visible';
     $('#trackRow').style.display = mode === 'gp' ? 'none' : 'flex';
     $('#cupRow').style.display = mode === 'gp' ? 'flex' : 'none';
 
@@ -286,9 +309,32 @@ class App {
       el.addEventListener('click', () => { s.trackId = t.id; audio.play('select'); this._renderSetup(); });
       list.appendChild(el);
     }
+    // 🎲 Pista Surpresa: uma pista gerada nova a cada sorteio
+    list.appendChild(this._surpriseCard(s.surpriseId, s.trackId === s.surpriseId,
+      () => { s.trackId = s.surpriseId; audio.play('select'); this._renderSetup(); },
+      () => { s.surpriseId = s.trackId = GEN_PREFIX + randomSeed(); audio.play('confirm'); this._renderSetup(); },
+      id => {
+        const st = this.stars[id] || [];
+        const rec = this.records[id];
+        return [0, 1, 2].map(k => (st[k] ? '⭐' : '☆')).join('') + (mode === 'tt' && rec ? ' • ' + formatTime(rec) : '');
+      }));
+
+    // copa do Grande Prêmio: Copa Marileo ou Copa Infinita
+    $$('#cupMode button').forEach(b => b.classList.toggle('on', b.dataset.c === s.cup));
+    $('#infPick').hidden = !cupDef.infinite;
+    if (cupDef.infinite) {
+      const n = cupDef.number;
+      $('#infName').textContent = `Copa ${n}`;
+      $('#infPrev').disabled = n <= 1;
+      $('#infNext').disabled = n >= this.infinite.unlocked;
+      $('#infNext').textContent = n >= this.infinite.unlocked ? '🔒' : '▶';
+      const best = this.infinite.best[n];
+      const ai = cupDef.aiDifficulty < 0.5 ? 'Fácil' : cupDef.aiDifficulty < 1.5 ? 'Normal' : 'Difícil';
+      $('#infInfo').textContent = `${best ? `Melhor: ${best}º lugar` : 'Copa nova!'} • Computador: ${ai}`;
+    }
     const cup = $('#cupList');
     cup.innerHTML = '';
-    CUP.tracks.forEach((id, n) => {
+    cupDef.tracks.forEach((id, n) => {
       const t = getTrack(id);
       const el = document.createElement('div');
       el.className = 'track';
@@ -302,9 +348,36 @@ class App {
   _thumbCanvas(id) {
     const c = document.createElement('canvas');
     c.width = 300; c.height = 170;
-    c.getContext('2d').drawImage(this.thumbs[id], 0, 0);
+    // pistas geradas ganham a miniatura na hora em que aparecem
+    if (!this.thumbs[id]) { const def = getTrack(id); if (def) this.thumbs[id] = this._trackThumb(def); }
+    if (this.thumbs[id]) c.getContext('2d').drawImage(this.thumbs[id], 0, 0);
     return c;
   }
+
+  // Cartão "🎲 Pista Surpresa" (Corrida Rápida, Contra o Relógio e sala online).
+  _surpriseCard(id, on, onPick, onReroll, extra) {
+    const t = getTrack(id);
+    const el = document.createElement('div');
+    el.className = 'track surprise' + (on ? ' on' : '');
+    el.appendChild(this._thumbCanvas(id));
+    el.insertAdjacentHTML('beforeend', `<div class="sname">🎲 ${esc(t.name)}</div>${extra ? `<div class="stars">${extra(id)}</div>` : ''}`);
+    const b = document.createElement('button');
+    b.className = 'reroll';
+    b.textContent = '🎲 Outra';
+    b.title = 'Sortear outra pista surpresa';
+    b.addEventListener('click', e => { e.stopPropagation(); onReroll(); });
+    el.appendChild(b);
+    el.addEventListener('click', onPick);
+    return el;
+  }
+
+  // Copa escolhida para o Grande Prêmio: { name, tracks, infinite?, number?, aiDifficulty? }
+  _activeCup() {
+    const s = this.settings;
+    return s.cup === 'infinita' ? infiniteCup(s.infCup) : CUP;
+  }
+
+  _saveInfinite() { save('marileo_infinite', this.infinite); }
 
   _changeChar(i, d) {
     const p = this.settings.players[i];
@@ -342,7 +415,7 @@ class App {
       const used = new Set(players.map(p => p.char));
       const ai = CHARACTERS.map((_, i) => i).filter(i => !used.has(i));
       while (ai.length < 8 - players.length) ai.push(Math.floor(Math.random() * CHARACTERS.length));
-      this.gp = { index: 0, points: {}, aiChars: ai.slice(0, 8 - players.length), players, grid: null };
+      this.gp = { index: 0, points: {}, aiChars: ai.slice(0, 8 - players.length), players, grid: null, cup: this._activeCup() };
       this.startGPRace();
     } else {
       this.startRace({ mode: s.mode, trackId: s.trackId, laps: s.laps, difficulty: s.difficulty, autoAccel: !!s.autoAccel, players });
@@ -352,8 +425,9 @@ class App {
   startGPRace() {
     const s = this.settings;
     const g = this.gp;
+    const cup = g.cup;
     this.startRace({
-      mode: 'gp', trackId: CUP.tracks[g.index], laps: s.laps, difficulty: s.difficulty, autoAccel: !!s.autoAccel,
+      mode: 'gp', trackId: cup.tracks[g.index], laps: s.laps, difficulty: cup.infinite ? cup.aiDifficulty : s.difficulty, autoAccel: !!s.autoAccel,
       players: g.players, aiChars: g.aiChars, gridOrder: g.grid,
     });
   }
@@ -378,6 +452,16 @@ class App {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, n >= 3 ? 1 : n === 2 ? 1.25 : 1.5));
     this.race = new Race(this, cfg);
     this.show('race');
+    ads.gameplayStart();
+  }
+
+  // Mostra o intervalo comercial (se as regras deixarem) e só depois segue para a próxima corrida.
+  async _adBreak(next, cfg) {
+    if (this._adBusy) return;
+    this._adBusy = true;
+    try { await ads.interstitial('race_end', { online: !!(cfg && cfg.online) }); } catch (e) { /* nunca trava o jogo */ }
+    this._adBusy = false;
+    next();
   }
 
   // Corrida online: cada aparelho monta a mesma corrida com o seu kart.
@@ -400,15 +484,18 @@ class App {
     $('#quitBtn').textContent = online ? '🚪 Sair da sala' : '🏠 Sair para o menu';
     audio.play('back');
     this.show('pause');
+    ads.gameplayStop();
   }
 
   resume() {
     this.paused = false;
     audio.play('confirm');
     this.show('race');
+    ads.gameplayStart();
   }
 
   toMenu() {
+    ads.gameplayStop();
     this.paused = false;
     this.gp = null;
     if (this.online.connected) this.online.leave(true);
@@ -417,6 +504,7 @@ class App {
   }
 
   onRaceFinished(race) {
+    ads.gameplayStop();
     const cfg = race.cfg;
     const res = race.results();
     const def = race.def;
@@ -435,8 +523,8 @@ class App {
       chalHTML = `<h3>⭐ Desafios — ${def.name}</h3>` + now.map(n => `
         <div class="chal ${n.done ? 'done' : ''}"><span class="star">⭐</span><div>${n.c.text}
         <div style="font-size:13px;opacity:.8">${n.done ? 'Conseguiu: ' + n.who.map(k => k.netName ? esc(k.netName) : 'J' + (k.playerIndex + 1)).join(', ') : (n.wasDone ? 'Já conquistado antes' : 'Ainda não...')}</div></div></div>`).join('');
-      const total = Object.values(this.stars).reduce((a, s) => a + s.filter(Boolean).length, 0);
-      chalHTML += `<p class="hint">Total de estrelas: <b>${total} / ${TRACKS.length * 3}</b></p>`;
+      const total = TRACKS.reduce((a, t) => a + (this.stars[t.id] || []).filter(Boolean).length, 0);
+      chalHTML += `<p class="hint">Total de estrelas: <b>${total} / ${TRACKS.length * 3}</b>${def.generated ? ' (pistas fixas)' : ''}</p>`;
     } else {
       const best = Math.min(...humans.map(k => k.finishTime));
       const rec = this.records[def.id];
@@ -474,7 +562,8 @@ class App {
         <td>${r.estimated ? '~' : ''}${formatTime(r.time)}</td>${pts}</tr>`;
     }).join('');
     $('#resultsTable').innerHTML = rows;
-    const title = cfg.mode === 'gp' ? `Corrida ${this.gp.index + 1}/${CUP.tracks.length} — ${def.name}` : def.name;
+    const gcup = cfg.mode === 'gp' ? this.gp.cup : null;
+    const title = gcup ? `${gcup.infinite ? `Copa ${gcup.number} • ` : ''}Corrida ${this.gp.index + 1}/${gcup.tracks.length} — ${def.name}` : def.name;
     $('#resultsTitle').textContent = title;
 
     const acts = $('#resultsActions');
@@ -486,15 +575,15 @@ class App {
       if (this.online.isHost) btn('⚡ Revanche: mesma pista', 'mid', () => this.online.rematch());
       btn('🚪 Sair da sala', 'mid ghost', () => this.online.leave());
     } else if (cfg.mode === 'gp') {
-      if (this.gp.index < CUP.tracks.length - 1) {
-        const next = getTrack(CUP.tracks[this.gp.index + 1]);
-        btn(`▶ Próxima: ${next.name}`, 'big go', () => { this.gp.index++; this.startGPRace(); });
+      if (this.gp.index < this.gp.cup.tracks.length - 1) {
+        const next = getTrack(this.gp.cup.tracks[this.gp.index + 1]);
+        btn(`▶ Próxima: ${next.name}`, 'big go', () => this._adBreak(() => { this.gp.index++; this.startGPRace(); }, cfg));
       } else {
         btn('🏆 Ver o pódio!', 'big go', () => this.showPodium());
       }
       btn('🏠 Sair', 'mid ghost', () => this.toMenu());
     } else {
-      btn('🔄 Correr de novo', 'big go', () => this.startRace(cfg));
+      btn('🔄 Correr de novo', 'big go', () => this._adBreak(() => this.startRace(cfg), cfg));
       btn('🗺️ Escolher outra pista', 'mid', () => { this.startDemo(); this.show('setup'); });
       btn('🏠 Menu', 'mid ghost', () => this.toMenu());
     }
@@ -529,6 +618,37 @@ class App {
     $('#podiumTable').innerHTML = entries.map((e, i) => `<tr class="${e.info.human ? 'human' : ''}"><td>${i + 1}º</td><td><img src="${this.portraits[e.info.char]}">${e.info.name}${e.info.human ? ` <span class="tag" style="background:${PLAYER_COLORS[e.info.playerIndex]}">J${e.info.playerIndex + 1}</span>` : ''}</td><td class="pts">${e.pts} pts</td></tr>`).join('');
     const humanWin = entries[0] && entries[0].info.human;
     $('#podiumTitle').textContent = humanWin ? `🏆 J${entries[0].info.playerIndex + 1} é o grande campeão! 🏆` : '🏆 Campeões da Copa! 🏆';
+    const acts = $('#podiumActions');
+    acts.innerHTML = '';
+    const btn = (label, cls, fn) => {
+      const b = document.createElement('button');
+      b.className = cls; b.textContent = label;
+      b.addEventListener('click', () => { audio.play('confirm'); fn(); });
+      acts.appendChild(b);
+    };
+    let note = '';
+    if (g.cup.infinite) {
+      // melhor colocação de um jogador na classificação final da copa
+      const n = g.cup.number;
+      const place = entries.findIndex(e => e.info.human) + 1;
+      if (place > 0) {
+        const inf = this.infinite;
+        inf.best[n] = Math.min(inf.best[n] || 99, place);
+        const won = place <= 3;
+        if (won && inf.unlocked < n + 1) { inf.unlocked = n + 1; note = `🔓 Copa ${n + 1} liberada!`; }
+        else if (!won && inf.unlocked <= n) note = `Termine entre os 3 primeiros para liberar a Copa ${n + 1}.`;
+        this._saveInfinite();
+      }
+      const again = num => { Object.assign(g, { index: 0, points: {}, grid: null, cup: infiniteCup(num) }); this.startGPRace(); };
+      if (this.infinite.unlocked > n) {
+        btn('▶ Próxima copa', 'big go', () => { this.settings.infCup = n + 1; save('marileo_settings', this.settings); again(n + 1); });
+      } else {
+        btn('🔄 Tentar de novo', 'big go', () => again(n));
+      }
+    }
+    $('#podiumNote').textContent = note;
+    $('#podiumNote').hidden = !note;
+    btn('🏠 Menu principal', g.cup.infinite ? 'mid ghost' : 'big', () => this.toMenu());
     audio.play('finish');
     this.show('podium');
   }
@@ -547,7 +667,7 @@ class App {
   }
 
   _menuInput() {
-    if (this.screen === 'race' || this.screen === 'loading') {
+    if (ads.showing || this.screen === 'race' || this.screen === 'loading') {
       // continua lendo para as "bordas" (apertou agora) não vazarem para o próximo menu
       for (const m of this.menuInputs) m.poll();
       return;

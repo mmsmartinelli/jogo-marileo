@@ -17,6 +17,8 @@ import { clamp, damp, dampAngle, lerp } from './utils.js';
 
 const DIFF_SPEED = [0.84, 0.94, 1.0];
 const DIFF_SKILL = [0.3, 0.55, 0.85];
+// dificuldade pode ser fracionária (Copa Infinita sobe aos poucos): interpola a tabela
+const diffVal = (arr, d) => { d = clamp(d ?? 1, 0, arr.length - 1); const i = Math.min(arr.length - 2, Math.floor(d)); return lerp(arr[i], arr[i + 1], d - i); };
 
 export class Race {
   // cfg: { mode: 'race'|'gp'|'tt'|'demo', trackId, laps, difficulty, autoAccel,
@@ -98,7 +100,7 @@ export class Race {
         this.humans.push(k);
         if (cfg.mode === 'tt') { k.item = 'turbo3'; k.itemCount = 3; }
       } else {
-        const sk = cfg.mode === 'demo' ? 0.7 : DIFF_SKILL[cfg.difficulty ?? 1];
+        const sk = cfg.mode === 'demo' ? 0.7 : diffVal(DIFF_SKILL, cfg.difficulty);
         this.drivers.set(k, new AIDriver(k, this, clamp(sk + (Math.random() - 0.5) * 0.3, 0, 1)));
       }
     });
@@ -319,7 +321,7 @@ export class Race {
   }
 
   _rubberBand() {
-    const base = this.cfg.mode === 'demo' ? 0.95 : DIFF_SPEED[this.cfg.difficulty ?? 1];
+    const base = this.cfg.mode === 'demo' ? 0.95 : diffVal(DIFF_SPEED, this.cfg.difficulty);
     let best = -Infinity, worst = Infinity;
     for (const h of this.humans) { best = Math.max(best, h.progressTotal); worst = Math.min(worst, h.progressTotal); }
     for (const [k] of this.drivers) {

@@ -18,8 +18,10 @@ export class Track {
     this.group = new THREE.Group();
     this.animated = [];
     this.disposables = [];
-    this.noise = makeNoise2D(def.id.length * 131 + 7);
-    this.rand = rng(def.id.charCodeAt(0) * 977 + def.id.length);
+    // pistas geradas trazem a própria semente do cenário; 'style' = tema de origem (vale, deserto...)
+    this.style = def.style || def.id;
+    this.noise = makeNoise2D(def.sceneSeed ? def.sceneSeed % 100000 : def.id.length * 131 + 7);
+    this.rand = rng(def.sceneSeed || def.id.charCodeAt(0) * 977 + def.id.length);
     this.shadows = opts.shadows !== false;
     scene.add(this.group);
 
@@ -339,7 +341,7 @@ export class Track {
     this._strip(-hw - 1.3, -hw + 0.25, 0.07, 0.07, 0, 1, this.length / cReps, curbMat);
     this._strip(hw - 0.25, hw + 1.3, 0.07, 0.07, 1, 0, this.length / cReps, curbMat);
 
-    const shTex = TX.groundTexture(th.shoulder, 9, !this.def.lava && !this.def.city && this.def.id !== 'deserto');
+    const shTex = TX.groundTexture(th.shoulder, 9, !this.def.lava && !this.def.city && this.style !== 'deserto');
     const shMat = new THREE.MeshStandardMaterial({ map: shTex, roughness: 0.95 });
     const sw = this.shoulder + 0.8;
     this._strip(-hw - sw, -hw, -0.01, -0.01, 0, sw / 10, 10, shMat);
@@ -411,7 +413,7 @@ export class Track {
     }
     g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     g.computeVertexNormals();
-    const tex = TX.groundTexture(th.ground, 4, !this.def.lava && !this.def.city && this.def.id !== 'deserto' && this.def.id !== 'neve');
+    const tex = TX.groundTexture(th.ground, 4, !this.def.lava && !this.def.city && this.style !== 'deserto' && this.style !== 'neve');
     const mat = new THREE.MeshStandardMaterial({ map: tex, vertexColors: true, roughness: 0.95 });
     const terrain = new THREE.Mesh(g, mat);
     terrain.receiveShadow = true;

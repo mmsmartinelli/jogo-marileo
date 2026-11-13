@@ -1,4 +1,6 @@
 // Definição das fases (pistas). Coordenadas em [x, y(altura), z].
+import { generateTrack, isGenId, seedOf } from './trackgen.js';
+
 // Features: t = posição ao longo da pista (0..1), lat = deslocamento lateral (-1 = borda esquerda... 1 = direita).
 
 export const TRACKS = [
@@ -270,4 +272,6 @@ export const TRACKS = [
 
 export const CUP = { name: 'Copa Marileo', tracks: ['vale', 'deserto', 'neve', 'doce', 'vulcao', 'osasco'] };
 
-export const getTrack = id => TRACKS.find(t => t.id === id);
+// Pistas geradas ('gen-<semente>') vêm do gerador; as feitas à mão, da lista acima.
+// (trackgen.js também importa este arquivo, mas só usa TRACKS dentro das funções.)
+export const getTrack = id => TRACKS.find(t => t.id === id) || (isGenId(id) ? generateTrack(seedOf(id)) : undefined);

@@ -189,7 +189,7 @@ export class Obstacles {
     const t = this.track;
     const p = t.pointAt(f.t, f.lat || 0);
     const fr = this._frame(p.idx);
-    const kind = f.kind || (this.track.def.id === 'doce' ? 'candy' : 'stone');
+    const kind = f.kind || ((this.track.def.style || this.track.def.id) === 'doce' ? 'candy' : 'stone');
     const g = new THREE.Group();
     const col = { candy: 0xff7ab8, stone: 0x7a7f8f, rock: 0x3a2a28 }[kind] || 0x7a7f8f;
     const block = new THREE.Mesh(new THREE.BoxGeometry(5, 5, 5), new THREE.MeshStandardMaterial({ color: col, roughness: 0.7, flatShading: true }));

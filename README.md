@@ -78,7 +78,8 @@ pode não acontecer — nesse caso, usem o mesmo Wi-Fi.
 
 ## 🌟 O que tem no jogo
 
-- **3 modos:** Grande Prêmio (copa com 6 corridas e pódio), Corrida Rápida e Contra o Relógio (com recorde salvo).
+- **3 modos:** Grande Prêmio (Copa Marileo com 6 corridas ou a Copa Infinita, com pódio), Corrida Rápida e Contra o Relógio (com recorde salvo).
+- **Pistas infinitas:** 🎲 Pista Surpresa e ♾️ Copa Infinita, com pistas geradas na hora (veja abaixo).
 - **6 fases:** Vale Verdejante 🌳, Deserto Dourado 🏜️, Pico Nevado ❄️, Reino Doce 🍭, Vulcão Flamejante 🌋 e a **Super Osasco 🌭**.
 - **Super Osasco:** a maior pista do jogo, no fim de tarde com as janelas acesas. Tem o Dogão gigante na largada,
   bandos de pombos na pista (saem voando quando o kart chega — e às vezes deixam um “presente” na tela!),
@@ -98,6 +99,25 @@ pode não acontecer — nesse caso, usem o mesmo Wi-Fi.
 - Computador em 3 níveis de dificuldade, com ajuste automático para a corrida ficar sempre disputada.
 - Música e efeitos sonoros gerados na hora (sem arquivos de áudio).
 
+## ♾️ Pistas infinitas
+
+O jogo nunca fica sem fases: além das 6 pistas feitas à mão, ele **cria pistas novas sozinho**.
+
+- **🎲 Pista Surpresa:** na Corrida Rápida e no Contra o Relógio, o último cartão da lista de pistas
+  é uma pista sorteada na hora (com nome, tema, obstáculos, desafios ⭐ e música próprios).
+  Toque em **🎲 Outra** para sortear outra. Recordes e estrelas ficam guardados para cada pista surpresa.
+- **♾️ Copa Infinita:** no Grande Prêmio, escolha entre a **Copa Marileo** (as 6 pistas de sempre) e a
+  **Copa Infinita**: Copa 1, Copa 2, Copa 3... sem fim. Cada copa tem 4 pistas geradas e fica um pouco
+  mais difícil (curvas mais fechadas, mais obstáculos e o computador mais esperto). Terminar a copa
+  entre os 3 primeiros libera a próxima; com ◀ ▶ dá para jogar de novo as copas já liberadas.
+  O progresso e a melhor colocação de cada copa ficam salvos no aparelho.
+- **Online:** o anfitrião também pode escolher a 🎲 Pista Surpresa. Só o número da pista é enviado
+  e cada aparelho monta exatamente a mesma pista.
+
+Cada pista gerada sai de um número (semente): a mesma semente cria sempre a mesma pista. O gerador
+confere o traçado antes de usar (comprimento, curvas não muito fechadas, trechos sem encostar uns nos
+outros e reta de largada comprida) e, se algo não estiver bom, tenta de novo com outra variação.
+
 ## 🛠️ Tecnologia
 
 - [three.js](https://threejs.org/) r160, carregado da CDN jsDelivr (precisa de internet na primeira abertura; o app instalado guarda uma cópia)
@@ -112,7 +132,8 @@ js/kart.js        física do kart (derrapagem, saltos, colisões)
 js/track.js       construção 3D das pistas, terreno, céu e cenário
 js/city.js        cenário da Super Osasco (prédios, pontos da cidade, ponte, trem)
 js/pigeons.js     os pombos (desenho e animação)
-js/tracks.js      definição das 5 fases (traçado, tema, obstáculos, desafios)
+js/tracks.js      definição das 6 fases (traçado, tema, obstáculos, desafios)
+js/trackgen.js    gerador de pistas infinitas (Pista Surpresa e Copa Infinita)
 js/items.js       caixas surpresa e itens
 js/obstacles.js   moedas, turbos, rampas, barris, pilões, gêiseres, poças
 js/ai.js          pilotos do computador

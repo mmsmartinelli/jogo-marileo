@@ -3,6 +3,7 @@ import { Net, normalizeCode } from './net.js';
 import { CHARACTERS } from './characters.js';
 import { TRACKS, getTrack } from './tracks.js';
 import { audio } from './audio.js';
+import { GEN_PREFIX, randomSeed } from './trackgen.js';
 
 export const MAX_PLAYERS = 8;
 const $ = s => document.querySelector(s);
@@ -360,6 +361,11 @@ export class Online {
         el.addEventListener('click', () => { this.settings.trackId = t.id; this._settingsChanged(); });
         tracks.appendChild(el);
       }
+      // 🎲 Pista Surpresa: manda só o id 'gen-<semente>'; cada aparelho gera a mesma pista
+      if (!this.surpriseId) this.surpriseId = GEN_PREFIX + randomSeed();
+      tracks.appendChild(this.app._surpriseCard(this.surpriseId, this.settings.trackId === this.surpriseId,
+        () => { this.settings.trackId = this.surpriseId; this._settingsChanged(); },
+        () => { this.surpriseId = this.settings.trackId = GEN_PREFIX + randomSeed(); this._settingsChanged(); }));
       document.querySelectorAll('#onLaps button').forEach(b => b.classList.toggle('on', +b.dataset.n === this.settings.laps));
       document.querySelectorAll('#onDiff button').forEach(b => b.classList.toggle('on', +b.dataset.n === this.settings.difficulty));
       $('#onWait').textContent = this.members.length < 2
