@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marileo Kart — teste de anúncios</title>
+<link rel="stylesheet" href="css/ads.css">
+<style>
+  body { margin: 0; padding: 16px; font: 15px/1.4 system-ui, sans-serif; background: #12142e; color: #eef; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  fieldset { border: 1px solid #44487a; border-radius: 10px; margin: 12px 0; padding: 10px 14px; }
+  legend { padding: 0 6px; color: #ffd23f; }
+  label { margin-right: 14px; white-space: nowrap; }
+  button, select, input { font: inherit; padding: 6px 12px; border-radius: 8px; border: 1px solid #6a6fb0; background: #232650; color: #fff; }
+  button { cursor: pointer; }
+  button.main { background: #2f7bff; border-color: #2f7bff; }
+  #log { height: 220px; overflow: auto; background: #070816; border: 1px solid #333764; border-radius: 8px; padding: 8px; font: 12px/1.45 ui-monospace, monospace; white-space: pre-wrap; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0; }
+  .fake { margin-top: 10px; padding: 10px; background: #1a1d44; border-radius: 8px; }
+</style>
+</head>
+<body>
+<h1>Teste da camada de anúncios</h1>
+<div>Esta página não carrega o jogo. Estado do "jogo": <b id="gameState">jogando</b> <span id="sndState"></span></div>
+
+<fieldset>
+  <legend>Configuração</legend>
+  <div class="row">
+    <label><input type="checkbox" id="cEnabled" checked> enabled</label>
+    <label><input type="checkbox" id="cTest" checked> test</label>
+    <label><input type="checkbox" id="cOnline"> corrida online</label>
+    <label><input type="checkbox" id="cNoads"> removeAds (marileo_noads)</label>
+  </div>
+  <div class="row">
+    <label>plataforma
+      <select id="cPlatform">
+        <option value="web">web (h5, house)</option>
+        <option value="house">somente house</option>
+        <option value="crazygames">crazygames</option>
+        <option value="poki">poki</option>
+        <option value="native">native (precisa do app / simulação)</option>
+      </select>
+    </label>
+    <label>intervalo mínimo (s) <input id="cMin" type="number" value="90" style="width:70px"></label>
+    <label><input type="checkbox" id="cSkipFirst" checked> pular a 1ª corrida</label>
+  </div>
+  <div class="row">
+    <button id="bApply">Aplicar</button>
+    <button id="bNative">Simular app nativo (AndroidApp)</button>
+    <button id="bReset">Zerar sessão</button>
+  </div>
+</fieldset>
+
+<fieldset>
+  <legend>Disparar</legend>
+  <div class="row">
+    <button class="main" id="bInter">interstitial('race_end')</button>
+    <button class="main" id="bRew">rewarded('bonus')</button>
+    <button id="bStats">stats()</button>
+    <button id="bClear">limpar log</button>
+  </div>
+  <div class="fake">Simulação de corrida: cada clique em interstitial conta como "uma corrida terminada".</div>
+</fieldset>
+
+<div id="log"></div>
+
+<script type="module">
+import { ads } from './js/ads.js';
+
+const $ = id => document.getElementById(id);
+const log = (...a) => { const l = $('log'); l.textContent += new Date().toLocaleTimeString() + '  ' + a.map(x => typeof x === 'string' ? x : JSON.stringify(x)).join(' ') + '\n'; l.scrollTop = l.scrollHeight; };
+window.__log = log;
+
+// campanha com imagem (SVG embutido) só para testar o layout
+const svg = encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb020"/><stop offset="1" stop-color="#ff3b8f"/></linearGradient></defs><rect width="600" height="400" fill="url(#g)"/><text x="300" y="230" font-size="110" text-anchor="middle" fill="#fff" font-family="sans-serif" font-weight="800">PÃO</text></svg>');
+ads.configure({
+  house: { countdown: 5 },
+  houseCampaigns: [
+    { id: 'teste-texto', title: 'Jogue com os amigos!', text: 'Crie uma sala online e corra com a turma toda.', weight: 1 },
+    { id: 'teste-imagem', title: 'Padaria Pão Quente', text: 'Pão fresquinho todo dia às 6h!', image: 'data:image/svg+xml,' + svg, url: 'https://example.com/', linkLabel: 'Conhecer a padaria', weight: 1 },
+  ],
+});
+const q = new URLSearchParams(location.search);
+if (q.get('campaign') === 'text') ads.configure({ houseCampaigns: ads.config.houseCampaigns.slice(0, 1) });
+if (q.get('campaign') === 'image') ads.configure({ houseCampaigns: ads.config.houseCampaigns.slice(1) });
+
+ads.onPause = () => { $('gameState').textContent = 'PAUSADO (anúncio na tela, áudio mudo)'; log('onPause'); };
+ads.onResume = () => { $('gameState').textContent = 'jogando'; log('onResume'); };
+ads.isSoundOn = () => true;
+
+function apply() {
+  ads.configure({
+    enabled: $('cEnabled').checked, test: $('cTest').checked,
+    platform: $('cPlatform').value === 'house' ? 'web' : $('cPlatform').value,
+    minSecondsBetween: +$('cMin').value, skipFirstRace: $('cSkipFirst').checked,
+    providers: { web: $('cPlatform').value === 'house' ? ['house'] : ['h5', 'house'] },
+    h5: { client: 'ca-pub-1234567890123456' },
+  });
+  try { localStorage.setItem('marileo_noads', $('cNoads').checked ? '1' : '0'); } catch (e) { /* */ }
+  ads.init();
+  log('config aplicada; plataforma =', ads.platform, '; enabled =', ads.config.enabled);
+}
+$('bApply').onclick = apply;
+$('bReset').onclick = () => { ads.reset(); log('sessão zerada'); };
+$('bClear').onclick = () => { $('log').textContent = ''; };
+$('bStats').onclick = () => log('stats', ads.stats());
+$('bNative').onclick = () => {
+  // imita o app: chama __adStarted, espera 1,5 s e chama __adDone
+  window.AndroidApp = {
+    showInterstitial(p) { log('[app] showInterstitial', p); setTimeout(() => window.__adStarted && window.__adStarted(), 200); setTimeout(() => window.__adDone({ shown: true }), 1700); },
+    showRewarded(p) { log('[app] showRewarded', p); setTimeout(() => window.__adStarted && window.__adStarted(), 200); setTimeout(() => window.__adDone({ rewarded: true }), 1700); },
+  };
+  log('AndroidApp simulado instalado. Escolha a plataforma "native" e Aplicar.');
+};
+$('bInter').onclick = async () => {
+  log('> interstitial()...');
+  const t = performance.now();
+  const r = await ads.interstitial('race_end', { online: $('cOnline').checked });
+  log('< interstitial', r, Math.round(performance.now() - t) + 'ms');
+};
+$('bRew').onclick = async () => {
+  log('> rewarded()...');
+  const r = await ads.rewarded('bonus');
+  log('< rewarded', r);
+};
+window.__apply = apply;
+apply();
+</script>
+</body>
+</html>

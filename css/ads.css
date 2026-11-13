@@ -1,0 +1,118 @@
+/* Marileo Kart — anúncios próprios (patrocinadores). Veja docs/ANUNCIOS.md */
+.mk-ad {
+  position: fixed; inset: 0; z-index: 2000;
+  display: flex; align-items: center; justify-content: center;
+  padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  background: radial-gradient(ellipse at 50% 40%, rgba(40, 44, 120, .985), rgba(8, 10, 30, .995));
+  color: #fff; font-family: var(--font-body, 'Baloo 2', system-ui, sans-serif);
+  -webkit-user-select: none; user-select: none; touch-action: manipulation;
+  animation: mk-ad-in .25s ease-out;
+}
+.mk-ad *, .mk-ad *::before, .mk-ad *::after { box-sizing: border-box; }
+@keyframes mk-ad-in { from { opacity: 0; } to { opacity: 1; } }
+
+.mk-ad__card {
+  position: relative; width: min(94vw, 760px); max-height: 100%;
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 34px 22px 18px;
+  background: linear-gradient(160deg, #2f7bff 0%, #6a3cff 55%, #ff3b8f 130%);
+  border: 3px solid rgba(255, 255, 255, .35); border-radius: 22px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .6);
+  overflow: hidden;
+}
+.mk-ad__tag {
+  position: absolute; top: 10px; left: 14px;
+  font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  padding: 2px 10px; border-radius: 999px; background: rgba(0, 0, 0, .35); color: #ffe27a;
+}
+.mk-ad__body { display: flex; flex-direction: row; align-items: stretch; gap: 18px; min-height: 0; flex: 1 1 auto; }
+.mk-ad__media {
+  flex: 0 0 44%; min-height: 0; border-radius: 14px; overflow: hidden;
+  background: rgba(0, 0, 0, .25); display: flex; align-items: center; justify-content: center;
+}
+.mk-ad__media img { width: 100%; height: 100%; max-height: 52vh; object-fit: cover; display: block; -webkit-user-drag: none; }
+.mk-ad__tap { cursor: pointer; }
+.mk-ad__text { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+.mk-ad__title {
+  margin: 0; font-family: var(--font-title, 'Lilita One', system-ui, sans-serif); font-weight: 400;
+  font-size: clamp(26px, 5vw, 44px); line-height: 1.05; text-shadow: 0 3px 0 rgba(0, 0, 0, .25);
+  overflow-wrap: anywhere;
+}
+.mk-ad__desc { margin: 0; font-size: clamp(16px, 2.6vw, 22px); line-height: 1.25; font-weight: 700; opacity: .96; overflow-wrap: anywhere; }
+.mk-ad:not(.mk-ad--x) .mk-ad__card:not(.mk-ad--img) .mk-ad__text { text-align: center; align-items: center; padding: 8px 4px; }
+
+.mk-ad button {
+  font: inherit; font-weight: 800; color: #fff; cursor: pointer; border: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.mk-ad button:focus-visible { outline: 3px solid #ffe27a; outline-offset: 2px; }
+.mk-ad__link {
+  align-self: flex-start; margin-top: 4px; padding: 8px 16px; font-size: 16px;
+  background: rgba(255, 255, 255, .18); border: 2px solid rgba(255, 255, 255, .5) !important; border-radius: 999px;
+}
+.mk-ad__card:not(.mk-ad--img) .mk-ad__link { align-self: center; }
+.mk-ad__bar { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+.mk-ad__go {
+  min-width: 220px; padding: 12px 26px; font-size: 22px; border-radius: 16px;
+  font-family: var(--font-title, 'Lilita One', system-ui, sans-serif); font-weight: 400;
+  background: rgba(255, 255, 255, .22); color: rgba(255, 255, 255, .8); cursor: default !important;
+}
+.mk-ad__go.ready {
+  background: linear-gradient(#52e08f, #1fb865); color: #0b2a18; cursor: pointer !important;
+  box-shadow: 0 5px 0 #138a4a, 0 10px 24px rgba(0, 0, 0, .35); animation: mk-ad-pop .5s ease-out;
+}
+.mk-ad__go.ready:active { transform: translateY(3px); box-shadow: 0 2px 0 #138a4a; }
+@keyframes mk-ad-pop { 0% { transform: scale(.85); } 60% { transform: scale(1.06); } 100% { transform: scale(1); } }
+.mk-ad__cancel { margin-right: auto; padding: 10px 14px; background: transparent; text-decoration: underline; opacity: .85; font-size: 16px; }
+
+/* portão dos pais */
+.mk-ad__gate {
+  position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center;
+  padding: 12px; background: rgba(5, 6, 20, .88);
+}
+.mk-ad__gate[hidden] { display: none; }
+.mk-ad__gatebox {
+  width: min(92vw, 420px); max-height: 100%; overflow: auto; text-align: center;
+  background: #fff; color: #16163a; border-radius: 20px; padding: 18px 20px; box-shadow: 0 14px 50px rgba(0, 0, 0, .6);
+}
+.mk-ad__gatebox h3 { margin: 0; font-size: 24px; font-family: var(--font-title, 'Lilita One', system-ui, sans-serif); font-weight: 400; }
+.mk-ad__gatebox p { margin: 4px 0; font-size: 18px; font-weight: 700; }
+.mk-ad__gateicon { font-size: 30px; line-height: 1; }
+.mk-ad__host { font-size: 14px !important; opacity: .65; overflow-wrap: anywhere; }
+.mk-ad__hold {
+  position: relative; display: block; width: 100%; margin: 10px 0 6px; padding: 14px 10px; font-size: 20px;
+  border-radius: 14px; overflow: hidden; color: #16163a !important; background: #e3e6ff; touch-action: none;
+  --p: 0;
+}
+.mk-ad__hold::before {
+  content: ''; position: absolute; inset: 0; width: calc(var(--p) * 100%); background: #ffd23f; z-index: -1;
+}
+.mk-ad__hold { isolation: isolate; }
+.mk-ad__gatecancel { padding: 8px 14px; background: transparent; color: #16163a !important; text-decoration: underline; font-size: 16px; }
+
+/* celular na horizontal / telas baixas */
+@media (max-height: 420px) {
+  .mk-ad { padding: 6px 10px; }
+  .mk-ad__card { gap: 6px; padding: 26px 14px 10px; border-radius: 16px; }
+  .mk-ad__tag { top: 6px; left: 10px; font-size: 11px; }
+  .mk-ad__body { gap: 12px; }
+  .mk-ad__media img { max-height: 58vh; }
+  .mk-ad__title { font-size: clamp(22px, 5.5vh, 32px); }
+  .mk-ad__desc { font-size: clamp(14px, 4.2vh, 18px); }
+  .mk-ad__link { padding: 5px 12px; font-size: 14px; margin-top: 0; }
+  .mk-ad__go { min-width: 190px; padding: 8px 20px; font-size: 19px; border-radius: 13px; }
+  .mk-ad__gatebox { padding: 10px 16px; }
+  .mk-ad__gatebox h3 { font-size: 20px; }
+  .mk-ad__gatebox p { font-size: 15px; margin: 2px 0; }
+  .mk-ad__gateicon { display: none; }
+  .mk-ad__hold { padding: 9px 8px; font-size: 17px; margin: 6px 0 2px; }
+}
+/* celular em pé */
+@media (orientation: portrait) and (max-width: 600px) {
+  .mk-ad__body { flex-direction: column; }
+  .mk-ad__media { flex: 0 0 auto; }
+  .mk-ad__media img { max-height: 34vh; }
+  .mk-ad__link { align-self: center; }
+  .mk-ad__go { width: 100%; min-width: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .mk-ad, .mk-ad__go.ready { animation: none; } }
