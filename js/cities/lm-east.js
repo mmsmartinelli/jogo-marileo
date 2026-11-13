@@ -19,6 +19,11 @@ function chhatri(ctx, g, x, y, z, s, col = 0xf6f2ea) {
   g.add(box(2.8 * s, 0.4 * s, 2.8 * s, ctx.P(col), x, y + 2.6 * s, z));
   g.add(geo(onionGeo(1.3 * s, 2.4 * s, 8), ctx.P(col, 'smooth'), x, y + 2.8 * s, z));
 }
+// Cupulazinha branca (fileira em cima de portões e muralhas).
+function miniDome(ctx, g, x, y, z, s, col = 0xf6f2ea) {
+  g.add(box(1.6 * s, 0.5 * s, 1.6 * s, ctx.P(col), x, y + 0.25 * s, z));
+  g.add(geo(onionGeo(0.75 * s, 1.6 * s, 6), ctx.P(col, 'smooth'), x, y + 0.5 * s, z));
+}
 // Minarete com sacadas.
 function minaret(ctx, g, x, z, h, r, col, top = 'onion') {
   g.add(cyl(r * 0.8, r, h, ctx.P(col, 'smooth'), x, h / 2, z, 10));
@@ -157,54 +162,157 @@ export const LANDMARKS_B = {
   },
 
   // ======================= AGRA =======================
+  // Complexo do Taj Mahal: portão vermelho de entrada virado para a pista, jardim em
+  // quatro partes (charbagh) com o espelho d'água no eixo, chafarizes, ciprestes e
+  // canteiros de flores; ao fundo o terraço vermelho com a mesquita, o mausoléu de
+  // mármore (bem grande, aparece de longe) e os quatro minaretes.
   tajMahal: {
-    w: 100, d: 116, scale: 1.3,
+    w: 170, d: 196,
     build(ctx, g) {
-      const marble = 0xfaf7f0, marbleS = ctx.P(marble, 'smooth');
-      // jardim com o espelho d'água apontando para a pista
-      g.add(geo(new THREE.PlaneGeometry(100, 116).rotateX(-Math.PI / 2), ctx.P(0x5fae48, 'flat'), 0, 0.08, 0));
-      g.add(geo(new THREE.PlaneGeometry(10, 64).rotateX(-Math.PI / 2), ctx.P(0xd8ccb8, 'flat'), 0, 0.12, 22));
-      g.add(geo(new THREE.PlaneGeometry(6, 60).rotateX(-Math.PI / 2), ctx.P(0x3f9ad8, 'glow'), 0, 0.18, 22));
-      g.add(geo(new THREE.PlaneGeometry(90, 6).rotateX(-Math.PI / 2), ctx.P(0xd8ccb8, 'flat'), 0, 0.12, 24));
-      for (let z = -4; z <= 50; z += 9) for (const s of [-1, 1]) ctx.tree(...(p => [p.x, p.z])(ctx.world(g, s * 9, 0, z)), 0.9, 'cypress');
-      for (const s of [-1, 1]) for (let z = -2; z <= 50; z += 13) ctx.tree(...(p => [p.x, p.z])(ctx.world(g, s * 34, 0, z)), 1.1);
-      // plataforma, mausoléu, cúpula e minaretes
-      const Z = -30;
-      g.add(box(64, 6, 52, ctx.P(0xf2ece0), 0, 3, Z));
-      const M = new THREE.Group(); M.position.set(0, 6, Z); g.add(M);
-      M.add(geo(new THREE.CylinderGeometry(19, 19, 26, 8).rotateY(Math.PI / 8), ctx.P(marble), 0, 13, 0));
-      for (let f = 0; f < 4; f++) {
-        const a = f * Math.PI / 2;
-        const arch = geo(archWallGeo(14, 22, 1.2, 4.2, 9, true), ctx.P(0xe8e2d4), Math.sin(a) * 17.8, 0, Math.cos(a) * 17.8);
-        arch.rotation.y = a; M.add(arch);
-        const inset = geo(new THREE.PlaneGeometry(8, 15), ctx.P(0xc8bca8, 'lit'), Math.sin(a) * 17.5, 8, Math.cos(a) * 17.5);
-        inset.rotation.y = a; M.add(inset);
+      const W = 170, D = 196, Zf = D / 2 - 6, Zc = 24, Zt = -58, Zg = -28; // portão, cruzamento, mausoléu, fim do jardim
+      const marble = 0xf7f3ea, red = 0xb04a2a, redD = 0x8e3a20, white = 0xf6f0e4;
+      const water = ctx.P(0x4a9fd8, 'smooth'), rim = ctx.P(0xeee6d6), redP = ctx.P(red), redDP = ctx.P(redD);
+      const flat = c => ctx.P(c, 'flat');
+      const T = (x, z, s, kind) => { const p = ctx.world(g, x, 0, z); ctx.tree(p.x, p.z, s, kind); };
+      // piso de arenito claro e os 16 gramados do charbagh (dois tons, em xadrez)
+      g.add(geo(new THREE.PlaneGeometry(W - 4, D - 4).rotateX(-Math.PI / 2), flat(0xdccfb6), 0, 0.05, -2));
+      const xs = [[-80, -50], [-46, -16], [16, 46], [50, 80]];
+      const zs = [[Zg + 2, (Zc + Zg) / 2 - 2], [(Zc + Zg) / 2 + 2, Zc - 5], [Zc + 5, (Zc + Zf) / 2 - 2], [(Zc + Zf) / 2 + 2, Zf - 8]];
+      xs.forEach(([x0, x1], a) => zs.forEach(([z0, z1], b) => {
+        g.add(geo(new THREE.PlaneGeometry(x1 - x0, z1 - z0).rotateX(-Math.PI / 2), flat((a + b) % 2 ? 0x4f9e3c : 0x62b24c), (x0 + x1) / 2, 0.1, (z0 + z1) / 2));
+      }));
+      // canteiros de flores dos dois lados do eixo
+      const fl = [0xff5e9c, 0xffb02e, 0xffe14d, 0xb98cff, 0xff7b3b];
+      for (const s of [-1, 1]) for (let k = 0; k < 10; k++) {
+        const z0 = Zf - 14 - k * 11;
+        if (Math.abs(z0 - Zc) < 10 || z0 < Zg + 4) continue;
+        g.add(box(2.2, 0.5, 8, ctx.P(fl[(k + (s > 0 ? 2 : 0)) % fl.length]), s * 12.5, 0.25, z0));
       }
+      // espelho d'água no eixo (aponta para a pista) e o canal que cruza o jardim
+      const L = Zf - 10 - Zg, zm = (Zf - 10 + Zg) / 2;
+      g.add(box(6, 0.3, L, water, 0, 0.2, zm));
+      for (const s of [-1, 1]) g.add(box(1.4, 0.7, L, rim, s * 3.7, 0.35, zm));
+      g.add(box(W - 12, 0.3, 4.5, water, 0, 0.2, Zc));
+      for (const s of [-1, 1]) g.add(box(W - 12, 0.7, 1.2, rim, 0, 0.35, Zc + s * 2.9));
+      // tanque central de mármore com chafariz
+      g.add(box(18, 1, 18, rim, 0, 0.5, Zc));
+      g.add(box(14, 0.4, 14, water, 0, 1.0, Zc));
+      g.add(cyl(1.2, 1.6, 2.2, rim, 0, 1.6, Zc, 8));
+      g.add(cone(0.5, 4.5, ctx.P(0xe6f6ff, 'smooth'), 0, 4.6, Zc, 6));
+      // chafarizes ao longo do espelho d'água
+      for (let z = Zf - 18; z > Zg + 4; z -= 10) if (Math.abs(z - Zc) > 10) g.add(cone(0.22, 2.4, ctx.P(0xe6f6ff, 'smooth'), 0, 1.5, z, 5));
+      // ciprestes alinhados no eixo e no canal; árvores grandes nos canteiros
+      for (let z = Zf - 16; z > Zg + 2; z -= 8) if (Math.abs(z - Zc) > 8) for (const s of [-1, 1]) T(s * 8, z, 0.95, 'cypress');
+      for (let x = 14; x < W / 2 - 8; x += 10) for (const s of [-1, 1]) for (const dz of [-6, 6]) T(s * x, Zc + dz, 0.85, 'cypress');
+      for (const x of [-48, 48]) for (const z of [Zf - 30, Zc - 26]) T(x, z, 1.25);
+      // muro de arenito vermelho em volta do jardim, com pavilhões octogonais nos cantos
+      const wallH = 5;
+      for (const s of [-1, 1]) {
+        g.add(box(W / 2 - 20, 2.2, 2, redP, s * (W / 4 + 10), 1.1, Zf)); // muro baixo na frente: dá para ver o jardim da pista
+        g.add(box(W / 2 - 20, 0.6, 2.4, ctx.P(white), s * (W / 4 + 10), 2.5, Zf));
+        g.add(box(2, wallH, Zf - Zg, redP, s * (W / 2 - 1), wallH / 2, (Zf + Zg) / 2));
+        for (const z of [Zf, Zg]) {
+          g.add(cyl(4, 4.4, 9, redP, s * (W / 2 - 1), 4.5, z, 8));
+          chhatri(ctx, g, s * (W / 2 - 1), 9, z, 1.4);
+        }
+      }
+      // portão de entrada (darwaza) com arco ogival, moldura branca e cupulazinhas
+      const GW = 38, GH = 28;
+      g.add(geo(archWallGeo(GW, GH, 12, 5.5, 11, true), redP, 0, 0, Zf));
+      for (const fz of [-1, 1]) {
+        const z = Zf + fz * 6.1;
+        g.add(box(16, 0.9, 0.4, ctx.P(white), 0, 23, z));
+        for (const sx of [-1, 1]) g.add(box(0.9, 23, 0.4, ctx.P(white), sx * 8, 11.5, z));
+        g.add(box(GW - 4, 1, 0.4, ctx.P(white), 0, GH - 2.5, z));
+      }
+      for (const sx of [-1, 1]) {
+        g.add(cyl(2.4, 2.8, GH + 3, redDP, sx * (GW / 2), (GH + 3) / 2, Zf + 5, 8));
+        chhatri(ctx, g, sx * (GW / 2), GH + 3, Zf + 5, 1.2);
+      }
+      for (let k = 0; k < 9; k++) miniDome(ctx, g, -GW / 2 + 4 + k * (GW - 8) / 8, GH, Zf + 4.5, 1.1);
+      // terraço vermelho, plataforma de mármore e o mausoléu
+      g.add(box(W - 4, 2.5, 70, redP, 0, 1.25, Zt - 5));
+      g.add(box(102, 6, 76, ctx.P(0xf2ece0), 0, 5.5, Zt));
+      for (const sx of [-1, 1]) g.add(box(0.6, 4, 76.4, ctx.P(0xd8ccb8), sx * 51, 5.5, Zt));
+      const S = 1.6;
+      const M = new THREE.Group(); M.position.set(0, 8.5, Zt); M.scale.setScalar(S); g.add(M);
+      const marbleS = ctx.P(marble, 'smooth');
+      M.add(geo(new THREE.CylinderGeometry(19, 19, 26, 8).rotateY(Math.PI / 8), ctx.P(marble), 0, 13, 0));
+      for (let f = 0; f < 8; f++) {
+        const a = f * Math.PI / 4, big = f % 2 === 0;
+        const r = big ? 17.8 : 16.9;
+        const arch = geo(archWallGeo(big ? 14 : 9, big ? 22 : 12, 1.2, big ? 4.2 : 2.4, big ? 9 : 5, true), ctx.P(0xece6d8), Math.sin(a) * r, 0, Math.cos(a) * r);
+        arch.rotation.y = a; M.add(arch);
+        const inset = geo(new THREE.PlaneGeometry(big ? 8 : 4.6, big ? 15 : 8), ctx.P(0xb8ab96, 'lit'), Math.sin(a) * (r - 0.3), big ? 8 : 4.5, Math.cos(a) * (r - 0.3));
+        inset.rotation.y = a; M.add(inset);
+        if (!big) { const up = geo(archWallGeo(9, 11, 1.2, 2.4, 4.5, true), ctx.P(0xece6d8), Math.sin(a) * r, 13, Math.cos(a) * r); up.rotation.y = a; M.add(up); }
+      }
+      M.add(box(16, 1.2, 1, ctx.P(0x9a8a70), 0, 23.4, 18.4)); // faixa de caligrafia (escura)
       M.add(cyl(10, 10, 7, marbleS, 0, 29.5, 0, 16));
       M.add(geo(onionGeo(13, 24, 18), marbleS, 0, 33, 0));
       M.add(cone(0.5, 7, ctx.P(0xd8b04a, 'metal'), 0, 59, 0, 6));
+      M.add(sphere(0.9, ctx.P(0xd8b04a, 'metal'), 0, 56.5, 0, 6, 4));
       for (const [x, z] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) chhatri(ctx, M, x * 11, 26, z * 11, 2.1);
+      const lights = [M];
       for (const [x, z] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
-        const mg = new THREE.Group(); mg.position.set(x * 29, 6, Z + z * 23); g.add(mg);
+        const mg = new THREE.Group(); mg.position.set(x * 45, 8.5, Zt + z * 33); mg.scale.setScalar(S); g.add(mg);
         minaret(ctx, mg, 0, 0, 34, 1.7, marble);
+        lights.push(mg);
+      }
+      // no pôr do sol e à noite o mármore fica iluminado (holofotes)
+      if (ctx.glow > 0.6) for (const o of lights) o.traverse(m => { if (m.isMesh && (m.material === ctx.mats.solid || m.material === ctx.mats.smooth)) m.material = ctx.mats.lit; });
+      // mesquita e "jawab" de arenito vermelho com três cúpulas brancas, dos dois lados
+      for (const s of [-1, 1]) {
+        const mq = new THREE.Group(); mq.position.set(s * 68, 2.5, Zt); mq.rotation.y = -s * Math.PI / 2; g.add(mq);
+        mq.add(box(36, 13, 22, redP, 0, 6.5, -2));
+        for (let k = -1; k <= 1; k++) {
+          mq.add(geo(archWallGeo(10, 11, 1, 2.6, 5, true), redDP, k * 11, 0, 9.2));
+          mq.add(box(7.5, 1, 0.3, ctx.P(white), k * 11, 11.6, 9.8));
+          const dr = k === 0 ? 5 : 3.6;
+          mq.add(cyl(dr, dr, 2.4, ctx.P(white), k * 11, 14.2, -2, 10));
+          mq.add(geo(onionGeo(dr * 1.1, dr * 2.2, 10), ctx.P(white, 'smooth'), k * 11, 15.4, -2));
+        }
+        for (const x of [-18, 18]) miniDome(ctx, mq, x, 13, 9, 1.4);
       }
     },
   },
+  // Forte Vermelho: muralha de arenito com ameias, bastiões redondos, o portão alto entre
+  // duas torres octogonais, pavilhões de mármore aparecendo atrás e o fosso na frente.
   forteVermelho: {
-    w: 96, d: 34,
+    w: 124, d: 52,
     build(ctx, g) {
-      const red = 0xb8502e, redP = ctx.P(red), redD = ctx.P(0x9a4024);
-      g.add(box(90, 14, 10, redP, 0, 7, -8));
-      crenellate(ctx, g, -44, 44, 14, -3.6, redD, 3, 1.4);
-      for (const s of [-1, 1]) {
-        g.add(geo(new THREE.CylinderGeometry(7, 8, 22, 8), redP, s * 12, 11, -4));
-        chhatri(ctx, g, s * 12, 22, -4, 2.2, 0xf6f2ea);
-        g.add(geo(new THREE.CylinderGeometry(4.5, 5, 16, 8), redP, s * 44, 8, -6));
-        chhatri(ctx, g, s * 44, 16, -6, 1.5, 0xf6f2ea);
+      const redP = ctx.P(0xc85a34), redD = ctx.P(0xa84a2a), white = 0xf6f2ea;
+      g.add(geo(new THREE.PlaneGeometry(124, 9).rotateX(-Math.PI / 2), ctx.P(0x3f8fc0, 'flat'), 0, 0.12, 20));
+      g.add(geo(new THREE.PlaneGeometry(124, 4).rotateX(-Math.PI / 2), ctx.P(0x6aa84a, 'flat'), 0, 0.1, 25.5));
+      g.add(box(118, 15, 9, redP, 0, 7.5, 6));
+      g.add(box(118.4, 0.8, 9.4, ctx.P(0xd8b49a), 0, 11.5, 6));
+      crenellate(ctx, g, -58, 58, 15, 10, redD, 3, 1.5);
+      for (const x of [-57, -36, 36, 57]) {
+        g.add(cyl(6, 6.8, 17, redP, x, 8.5, 9, 10));
+        g.add(cyl(6.3, 6.3, 1.2, redD, x, 17.6, 9, 10));
+        if (Math.abs(x) < 40) chhatri(ctx, g, x, 18.2, 9, 1.6, white);
       }
-      g.add(geo(archWallGeo(18, 20, 6, 3.8, 9, true), redP, 0, 0, -1));
-      g.add(box(7.4, 12, 0.6, ctx.P(0x3a2018), 0, 6, -3.8));
-      for (let x = -3; x <= 3; x++) chhatri(ctx, g, x * 2.4, 20, -1, 0.7, 0xf6f2ea);
+      // portão alto entre duas torres octogonais
+      g.add(geo(archWallGeo(30, 25, 14, 4.6, 10, true), redP, 0, 0, 10));
+      g.add(box(9.4, 14.6, 0.5, ctx.P(0x3a2018), 0, 7.3, 3.2));
+      for (const s of [-1, 1]) {
+        g.add(box(0.8, 20, 0.4, ctx.P(white), s * 7.5, 10, 17.1));
+        g.add(geo(new THREE.CylinderGeometry(5.2, 5.8, 31, 8).rotateY(Math.PI / 8), redP, s * 16, 15.5, 11));
+        chhatri(ctx, g, s * 16, 31, 11, 2.1, white);
+      }
+      g.add(box(16, 0.8, 0.4, ctx.P(white), 0, 20.4, 17.1));
+      for (let k = 0; k < 7; k++) miniDome(ctx, g, -9 + k * 3, 25, 13, 1, white);
+      // bandeira laranja em cima do portão
+      g.add(cyl(0.12, 0.12, 8, ctx.P(0xdddddd), 0, 29, 8, 5));
+      g.add(box(4, 2.4, 0.1, ctx.P(0xff8a1a), 2, 31.6, 8));
+      // pavilhões de mármore atrás da muralha
+      for (const s of [-1, 1]) {
+        g.add(box(26, 22, 14, ctx.P(white), s * 26, 11, -12));
+        for (let k = -1; k <= 1; k++) {
+          g.add(cyl(2.8, 2.8, 1.6, ctx.P(white), s * 26 + k * 8, 22.8, -12, 8));
+          g.add(geo(onionGeo(3, 6, 8), ctx.P(0xfffaf0, 'smooth'), s * 26 + k * 8, 23.6, -12));
+        }
+      }
     },
   },
   portaoVermelho: {
@@ -216,6 +324,14 @@ export const LANDMARKS_B = {
       for (const fz of [-1, 1]) {
         g.add(box(W - 6, 1.2, 0.6, white, 0, H - 6, fz * 7.3));
         for (const s of [-1, 1]) g.add(box(1, H - 8, 0.6, white, s * (a + 1.2), (H - 8) / 2, fz * 7.3));
+        // nichos escuros, rosetas brancas e estrela verde nos pilares
+        for (const s of [-1, 1]) {
+          const x = s * (a + 6.6), z = fz * 7.35;
+          g.add(box(4.2, 9, 0.3, ctx.P(0x5a2416), x, 9, z));
+          g.add(box(5.4, 0.6, 0.4, white, x, 14, z));
+          const ro = cyl(1.8, 1.8, 0.3, white, x, H - 15, z, 8); ro.rotation.x = Math.PI / 2; g.add(ro);
+          const st = box(1.7, 1.7, 0.4, ctx.P(0x2f8a7a), x, H - 15, z + fz * 0.12); st.rotation.z = Math.PI / 4; g.add(st);
+        }
       }
       for (let k = 0; k < 11; k++) chhatri(ctx, g, -W / 2 + 4 + k * (W - 8) / 10, H, 0, 1.1);
       for (const s of [-1, 1]) { const mg = new THREE.Group(); mg.position.set(s * (W / 2 + 1.5), 0, 0); g.add(mg); minaret(ctx, mg, 0, 0, H + 6, 1.6, 0xb8502e); }
