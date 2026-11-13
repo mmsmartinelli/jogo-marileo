@@ -1,4 +1,4 @@
-/* Marileo Kart — anúncios próprios (patrocinadores). Veja docs/ANUNCIOS.md */
+/* Race Cities — anúncios próprios (patrocinadores). Veja docs/ANUNCIOS.md */
 .mk-ad {
   position: fixed; inset: 0; z-index: 2000;
   display: flex; align-items: center; justify-content: center;

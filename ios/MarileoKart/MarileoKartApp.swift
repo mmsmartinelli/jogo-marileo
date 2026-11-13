@@ -1,6 +1,7 @@
-// App iOS do Marileo Kart: o jogo vem guardado dentro do app (pasta "www")
+// App iOS do Race Cities: o jogo vem guardado dentro do app (pasta "www")
 // e roda numa WKWebView em tela cheia, deitado, funcionando até sem internet
 // (só o modo Online com Amigos precisa de conexão).
+// Anúncios (Google AdMob, intervalo + recompensa): GameAds.swift.
 import SwiftUI
 import WebKit
 import UniformTypeIdentifiers
@@ -27,6 +28,9 @@ final class GameViewController: UIViewController, WKNavigationDelegate, WKUIDele
     static let scheme = "marileo"
     static let startURL = URL(string: "marileo://localhost/index.html")!
     private var web: WKWebView!
+    private lazy var ads = GameAds(host: self) { [weak self] code in
+        self?.web?.evaluateJavaScript(code + "; 0", completionHandler: nil)
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -43,6 +47,9 @@ final class GameViewController: UIViewController, WKNavigationDelegate, WKUIDele
         let bridge = "window.IOSApp = { share: function (t) { window.webkit.messageHandlers.share.postMessage(String(t)); } };"
         config.userContentController.addUserScript(WKUserScript(source: bridge, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         config.userContentController.add(WeakHandler(self), name: "share")
+        // anúncios (js/ads.js, provedor "native") e links de patrocinador (depois do portão dos pais)
+        config.userContentController.add(WeakHandler(self), name: "ads")
+        config.userContentController.add(WeakHandler(self), name: "openurl")
 
         web = WKWebView(frame: view.bounds, configuration: config)
         web.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -99,7 +106,30 @@ final class GameViewController: UIViewController, WKNavigationDelegate, WKUIDele
     }
 
     func userContentController(_ ucc: WKUserContentController, didReceive message: WKScriptMessage) {
-        guard message.name == "share", let text = message.body as? String else { return }
+        switch message.name {
+        case "ads":
+            // {action: 'prepare'|'interstitial'|'rewarded', placement, test, childDirected}
+            guard let d = message.body as? [String: Any] else { return }
+            let action = (d["action"] as? String) ?? (d["type"] as? String) ?? ""
+            let test = (d["test"] as? Bool) ?? true
+            switch action {
+            case "prepare": ads.prepare(test: test)
+            case "interstitial": ads.prepare(test: test); ads.showInterstitial()
+            case "rewarded": ads.prepare(test: test); ads.showRewarded()
+            default: break
+            }
+        case "openurl":
+            guard let s = message.body as? String, let u = URL(string: s),
+                  let scheme = u.scheme?.lowercased(), scheme == "https" || scheme == "http" else { return }
+            UIApplication.shared.open(u)
+        case "share":
+            if let text = message.body as? String { share(text) }
+        default:
+            break
+        }
+    }
+
+    private func share(_ text: String) {
         let sheet = UIActivityViewController(activityItems: [text], applicationActivities: nil)
         if let pop = sheet.popoverPresentationController { // iPad
             pop.sourceView = view

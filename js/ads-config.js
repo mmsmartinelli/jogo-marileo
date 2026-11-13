@@ -1,4 +1,4 @@
-// Marileo Kart — configuração dos anúncios.
+// Race Cities — configuração dos anúncios.
 // É AQUI que o estúdio liga/desliga os anúncios e cadastra patrocinadores.
 // Guia completo (em português): docs/ANUNCIOS.md
 //
@@ -58,8 +58,13 @@ export const ADS_CONFIG = {
   native: {
     timeoutMs: 90000,       // espera máxima pelo retorno do app (window.__adDone)
     startTimeoutMs: 6000,   // o app precisa chamar window.__adStarted() ou window.__adDone() em até X ms
-    // IDs de TESTE oficiais do Google (AdMob). Troque pelos reais na hora de publicar.
-    // Eles são usados no código nativo do app, listados aqui só para referência.
+    // Os apps (Google AdMob) NÃO precisam de nenhum ID aqui. Os IDs ficam:
+    //   Android: android/ads.properties      iOS: ios/project.yml (ADMOB_*)
+    // Com `enabled: true` o jogo avisa o app (ads.init) e só então o app liga o SDK do Google.
+    // Com `test: true` (ou numa versão de desenvolvimento) o app usa SEMPRE os blocos de teste
+    // do Google, mesmo que os IDs reais já estejam colocados.
+    // Para mostrar anúncios SÓ nos apps (e nada no site): providers.web: [] (ou ['house']).
+    // IDs de TESTE oficiais do Google, só para referência:
     testIds: {
       androidInterstitial: 'ca-app-pub-3940256099942544/1033173712',
       androidRewarded: 'ca-app-pub-3940256099942544/5224354917',

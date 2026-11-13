@@ -1,7 +1,8 @@
-# Marileo Kart na App Store — passo a passo
+# Race Cities na App Store — passo a passo
 
-O app de iPhone/iPad está pronto em `ios/`. O jogo vai **guardado dentro do app** e funciona sem
-internet (só o modo Online com Amigos precisa de conexão). Não é preciso ter Mac: o GitHub compila
+O app de iPhone/iPad (**Race Cities**, da **Marileo Studios**) está pronto em `ios/`. O jogo vai
+**guardado dentro do app** e funciona sem internet (só o modo Online com Amigos e os anúncios precisam
+de conexão). Não é preciso ter Mac: o GitHub compila
 o app num Mac da nuvem (`.github/workflows/ios.yml`).
 
 ## 1. Conta de desenvolvedor Apple (só o dono pode fazer)
@@ -11,9 +12,12 @@ o app num Mac da nuvem (`.github/workflows/ios.yml`).
 
 ## 2. Criar o app no App Store Connect
 1. <https://appstoreconnect.apple.com> → **Apps** → **+** → **Novo app**.
-2. Plataforma **iOS** · Nome **Marileo Kart** · Idioma principal **Português (Brasil)**
-   · ID do pacote **com.martinelli.marileokart** (se não aparecer na lista, crie em
-   developer.apple.com → Certificates, IDs & Profiles → Identifiers → +) · SKU **marileokart**.
+2. Plataforma **iOS** · Nome **Race Cities** · Idioma principal **Português (Brasil)**
+   · ID do pacote **com.marileostudios.racecities** (se não aparecer na lista, crie em
+   developer.apple.com → Certificates, IDs & Profiles → Identifiers → +) · SKU **racecities**.
+3. **Categoria:** principal **Jogos**, subcategoria **Corrida**. **NÃO marque a categoria "Crianças"
+   (Kids)** — veja a seção 6. Classificação etária: responda o questionário (sem violência
+   realista etc.) → deve dar **4+**.
 
 ## 3. Chave para o GitHub enviar o app
 1. App Store Connect → **Usuários e acesso** → **Integrações** → **Chaves da API do App Store Connect**
@@ -40,7 +44,40 @@ Use os textos de `ios/AppStore/textos.md` e as fotos de `ios/AppStore/screenshot
 (`iphone-*` = iPhone 6,9", `ipad-*` = iPad 13"). Escolha a versão (build) enviada pelo GitHub e
 toque em **Enviar para revisão**. A Apple costuma responder em 1 a 3 dias.
 
+> Confira se os textos e fotos de `ios/AppStore/` já usam o nome **Race Cities** antes de enviar. Evite "para crianças"/"infantil" no nome, subtítulo e
+> palavras-chave (diretriz 2.3.8 da Apple): descreva como jogo **para toda a família**.
+
+## 6. Anúncios (Google AdMob)
+O app já vem com o **Google AdMob** (intervalo depois da corrida e "assista e ganhe"), hoje com os
+**IDs de TESTE** do Google, e só liga quando `js/ads-config.js` estiver com `enabled: true`.
+
+**Onde colar os IDs reais** (quando a conta AdMob existir — passo a passo completo em
+`docs/ANUNCIOS.md`, seção 8): abra `ios/project.yml` e troque as 3 linhas:
+
+```yaml
+    ADMOB_APP_ID: ca-app-pub-3940256099942544~1458002511          # ID do app iOS no AdMob (tem "~")
+    ADMOB_INTERSTITIAL_ID: ca-app-pub-3940256099942544/4411468910 # bloco "Intersticial" (tem "/")
+    ADMOB_REWARDED_ID: ca-app-pub-3940256099942544/1712485313     # bloco "Premiado" (tem "/")
+```
+Depois gere uma nova versão (seção 4). Enquanto `js/ads-config.js` tiver `test: true`, o app mostra
+anúncios de teste mesmo com os IDs reais.
+
+**Regras da Apple que já foram decididas:**
+- **Fora da categoria "Crianças" (Kids).** A diretriz 1.3 diz que apps dessa categoria não devem ter
+  publicidade de terceiros. O Race Cities vai como jogo **4+ para toda a família**, categoria Corrida.
+- O app **não pede permissão de rastreamento** (não aparece "Permitir que o app rastreie…"): os
+  anúncios são sem personalização, com tratamento de criança e classificação máxima G.
+- **Privacidade do app** (App Store Connect → seu app → Privacidade do app): com anúncios **não é mais
+  "Dados não coletados"**. Declare o que o SDK do Google coleta (tabela em `docs/ANUNCIOS.md`, seção 6):
+  Dados de falhas, Dados de desempenho, ID do dispositivo, Dados de publicidade, Interação com o produto
+  e Localização aproximada — finalidade "Publicidade de terceiros" (e "Análises"). Confirme com o
+  jurídico se marca "vinculado à identidade"/"rastreamento" (nossa leitura: não).
+- Atualize a política de privacidade (`privacidade.html`) dizendo que há anúncios do Google AdMob.
+
 ## Para desenvolvedores
-- `node ios/build-web.mjs` copia o jogo para `ios/www` e baixa three.js, PeerJS e as fontes.
-- `cd ios && xcodegen generate` cria o `MarileoKart.xcodeproj` (abre no Xcode, se tiver um Mac).
+- `node ios/build-web.mjs` copia o jogo para `ios/www` e baixa three.js, PeerJS e as fontes
+  (o app Android usa o mesmo script: `node ios/build-web.mjs <pasta>/www`).
+- `cd ios && xcodegen generate` cria o `MarileoKart.xcodeproj` (abre no Xcode, se tiver um Mac); o
+  Xcode baixa sozinho o pacote `GoogleMobileAds` (Swift Package Manager).
+- Anúncios: `ios/MarileoKart/GameAds.swift`; contrato com o jogo em `docs/ANUNCIOS.md`, Apêndice C.
 - Ícone 1024×1024: `ios/tools/icon.html` (desenhado com os próprios karts do jogo).

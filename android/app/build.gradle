@@ -1,0 +1,119 @@
+// Race Cities — módulo do app Android.
+plugins {
+    id 'com.android.application'
+}
+
+// ---------- valores que vêm de fora (ambiente > gradle.properties > padrão) ----------
+def prop = { String name, String fallback = null ->
+    def env = System.getenv(name)
+    if (env != null && !env.trim().isEmpty()) return env.trim()
+    def p = project.findProperty(name)
+    return (p != null && !p.toString().trim().isEmpty()) ? p.toString().trim() : fallback
+}
+
+// IDs do AdMob: android/ads.properties (ou variáveis ADMOB_*)
+def adsProps = new Properties()
+def adsFile = rootProject.file('ads.properties')
+if (adsFile.exists()) adsFile.withInputStream { adsProps.load(it) }
+def admob = { String env, String key -> prop(env, adsProps.getProperty(key)) }
+def ADMOB_APP_ID = admob('ADMOB_APP_ID', 'admob.appId') ?: 'ca-app-pub-3940256099942544~3347511713'
+def ADMOB_INTERSTITIAL_ID = admob('ADMOB_INTERSTITIAL_ID', 'admob.interstitialId') ?: 'ca-app-pub-3940256099942544/1033173712'
+def ADMOB_REWARDED_ID = admob('ADMOB_REWARDED_ID', 'admob.rewardedId') ?: 'ca-app-pub-3940256099942544/5224354917'
+
+// Assinatura da versão da loja: nunca coloque a chave nem as senhas no repositório.
+def keystorePath = prop('ANDROID_KEYSTORE_FILE')
+def hasReleaseKey = keystorePath != null && file(keystorePath).exists()
+
+// O jogo vai dentro do APK (pasta assets/www), gerado por ios/build-web.mjs.
+def remoteGame = prop('remoteGame', 'false') == 'true'
+def gameRoot = rootProject.file('..')
+def webOut = layout.buildDirectory.dir('generated/webgame')
+
+android {
+    namespace = 'com.marileostudios.racecities'
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = 'com.marileostudios.racecities'
+        minSdk = 24
+        targetSdk = 36
+        versionCode = prop('VERSION_CODE', prop('appVersionCode', '1')).toInteger()
+        versionName = prop('VERSION_NAME', prop('appVersionName', '1.0'))
+
+        manifestPlaceholders = [admobAppId: ADMOB_APP_ID]
+        resValue 'string', 'admob_interstitial_id', ADMOB_INTERSTITIAL_ID
+        resValue 'string', 'admob_rewarded_id', ADMOB_REWARDED_ID
+    }
+
+    signingConfigs {
+        release {
+            if (hasReleaseKey) {
+                storeFile = file(keystorePath)
+                storePassword = prop('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias = prop('ANDROID_KEY_ALIAS')
+                keyPassword = prop('ANDROID_KEY_PASSWORD', prop('ANDROID_KEYSTORE_PASSWORD'))
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled = false
+            // sem chave configurada, assina com a chave de depuração (o build nunca falha por isso)
+            signingConfig = hasReleaseKey ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    buildFeatures {
+        buildConfig = true
+        resValues = true
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    sourceSets {
+        main {
+            if (!remoteGame) assets.srcDir(webOut)
+        }
+    }
+
+    androidResources {
+        // não comprimir os arquivos do jogo (o WebView lê mais rápido)
+        noCompress += ['js', 'css', 'html', 'png', 'woff2', 'json']
+    }
+}
+
+dependencies {
+    implementation 'com.google.android.gms:play-services-ads:25.5.0'
+    implementation 'androidx.webkit:webkit:1.18.0'
+}
+
+// ---------- copia o jogo para dentro do APK ----------
+def buildWeb = tasks.register('buildWebGame', Exec) {
+    description = 'Copia o jogo (index.html, js, css, icons) e as bibliotecas para assets/www.'
+    inputs.file(new File(gameRoot, 'index.html'))
+    inputs.dir(new File(gameRoot, 'js'))
+    inputs.dir(new File(gameRoot, 'css'))
+    inputs.dir(new File(gameRoot, 'icons'))
+    inputs.file(new File(gameRoot, 'ios/build-web.mjs'))
+    outputs.dir(webOut)
+    def out = webOut.get().dir('www').asFile
+    commandLine 'node', new File(gameRoot, 'ios/build-web.mjs').absolutePath, out.absolutePath
+    doFirst {
+        if (!out.parentFile.exists()) out.parentFile.mkdirs()
+    }
+}
+if (!remoteGame) {
+    tasks.named('preBuild') { dependsOn buildWeb }
+}
+
+if (!hasReleaseKey) {
+    gradle.taskGraph.whenReady { graph ->
+        if (graph.allTasks.any { it.name.toLowerCase().contains('release') }) {
+            logger.warn('AVISO: ANDROID_KEYSTORE_FILE não configurado — a versão release será assinada com a chave de DEPURAÇÃO (não serve para a Google Play).')
+        }
+    }
+}

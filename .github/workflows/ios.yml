@@ -1,4 +1,4 @@
-# Compila o app de iPhone num Mac do GitHub.
+# Compila o app de iPhone (Race Cities) num Mac do GitHub.
 # - A cada mudança no jogo: confere se o app compila (sem precisar de conta Apple).
 # - "Run workflow" (Actions → iOS → Run workflow): gera o app assinado e envia para o
 #   App Store Connect / TestFlight. Precisa dos segredos do repositório:
@@ -35,11 +35,17 @@ jobs:
       - name: Gera o projeto Xcode
         run: cd ios && xcodegen generate
 
+      - name: Baixa o SDK de anúncios do Google (Swift Package)
+        run: |
+          xcodebuild -resolvePackageDependencies -project ios/MarileoKart.xcodeproj -scheme MarileoKart \
+            -skipPackagePluginValidation -skipMacroValidation
+
       - name: Compila (simulador, sem assinatura)
         if: github.event_name == 'push'
         run: |
           xcodebuild -project ios/MarileoKart.xcodeproj -scheme MarileoKart -configuration Release \
             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -skipPackagePluginValidation -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO -quiet build
 
       - name: Gera e envia para o App Store Connect
@@ -61,6 +67,7 @@ jobs:
           xcodebuild -project ios/MarileoKart.xcodeproj -scheme MarileoKart -configuration Release \
             -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/MarileoKart.xcarchive" \
             DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic CURRENT_PROJECT_VERSION="$BUILD" \
+            -skipPackagePluginValidation -skipMacroValidation \
             $AUTH -quiet archive
           sed "s/TEAM_ID/$TEAM_ID/" ios/ExportOptions.plist > "$RUNNER_TEMP/ExportOptions.plist"
           xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/MarileoKart.xcarchive" \

@@ -1,0 +1,111 @@
+# Compila o app Android (Race Cities) num computador do GitHub.
+# - A cada mudança no app ou no jogo: gera o APK de teste (debug) e guarda em "Artifacts".
+# - "Run workflow" (Actions → Android → Run workflow): gera o APK e o AAB (o arquivo que vai
+#   para a Google Play) da versão final, assinados com a chave do estúdio.
+#   Segredos do repositório (Settings → Secrets and variables → Actions):
+#     ANDROID_KEYSTORE_B64      a chave (.jks) em base64:  base64 -w0 race-cities.jks
+#     ANDROID_KEYSTORE_PASSWORD senha da chave
+#     ANDROID_KEY_ALIAS         apelido (alias) da chave
+#     ANDROID_KEY_PASSWORD      senha do alias (se for a mesma, repita)
+#   Criar a chave (uma vez só, guarde em lugar seguro; perder = não dá para atualizar o app):
+#     keytool -genkeypair -v -keystore race-cities.jks -alias racecities -keyalg RSA -keysize 4096 -validity 10000
+#   Sem os segredos, a versão final é assinada com uma chave de teste (serve para instalar, não para a loja).
+name: Android
+
+on:
+  push:
+    paths: ['android/**', 'ios/build-web.mjs', 'js/**', 'css/**', 'icons/**', 'index.html', '.github/workflows/android.yml']
+  workflow_dispatch:
+    inputs:
+      versao:
+        description: 'Nome da versão (ex.: 1.2). O número interno (versionCode) é automático.'
+        type: string
+        default: '1.0'
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Node (copia o jogo para dentro do app)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Android SDK 36
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0" > /dev/null
+          chmod +x android/gradlew
+
+      - name: Compila o APK de teste (debug)
+        if: github.event_name == 'push'
+        working-directory: android
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Guarda o APK de teste
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-cities-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          retention-days: 14
+
+      - name: Prepara a chave de assinatura
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "Chave do estúdio encontrada."
+          else
+            echo "::warning::Sem o segredo ANDROID_KEYSTORE_B64: a versão final sai assinada com chave de TESTE (não serve para a Google Play)."
+          fi
+
+      - name: Gera a versão final (APK + AAB)
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: android
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          VERSION_NAME: ${{ inputs.versao }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          ./gradlew --no-daemon assembleRelease bundleRelease
+          BT="$ANDROID_HOME/build-tools/36.0.0"
+          "$BT/aapt2" dump badging app/build/outputs/apk/release/app-release.apk | grep -E "^package|targetSdk|application-label:"
+          "$BT/apksigner" verify --print-certs app/build/outputs/apk/release/app-release.apk | head -3
+          {
+            echo "### Race Cities ${VERSION_NAME} (versionCode ${VERSION_CODE})"
+            if [ -n "$ANDROID_KEYSTORE_FILE" ]; then echo "Assinado com a chave do estúdio."; else echo "⚠️ Assinado com chave de TESTE (configure os segredos ANDROID_*)."; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Guarda a versão final
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: race-cities-release
+          path: |
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
+          retention-days: 30
+
+      - name: Apaga a chave
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks"

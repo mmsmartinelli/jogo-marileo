@@ -1,0 +1,19 @@
+// Race Cities — app Android (projeto Gradle).
+// Compilar: cd android && ./gradlew assembleDebug  (precisa de JDK 17+, Android SDK 36 e Node).
+// Na nuvem: .github/workflows/android.yml. Anúncios: android/ads.properties e docs/ANUNCIOS.md.
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = 'RaceCities'
+include ':app'

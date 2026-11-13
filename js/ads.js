@@ -1,4 +1,4 @@
-// Marileo Kart — camada de anúncios (independente de provedor).
+// Race Cities — camada de anúncios (independente de provedor).
 // Uso: import { ads } from './ads.js';  ads.init();  await ads.interstitial('race_end');
 // Tudo é à prova de falhas: SDK bloqueado, sem internet ou erro => resolve sem anúncio, nunca trava o jogo.
 // Guia: docs/ANUNCIOS.md
@@ -383,7 +383,19 @@ const poki = {
 const nativeBridge = {
   name: 'native',
   available() { return hasNative(); },
-  async load() { return true; },
+  // Avisa o app uma única vez (ads.init ou primeiro anúncio) para iniciar o SDK e pré-carregar.
+  // Sem isso o app nem inicia o SDK do Google (anúncios desligados = nenhum contato com o Google).
+  async load(cfg) {
+    try {
+      const A = window.AndroidApp;
+      const test = !!(cfg && cfg.test);
+      if (A && A.prepareAds) A.prepareAds(JSON.stringify({ test }));
+      else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.ads) {
+        window.webkit.messageHandlers.ads.postMessage({ action: 'prepare', test });
+      }
+    } catch (e) { /* o app antigo não tem prepare: segue */ }
+    return true;
+  },
   _call(kind, placement, ctx) {
     const cfg = ctx.cfg, n = cfg.native;
     return new Promise(resolve => {
@@ -423,11 +435,16 @@ function hasNative() {
 function normalizeNative(raw, kind) {
   let r = raw;
   if (typeof r === 'string') { try { r = JSON.parse(r); } catch (e) { /* string simples */ } }
-  let ok, reason = 'native';
-  if (r === true || r === 'true' || r === 'shown' || r === 'rewarded' || r === 'ok') ok = true;
-  else if (isObj(r)) { ok = !!(kind === 'rewarded' ? (r.rewarded ?? r.shown) : r.shown); reason = r.reason || reason; }
-  else ok = false;
-  return kind === 'rewarded' ? { shown: ok, rewarded: ok, reason } : { shown: ok, reason };
+  let shown, rewarded, reason = 'native';
+  if (r === true || r === 'true' || r === 'shown' || r === 'rewarded' || r === 'ok') shown = rewarded = true;
+  else if (isObj(r)) {
+    // o anúncio com recompensa pode ter aparecido e sido fechado antes do fim:
+    // shown:true + rewarded:false (não cai para o cartão próprio, e não dá prêmio)
+    shown = !!(r.shown ?? r.rewarded);
+    rewarded = !!(r.rewarded ?? r.shown);
+    reason = r.reason || reason;
+  } else shown = rewarded = false;
+  return kind === 'rewarded' ? { shown, rewarded: shown && rewarded, reason } : { shown, reason };
 }
 
 const PROVIDERS = { house, h5, crazygames, poki, native: nativeBridge };
@@ -464,6 +481,8 @@ class Ads {
       this._inited = true;
       const names = this._chain();
       // só carrega SDKs externos agora (pré-carregamento); house/native não precisam
+      // native: só avisa o app (prepareAds), não espera nada
+      if (names.includes('native') && hasNative()) this._load('native').catch(() => false);
       this._ready = Promise.all(names.filter(n => n !== 'house' && n !== 'native').map(n => this._load(n).catch(() => false))).then(() => true).catch(() => false);
       return within(this._ready, this.config.loadTimeoutMs + 500, false);
     } catch (e) { return Promise.resolve(false); }

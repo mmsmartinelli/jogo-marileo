@@ -1,6 +1,8 @@
-// Copia o jogo para ios/www e baixa as bibliotecas e fontes que hoje vêm da internet
+// Copia o jogo para dentro dos apps e baixa as bibliotecas e fontes que hoje vêm da internet
 // (three.js, PeerJS, Google Fonts), para o app abrir e jogar mesmo sem conexão.
-// Uso: node ios/build-web.mjs
+// Uso: node ios/build-web.mjs [pasta-de-saída]
+//   sem argumento: ios/www (app iOS)
+//   o app Android chama com android/app/build/generated/webgame/www (feito pelo Gradle)
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -8,7 +10,9 @@ import { fileURLToPath } from 'node:url';
 
 const ios = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(ios, '..');
-const www = path.join(ios, 'www');
+const www = path.resolve(process.argv[2] || path.join(ios, 'www'));
+// a pasta de saída é apagada antes da cópia: nunca aceite a raiz do projeto ou algo acima dela
+if (path.basename(www) !== 'www' || root.startsWith(www)) throw new Error(`pasta de saída inválida: ${www} (precisa terminar em /www)`);
 const THREE = 'https://cdn.jsdelivr.net/npm/three@0.160.0/';
 const PEERJS = 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js';
 const FONTS = 'https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Lilita+One&display=swap';
@@ -32,7 +36,8 @@ for (const item of ['index.html', 'css', 'js', 'icons']) fs.cpSync(path.join(roo
 
 // three.js e os complementos usados pelo jogo
 const addons = new Set();
-for (const f of fs.readdirSync(path.join(www, 'js'))) {
+const jsFiles = fs.readdirSync(path.join(www, 'js'), { recursive: true }).map(String).filter(f => /\.m?js$/.test(f));
+for (const f of jsFiles) {
   for (const m of read(`js/${f}`).matchAll(/three\/addons\/([\w/.-]+\.js)/g)) addons.add(m[1]);
 }
 get(THREE + 'build/three.module.js', path.join(www, 'vendor/three/build/three.module.js'));
@@ -71,4 +76,4 @@ let left = [];
 try { left = execFileSync('grep', ['-rln', 'https://cdn.jsdelivr.net\\|fonts.googleapis', www], { encoding: 'utf8' }).trim().split('\n').filter(f => f && !f.includes('/vendor/')); } catch (e) { /* nada encontrado */ }
 if (left.length) console.warn('Ainda há endereços externos em:', left.join(', '));
 const size = Number(execFileSync('du', ['-sk', www], { encoding: 'utf8' }).split('\t')[0]);
-console.log(`Jogo copiado para ios/www (${(size / 1024).toFixed(1)} MB, ${addons.size} complementos do three.js, ${n} fontes).`);
+console.log(`Jogo copiado para ${path.relative(process.cwd(), www) || www} (${(size / 1024).toFixed(1)} MB, ${addons.size} complementos do three.js, ${n} fontes).`);
