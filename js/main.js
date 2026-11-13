@@ -1,7 +1,7 @@
-// Marileo Kart — aplicação principal: renderizador, menus, fluxo de jogo.
+// Race Cities — aplicação principal: renderizador, menus, fluxo de jogo.
 import * as THREE from 'three';
 import { CHARACTERS, buildKart } from './characters.js';
-import { TRACKS, CUP, getTrack } from './tracks.js';
+import { TRACKS, CUPS, getCup, getTrack, WORLD_IDS, FANTASY_IDS } from './tracks.js';
 import { infiniteCup, randomSeed, isGenId, GEN_PREFIX } from './trackgen.js';
 import { Race } from './race.js';
 import { audio } from './audio.js';
@@ -37,13 +37,15 @@ class App {
     if (this.touch) document.body.classList.add('touchmode');
     const saved = load('marileo_settings', {});
     this.settings = Object.assign({
-      mode: 'race', nPlayers: 1, trackId: 'vale', laps: 3, difficulty: 1, autoAccel: this.touch ? 1 : 0,
+      mode: 'race', nPlayers: 1, trackId: 'osasco', laps: 3, difficulty: 1, autoAccel: this.touch ? 1 : 0,
       players: [{ char: 0, source: this.touch ? 'touch' : 'kb1' }, { char: 1, source: 'kb2' }, { char: 2, source: 'gp0' }, { char: 3, source: 'gp1' }],
     }, saved);
     this.stars = load('marileo_stars', {});
     // Copa Infinita: copa mais alta liberada e melhor colocação em cada copa
     this.infinite = Object.assign({ unlocked: 1, best: {} }, load('marileo_infinite', {}));
-    if (!this.settings.cup) this.settings.cup = 'marileo';
+    // copa antiga ("Copa Marileo") virou a primeira copa da Volta ao Mundo
+    if (!this.settings.cup || (this.settings.cup !== 'infinita' && !CUPS.some(c => c.id === this.settings.cup))) this.settings.cup = CUPS[0].id;
+    if (!getTrack(this.settings.trackId)) this.settings.trackId = 'osasco';
     this.settings.infCup = Math.max(1, Math.min(this.settings.infCup || this.infinite.unlocked, this.infinite.unlocked));
     if (!isGenId(this.settings.surpriseId)) this.settings.surpriseId = isGenId(this.settings.trackId) ? this.settings.trackId : GEN_PREFIX + randomSeed();
     this.records = load('marileo_tt', {});
@@ -79,9 +81,9 @@ class App {
     const step = async (p, text) => { fill.style.width = p + '%'; $('#loadtext').textContent = text; await new Promise(r => setTimeout(r, 16)); };
     await step(10, 'Pintando os karts...');
     this._makePortraits();
-    await step(50, 'Desenhando as pistas...');
+    await step(50, 'Desenhando as cidades...');
     for (const t of TRACKS) this.thumbs[t.id] = this._trackThumb(t);
-    await step(70, 'Ligando os motores...');
+    await step(70, 'Construindo os prédios...');
     this.startDemo();
     await step(100, 'Pronto!');
     this.show('title');
@@ -130,6 +132,14 @@ class App {
     const g = ctx.createLinearGradient(0, 0, 0, 170);
     g.addColorStop(0, th.skyTop); g.addColorStop(0.45, th.skyHorizon); g.addColorStop(0.46, th.ground[0]); g.addColorStop(1, th.ground[3] || th.ground[1]);
     ctx.fillStyle = g; ctx.fillRect(0, 0, 300, 170);
+    if (def.city) {
+      // silhueta de prédios no horizonte
+      let r = 7;
+      for (const ch of def.id) r = (r * 31 + ch.charCodeAt(0)) % 9973;
+      const rnd = () => { r = (r * 16807) % 2147483647; return r / 2147483647; };
+      ctx.fillStyle = 'rgba(30,30,60,0.28)';
+      for (let x = 0; x < 300;) { const w = 10 + rnd() * 18, h = 12 + rnd() * 40; ctx.fillRect(x, 77 - h, w - 2, h); x += w; }
+    }
     const curve = new THREE.CatmullRomCurve3(def.points.map(p => new THREE.Vector3(p[0], p[1], p[2])), true, 'centripetal');
     const pts = curve.getPoints(240);
     let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
@@ -145,6 +155,8 @@ class App {
     const [sx, sy] = map(new THREE.Vector3(...def.points[1]));
     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(sx, sy, 5, 0, 7); ctx.fill();
     ctx.font = '38px serif'; ctx.fillText(def.emoji, 8, 44);
+    if (def.timeOfDay === 'noite') { ctx.font = '26px serif'; ctx.fillText('🌙', 262, 34); }
+    else if (def.timeOfDay === 'tarde') { ctx.font = '26px serif'; ctx.fillText('🌇', 262, 34); }
     return c;
   }
 
@@ -221,8 +233,7 @@ class App {
       if (this.race && this.race.online) this.online.leave();
       else this.toMenu();
     });
-    // Grande Prêmio: Copa Marileo ou Copa Infinita (◀ ▶ escolhe entre as copas já liberadas)
-    $$('#cupMode button').forEach(b => b.addEventListener('click', () => { this.settings.cup = b.dataset.c; audio.play('select'); this._renderSetup(); }));
+    // Grande Prêmio: Copa Infinita (◀ ▶ escolhe entre as copas já liberadas). Os botões das copas são criados em _renderSetup.
     $('#infPrev').addEventListener('click', () => { this.settings.infCup = Math.max(1, this.settings.infCup - 1); audio.play('select'); this._renderSetup(); });
     $('#infNext').addEventListener('click', () => { this.settings.infCup = Math.min(this.infinite.unlocked, this.settings.infCup + 1); audio.play('select'); this._renderSetup(); });
 
@@ -296,20 +307,22 @@ class App {
       cards.appendChild(card);
     }
 
-    // pistas
+    // cidades (e as pistas de fantasia no fim da fila)
     const list = $('#trackList');
+    const keepScroll = list.scrollLeft;
     list.innerHTML = '';
-    for (const t of TRACKS) {
+    const card = t => {
       const el = document.createElement('div');
-      el.className = 'track' + (t.id === s.trackId ? ' on' : '');
+      el.className = 'track' + (t.id === s.trackId ? ' on' : '') + (t.city ? '' : ' fantasy');
       el.appendChild(this._thumbCanvas(t.id));
       const st = this.stars[t.id] || [];
       const rec = this.records[t.id];
-      el.insertAdjacentHTML('beforeend', `<div>${t.name}</div><div class="stars">${[0, 1, 2].map(k => st[k] ? '⭐' : '☆').join('')}${mode === 'tt' && rec ? ' • ' + formatTime(rec) : ''}</div>`);
+      el.insertAdjacentHTML('beforeend', `<div class="tname">${t.city ? `${t.emoji} ${esc(t.cityName || t.name)}` : esc(t.name)}</div><div class="stars">${[0, 1, 2].map(k => st[k] ? '⭐' : '☆').join('')}${mode === 'tt' && rec ? ' • ' + formatTime(rec) : ''}</div>`);
       el.addEventListener('click', () => { s.trackId = t.id; audio.play('select'); this._renderSetup(); });
-      list.appendChild(el);
-    }
-    // 🎲 Pista Surpresa: uma pista gerada nova a cada sorteio
+      return el;
+    };
+    for (const id of WORLD_IDS) list.appendChild(card(getTrack(id)));
+    // 🎲 Cidade Surpresa: uma cidade com pista nova a cada sorteio
     list.appendChild(this._surpriseCard(s.surpriseId, s.trackId === s.surpriseId,
       () => { s.trackId = s.surpriseId; audio.play('select'); this._renderSetup(); },
       () => { s.surpriseId = s.trackId = GEN_PREFIX + randomSeed(); audio.play('confirm'); this._renderSetup(); },
@@ -318,9 +331,28 @@ class App {
         const rec = this.records[id];
         return [0, 1, 2].map(k => (st[k] ? '⭐' : '☆')).join('') + (mode === 'tt' && rec ? ' • ' + formatTime(rec) : '');
       }));
+    for (const id of FANTASY_IDS) list.appendChild(card(getTrack(id)));
+    list.scrollLeft = keepScroll;
+    if (!this._scrolledTo || this._scrolledTo !== s.trackId) {
+      this._scrolledTo = s.trackId;
+      const on = list.querySelector('.track.on');
+      if (on && (on.offsetLeft < list.scrollLeft || on.offsetLeft + on.offsetWidth > list.scrollLeft + list.clientWidth)) list.scrollLeft = on.offsetLeft - 8;
+    }
 
-    // copa do Grande Prêmio: Copa Marileo ou Copa Infinita
+    // copa do Grande Prêmio: as copas da Volta ao Mundo, a Copa Fantasia ou a Copa Infinita
+    const cm = $('#cupMode');
+    if (!cm.children.length) {
+      for (const c of [...CUPS, { id: 'infinita', emoji: '♾️', name: 'Copa Infinita' }]) {
+        const b = document.createElement('button');
+        b.dataset.c = c.id;
+        b.textContent = `${c.emoji} ${c.name.replace(/^Copa /, '')}`;
+        b.title = c.name;
+        b.addEventListener('click', () => { this.settings.cup = c.id; audio.play('select'); this._renderSetup(); });
+        cm.appendChild(b);
+      }
+    }
     $$('#cupMode button').forEach(b => b.classList.toggle('on', b.dataset.c === s.cup));
+    $('#cupName').textContent = cupDef.infinite ? '' : `${cupDef.emoji} ${cupDef.name}${cupDef.bonus ? ' (bônus)' : ''}`;
     $('#infPick').hidden = !cupDef.infinite;
     if (cupDef.infinite) {
       const n = cupDef.number;
@@ -339,7 +371,7 @@ class App {
       const el = document.createElement('div');
       el.className = 'track';
       el.appendChild(this._thumbCanvas(id));
-      el.insertAdjacentHTML('beforeend', `<div>${n + 1}. ${t.name}</div>`);
+      el.insertAdjacentHTML('beforeend', `<div class="tname">${n + 1}. ${t.city ? `${t.emoji} ${esc(t.cityName || t.name)}` : esc(t.name)}</div>`);
       cup.appendChild(el);
     });
     save('marileo_settings', s);
@@ -354,17 +386,17 @@ class App {
     return c;
   }
 
-  // Cartão "🎲 Pista Surpresa" (Corrida Rápida, Contra o Relógio e sala online).
+  // Cartão "🎲 Cidade Surpresa" (Corrida Rápida, Contra o Relógio e sala online).
   _surpriseCard(id, on, onPick, onReroll, extra) {
     const t = getTrack(id);
     const el = document.createElement('div');
     el.className = 'track surprise' + (on ? ' on' : '');
     el.appendChild(this._thumbCanvas(id));
-    el.insertAdjacentHTML('beforeend', `<div class="sname">🎲 ${esc(t.name)}</div>${extra ? `<div class="stars">${extra(id)}</div>` : ''}`);
+    el.insertAdjacentHTML('beforeend', `<div class="sname"><small>🎲 Cidade Surpresa</small><span>${t.emoji} ${esc(t.name)}</span></div>${extra ? `<div class="stars">${extra(id)}</div>` : ''}`);
     const b = document.createElement('button');
     b.className = 'reroll';
     b.textContent = '🎲 Outra';
-    b.title = 'Sortear outra pista surpresa';
+    b.title = 'Sortear outra cidade surpresa';
     b.addEventListener('click', e => { e.stopPropagation(); onReroll(); });
     el.appendChild(b);
     el.addEventListener('click', onPick);
@@ -374,7 +406,7 @@ class App {
   // Copa escolhida para o Grande Prêmio: { name, tracks, infinite?, number?, aiDifficulty? }
   _activeCup() {
     const s = this.settings;
-    return s.cup === 'infinita' ? infiniteCup(s.infCup) : CUP;
+    return s.cup === 'infinita' ? infiniteCup(s.infCup) : getCup(s.cup);
   }
 
   _saveInfinite() { save('marileo_infinite', this.infinite); }
@@ -435,8 +467,9 @@ class App {
   // ---------- Corridas ----------
   startDemo() {
     if (this.race) this.race.dispose();
-    const ids = TRACKS.map(t => t.id);
-    const id = this._demoIdx === undefined ? 'vale' : ids[this._demoIdx % ids.length];
+    // no fundo do menu passa uma volta por cada cidade
+    const ids = ['paris', 'toquio', 'rio', 'londres', 'novayork', 'cairo', 'roma', 'sydney', 'dubai', 'agra', 'pequim', 'osasco'];
+    const id = ids[(this._demoIdx ?? 0) % ids.length];
     this._demoIdx = (this._demoIdx ?? 0) + 1;
     this.race = new Race(this, { mode: 'demo', trackId: id, laps: 99, difficulty: 1, players: [] });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));

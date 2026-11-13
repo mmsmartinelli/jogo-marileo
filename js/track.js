@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { rng, makeNoise2D, fbm, smoothstep, lerp, clamp } from './utils.js';
 import * as TX from './textures.js';
-import { buildCity } from './city.js';
+import { buildCity, prepareCity } from './cities/build.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
 
@@ -27,6 +27,7 @@ export class Track {
 
     this._sample();
     this._findBridge();
+    if (def.city) prepareCity(this); // cidade com mar: onde fica a praia
     this._buildLights();
     this._buildSky();
     this._buildRoad();
@@ -190,9 +191,14 @@ export class Track {
     const e = this.edge;
     const nz = fbm(this.noise, x * 0.012, z * 0.012, 4);
     if (this.def.city) {
-      // cidade: chão plano, morros só lá no horizonte
+      // cidade: chão plano, morros só lá no horizonte (e o mar, quando tem)
       const gl = this.def.groundY;
-      const base = gl + smoothstep(e + 330, e + 520, d) * 45 * (0.4 + nz);
+      const H = this.theme.hills || [330, 520, 45];
+      let base = gl + smoothstep(e + H[0], e + H[1], d) * H[2] * (0.4 + nz);
+      if (this.shore) {
+        const s = x * this.shore.nx + z * this.shore.nz - this.shore.d0;
+        base = lerp(gl + (base - gl) * smoothstep(-40, -200, s), gl - 3, smoothstep(-6, 8, s));
+      }
       const k = this.bridgeK ? this.bridgeK[i] : 0;
       const tyE = lerp(ty, gl + 1.6, k);
       return lerp(tyE - 1.6, base, smoothstep(e + 8, e + 34, d));
@@ -208,9 +214,9 @@ export class Track {
   // ---------- Luzes e céu ----------
   _buildLights() {
     const th = this.theme;
-    const hemi = new THREE.HemisphereLight(th.hemiSky, th.hemiGround, 1.25);
+    const hemi = new THREE.HemisphereLight(th.hemiSky, th.hemiGround, th.hemiI ?? 1.25);
     this.group.add(hemi);
-    const sun = new THREE.DirectionalLight(th.sun, 2.4);
+    const sun = new THREE.DirectionalLight(th.sun, th.sunI ?? 2.4);
     const sd = new THREE.Vector3(...th.sunDir).normalize();
     this.sunDir = sd;
     sun.position.copy(sd).multiplyScalar(120);
@@ -341,7 +347,8 @@ export class Track {
     this._strip(-hw - 1.3, -hw + 0.25, 0.07, 0.07, 0, 1, this.length / cReps, curbMat);
     this._strip(hw - 0.25, hw + 1.3, 0.07, 0.07, 1, 0, this.length / cReps, curbMat);
 
-    const shTex = TX.groundTexture(th.shoulder, 9, !this.def.lava && !this.def.city && this.style !== 'deserto');
+    const shTex = th.sidewalk ? TX.sidewalkTexture(th.sidewalk, th.shoulder)
+      : TX.groundTexture(th.shoulder, 9, !this.def.lava && !this.def.city && this.style !== 'deserto');
     const shMat = new THREE.MeshStandardMaterial({ map: shTex, roughness: 0.95 });
     const sw = this.shoulder + 0.8;
     this._strip(-hw - sw, -hw, -0.01, -0.01, 0, sw / 10, 10, shMat);
@@ -409,6 +416,11 @@ export class Track {
       const nn = this.noise(x * 0.05, z * 0.05);
       tmp.copy(base).lerp(alt, k * 0.8).multiplyScalar(0.85 + nn * 0.3);
       if (th.mountainSnow && h > n.y + 45) tmp.lerp(new THREE.Color(0xffffff), smoothstep(n.y + 45, n.y + 70, h));
+      if (this.shore) {
+        // areia da praia
+        const s = x * this.shore.nx + z * this.shore.nz - this.shore.d0;
+        if (s > -this.shore.beachW - 4) tmp.set(this.shore.beach).multiplyScalar(0.92 + nn * 0.16);
+      }
       colors[i * 3] = tmp.r; colors[i * 3 + 1] = tmp.g; colors[i * 3 + 2] = tmp.b;
     }
     g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
@@ -447,8 +459,8 @@ export class Track {
     }
     const beam = new THREE.Mesh(new THREE.BoxGeometry(span * 2 + 1.2, 2.6, 0.8),
       [pillarMat, pillarMat, pillarMat, pillarMat,
-        new THREE.MeshStandardMaterial({ map: TX.bannerTexture('MARILEO KART'), roughness: 0.5, emissive: 0x222222 }),
-        new THREE.MeshStandardMaterial({ map: TX.bannerTexture('MARILEO KART'), roughness: 0.5, emissive: 0x222222 })]);
+        new THREE.MeshStandardMaterial({ map: TX.bannerTexture('RACE CITIES'), roughness: 0.5, emissive: 0x222222 }),
+        new THREE.MeshStandardMaterial({ map: TX.bannerTexture('RACE CITIES'), roughness: 0.5, emissive: 0x222222 })]);
     beam.position.y = 10.4;
     beam.castShadow = true;
     gantry.add(beam);

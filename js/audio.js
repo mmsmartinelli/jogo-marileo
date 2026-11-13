@@ -6,12 +6,24 @@ const SCALES = {
   minor: [0, 2, 3, 5, 7, 8, 10],
   minorPent: [0, 3, 5, 7, 10],
   arabic: [0, 1, 4, 5, 7, 8, 10],
+  majorPent: [0, 2, 4, 7, 9],
+  japan: [0, 2, 3, 7, 8],
+  blues: [0, 3, 5, 6, 7, 10],
+  mixolydian: [0, 2, 4, 5, 7, 9, 10],
+  harmonic: [0, 2, 3, 5, 7, 8, 11],
+  indian: [0, 1, 4, 5, 7, 8, 11],
 };
 const PROG = {
   major: [0, 4, 5, 3],
   minor: [0, 5, 2, 6],
   minorPent: [0, 3, 2, 4],
   arabic: [0, 1, 0, 5],
+  majorPent: [0, 3, 1, 4],
+  japan: [0, 3, 2, 0],
+  blues: [0, 2, 0, 4],
+  mixolydian: [0, 6, 3, 0],
+  harmonic: [0, 3, 4, 0],
+  indian: [0, 1, 3, 0],
 };
 const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
 

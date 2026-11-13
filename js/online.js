@@ -1,7 +1,7 @@
 // Sala online: criar/entrar com código, lista de jogadores e início da corrida para todos.
 import { Net, normalizeCode } from './net.js';
 import { CHARACTERS } from './characters.js';
-import { TRACKS, getTrack } from './tracks.js';
+import { WORLD_IDS, FANTASY_IDS, getTrack } from './tracks.js';
 import { audio } from './audio.js';
 import { GEN_PREFIX, randomSeed } from './trackgen.js';
 
@@ -27,7 +27,7 @@ export class Online {
     this.app = app;
     this.net = null;
     this.members = [];
-    this.settings = { trackId: 'vale', laps: 3, difficulty: 1 };
+    this.settings = { trackId: 'osasco', laps: 3, difficulty: 1 };
     this.inRace = false;
     this.busy = false;
     const saved = load('marileo_online', {});
@@ -233,12 +233,12 @@ export class Online {
     // no app de iPhone o jogo roda de dentro do aparelho: o convite usa o endereço do site
     const site = /^https?:$/.test(location.protocol) ? `${location.origin}${location.pathname}` : 'https://mmsmartinelli.github.io/jogo-marileo/';
     const url = `${site}?sala=${code}`;
-    const text = `Vem correr comigo no Marileo Kart! 🏁 Código da sala: ${code}`;
+    const text = `Vem correr comigo no Race Cities! 🏁 Código da sala: ${code}`;
     // dentro do app Android: abre a janela de compartilhar do celular (WhatsApp etc.)
     if (window.AndroidApp && window.AndroidApp.share) { window.AndroidApp.share(`${text}\n${url}`); return; }
     if (window.IOSApp && window.IOSApp.share) { window.IOSApp.share(`${text}\n${url}`); return; }
     try {
-      if (navigator.share) { await navigator.share({ title: 'Marileo Kart', text, url }); return; }
+      if (navigator.share) { await navigator.share({ title: 'Race Cities', text, url }); return; }
     } catch (e) { return; }
     try { await navigator.clipboard.writeText(`${text}\n${url}`); this.app.toast('Convite copiado! Cole no WhatsApp.'); }
     catch (e) { this.app.toast(`Código da sala: ${code}`); }
@@ -352,20 +352,27 @@ export class Online {
     $('#onGo').disabled = this.inRace;
     if (host) {
       const tracks = $('#onTracks');
+      const keep = tracks.scrollLeft;
       tracks.innerHTML = '';
-      for (const t of TRACKS) {
+      const card = t => {
         const el = document.createElement('div');
-        el.className = 'track' + (t.id === this.settings.trackId ? ' on' : '');
+        el.className = 'track' + (t.id === this.settings.trackId ? ' on' : '') + (t.city ? '' : ' fantasy');
         el.appendChild(this.app._thumbCanvas(t.id));
-        el.insertAdjacentHTML('beforeend', `<div>${t.name}</div>`);
+        const el2 = document.createElement('div');
+        el2.className = 'tname';
+        el2.textContent = t.city ? `${t.emoji} ${t.cityName || t.name}` : t.name;
+        el.appendChild(el2);
         el.addEventListener('click', () => { this.settings.trackId = t.id; this._settingsChanged(); });
-        tracks.appendChild(el);
-      }
-      // 🎲 Pista Surpresa: manda só o id 'gen-<semente>'; cada aparelho gera a mesma pista
+        return el;
+      };
+      for (const id of WORLD_IDS) tracks.appendChild(card(getTrack(id)));
+      // 🎲 Cidade Surpresa: manda só o id 'gen-<semente>'; cada aparelho gera a mesma pista
       if (!this.surpriseId) this.surpriseId = GEN_PREFIX + randomSeed();
       tracks.appendChild(this.app._surpriseCard(this.surpriseId, this.settings.trackId === this.surpriseId,
         () => { this.settings.trackId = this.surpriseId; this._settingsChanged(); },
         () => { this.surpriseId = this.settings.trackId = GEN_PREFIX + randomSeed(); this._settingsChanged(); }));
+      for (const id of FANTASY_IDS) tracks.appendChild(card(getTrack(id)));
+      tracks.scrollLeft = keep;
       document.querySelectorAll('#onLaps button').forEach(b => b.classList.toggle('on', +b.dataset.n === this.settings.laps));
       document.querySelectorAll('#onDiff button').forEach(b => b.classList.toggle('on', +b.dataset.n === this.settings.difficulty));
       $('#onWait').textContent = this.members.length < 2
@@ -375,7 +382,7 @@ export class Online {
       const t = getTrack(this.settings.trackId);
       $('#onWait').textContent = this.inRace
         ? '🏁 Tem uma corrida acontecendo. Você entra na próxima!'
-        : `⏳ Esperando o anfitrião começar... Pista: ${t ? t.name : ''} • ${this.settings.laps} voltas`;
+        : `⏳ Esperando o anfitrião começar... Pista: ${t ? `${t.emoji} ${t.name}` : ''} • ${this.settings.laps} voltas`;
     }
   }
 }

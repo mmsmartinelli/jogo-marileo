@@ -51,7 +51,7 @@ export class AIDriver {
     };
     for (const o of race.obstacles.danger) {
       const lat = o.lat !== undefined ? o.lat : 0;
-      checkDanger(o.idx, lat, o.radius || 2);
+      checkDanger(o.idx, lat, o.aiR || o.radius || 2);
     }
     for (const h of race.items.hazards) {
       if (h.owner === k && h.arm > 0) continue;

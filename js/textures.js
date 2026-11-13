@@ -117,6 +117,48 @@ export function groundTexture(colors, seed = 3, blades = true) {
   return toTexture(c);
 }
 
+// Calçadas das cidades: ondas de Copacabana, paralelepípedos ou ladrilhos.
+export function sidewalkTexture(kind, colors) {
+  const S = 512;
+  const c = canvas(S, S);
+  const ctx = c.getContext('2d');
+  const r = rng(11);
+  ctx.fillStyle = colors[0];
+  ctx.fillRect(0, 0, S, S);
+  if (kind === 'waves') {
+    // calçadão: ondas pretas e brancas acompanhando a pista
+    ctx.fillStyle = colors[1] || '#222';
+    for (const x0 of [-130, 70, 270, 470]) {
+      ctx.beginPath();
+      for (let y = 0; y <= S; y += 8) ctx.lineTo(x0 + 60 * Math.sin((y / S) * Math.PI * 4), y);
+      for (let y = S; y >= 0; y -= 8) ctx.lineTo(x0 + 70 + 60 * Math.sin((y / S) * Math.PI * 4 + 0.9), y);
+      ctx.fill();
+    }
+    speckle(ctx, S, S, 2500, ['#000', '#fff', '#888'], r, 1, 2);
+  } else if (kind === 'cobble') {
+    const h = 26, w = 34;
+    for (let row = 0; row * h < S; row++) {
+      for (let x = -(row % 2) * w / 2; x < S; x += w) {
+        const sh = colors[Math.floor(r() * colors.length)];
+        ctx.fillStyle = sh;
+        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x + 2, row * h + 2, w - 4, h - 4, 6) : ctx.rect(x + 2, row * h + 2, w - 4, h - 4); ctx.fill();
+      }
+    }
+    ctx.globalCompositeOperation = 'destination-over';
+    ctx.fillStyle = 'rgba(70,64,56,1)'; ctx.fillRect(0, 0, S, S);
+    ctx.globalCompositeOperation = 'source-over';
+    speckle(ctx, S, S, 2500, colors, r, 1, 2);
+  } else {
+    const t = 64;
+    for (let y = 0; y < S; y += t) for (let x = 0; x < S; x += t) {
+      ctx.fillStyle = colors[Math.floor(r() * colors.length)];
+      ctx.fillRect(x + 2, y + 2, t - 4, t - 4);
+    }
+    speckle(ctx, S, S, 3000, colors, r, 1, 2);
+  }
+  return toTexture(c);
+}
+
 export function checkerTexture(n = 8, m = 2) {
   const c = canvas(n * 32, m * 32);
   const ctx = c.getContext('2d');

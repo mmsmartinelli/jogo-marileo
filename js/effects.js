@@ -115,7 +115,7 @@ export class Effects {
   }
 
   _buildWeather(type) {
-    const n = type === 'snow' ? 2200 : 700;
+    const n = type === 'snow' || type === 'rain' ? 2200 : type === 'petals' ? 900 : 700;
     const pos = new Float32Array(n * 3);
     const seed = new Float32Array(n);
     for (let i = 0; i < n; i++) {
@@ -132,7 +132,10 @@ export class Effects {
       dust: { color: 0xffe0b0, size: 0.35, fall: -0.5, sway: 6, additive: false, alpha: 0.5 },
       embers: { color: 0xff7a20, size: 0.4, fall: -4, sway: 2, additive: true, alpha: 1 },
       sparkles: { color: 0xfff0ff, size: 0.35, fall: 1.2, sway: 1, additive: true, alpha: 0.9 },
+      petals: { color: 0xffb7d5, size: 0.45, fall: 2.2, sway: 3, additive: false, alpha: 0.95 },
+      rain: { color: 0xc8d8ff, size: 0.22, fall: 30, sway: 0.2, additive: false, alpha: 0.55 },
     }[type];
+    if (!cfg) return;
     const mat = new THREE.ShaderMaterial({
       uniforms: { time: { value: 0 }, scale: { value: 400 }, color: { value: new THREE.Color(cfg.color) }, size: { value: cfg.size }, fall: { value: cfg.fall }, sway: { value: cfg.sway }, alpha: { value: cfg.alpha }, origin: { value: new THREE.Vector3() } },
       vertexShader: `

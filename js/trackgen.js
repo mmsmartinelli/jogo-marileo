@@ -1,12 +1,14 @@
-// Gerador de pistas infinitas: cria uma fase completa (traçado, tema, obstáculos,
-// desafios e música) a partir de um número (semente). A mesma semente gera sempre
-// a mesma pista em qualquer aparelho — por isso aqui só se usa o sorteio com semente
-// (nunca Math.random) e o arquivo não depende do three.js.
+// Gerador de pistas infinitas do Race Cities: cria uma corrida completa numa cidade do
+// mundo (cidade, traçado, hora do dia, clima, marcos, obstáculos, desafios e música) a
+// partir de um número (semente). A mesma semente gera sempre a mesma pista em qualquer
+// aparelho — por isso aqui só se usa o sorteio com semente (nunca Math.random) e o
+// arquivo não depende do three.js.
 //
 // Ids das pistas geradas: 'gen-<semente>'. O nível (1..10) vem do último dígito da
 // semente, então o id sozinho já define tudo (importante para o modo online).
-import { TRACKS } from './tracks.js'; // usado só dentro das funções (import circular seguro)
+// As cidades da Volta ao Mundo (tracks.js) usam o mesmo gerador com cidade e semente fixas.
 import { rng } from './utils.js';
+import { KITS, KIT_IDS, TIMES, kitTheme } from './cities/kits.js';
 
 export const GEN_PREFIX = 'gen-';
 export const MAX_LEVEL = 10;
@@ -44,7 +46,7 @@ export const levelOfSeed = seed => 1 + (seed % MAX_LEVEL);
 // Semente com o nível escolhido "embutido" no último dígito.
 export const makeSeed = (base, level) => (base % 100000000) * MAX_LEVEL + (clamp(level | 0, 1, MAX_LEVEL) - 1) || MAX_LEVEL;
 
-// Semente aleatória para a "Pista Surpresa" (Math.random só escolhe o número).
+// Semente aleatória para a "Cidade Surpresa" (Math.random só escolhe o número).
 export function randomSeed(level) {
   const base = 1 + Math.floor(Math.random() * 99999999);
   return makeSeed(base, level || 1 + Math.floor(Math.random() * 6));
@@ -173,7 +175,7 @@ export function measure(points, lava = false) {
 }
 
 // ---------- Traçado ----------
-function makeShape(r, level, lava) {
+function makeShape(r, level, lava, flat = false) {
   const tight = clamp((level - 1) / (MAX_LEVEL - 1), 0, 1); // pistas de nível alto: mais sinuosas
   const R = lerp(165, 245, r());
   const aspect = lerp(0.72, 1.35, r());
@@ -217,7 +219,7 @@ function makeShape(r, level, lava) {
     const px = cx + Rx * rad * Math.cos(phi);
     const pz = Rz * rad * Math.sin(phi);
     let py = H * (0.5 - 0.5 * Math.cos(2 * Math.PI * hk * clamp(f + hph * f * (1 - f), 0, 1)));
-    py = clamp(py, 0, RULES.maxY);
+    py = flat ? 0 : clamp(py, 0, RULES.maxY);
     pts.push([side * px, py, pz]);
   }
   pts.push([side * PL[0], 0, PL[1]]);
@@ -252,14 +254,15 @@ export function fallbackLayout(lava = false) {
   return lava ? round1(pts.map(p => [p[0] * 1.18, p[1], p[2] * 1.18])) : pts;
 }
 
-export function generateLayout(seed, level, lava) {
+export function generateLayout(seed, level, lava, flat = false) {
   for (let attempt = 0; attempt < 80; attempt++) {
     const r = rng(hashInts(seed, attempt, 7919));
-    const pts = fitAndCenter(makeShape(r, level, lava), r);
+    const pts = fitAndCenter(makeShape(r, level, lava, flat), r);
     const m = measure(pts, lava);
     if (m.ok) return { points: pts, m, attempt };
   }
-  const pts = fallbackLayout(lava);
+  let pts = fallbackLayout(lava);
+  if (flat) pts = pts.map(p => [p[0], 0, p[2]]);
   return { points: pts, m: measure(pts, lava), attempt: -1 };
 }
 
@@ -289,92 +292,35 @@ function hslToHex(h, s, l) {
 }
 const shift = (hex, dh, ds = 0, dl = 0) => { const [h, s, l] = hexToHsl(hex); return hslToHex(h + dh, s + ds, l + dl); };
 
-// ---------- Temas ----------
-const STYLES = {
-  vale: {
-    weight: 26, emoji: ['🌳', '🌻', '🌈', '🐞'],
-    names: [['Circuito Vale', 'Campos', 'Colinas', 'Trilha', 'Bosque', 'Circuito'], ['do Trovão', 'das Flores', 'do Arco-Íris', 'dos Moinhos', 'do Sabiá', 'da Capivara', 'do Girassol', 'da Joaninha']],
-    barrel: 'barrel', puddle: 'mud', obstacles: ['barrel', 'barrel', 'puddle'],
-    music: { scales: ['major', 'major', 'minorPent'], root: [57, 64], tempo: [124, 140] },
-  },
-  deserto: {
-    weight: 22, emoji: ['🏜️', '🐪', '🦂', '🌵'],
-    names: [['Dunas', 'Oásis', 'Cânion', 'Rally', 'Miragem', 'Trilha'], ['do Escorpião', 'do Faraó', 'da Areia Quente', 'do Camelo', 'do Sol', 'das Caveiras', 'do Cacto', 'da Esfinge']],
-    barrel: 'boulder', puddle: 'quicksand', geyser: 'sand', obstacles: ['barrel', 'geyser', 'puddle', 'barrel'],
-    music: { scales: ['arabic', 'arabic', 'minor'], root: [55, 60], tempo: [118, 132] },
-  },
-  neve: {
-    weight: 22, emoji: ['❄️', '🐧', '⛄', '🏔️'],
-    names: [['Curva', 'Pico', 'Geleira', 'Trilha', 'Montanha', 'Descida'], ['do Pinguim', 'do Iglu', 'da Avalanche', 'do Urso Polar', 'do Floco de Neve', 'do Boneco de Neve', 'da Aurora', 'do Trenó']],
-    barrel: 'snowball', puddle: 'ice', obstacles: ['barrel', 'puddle', 'puddle', 'barrel'],
-    music: { scales: ['minorPent', 'minorPent', 'major'], root: [60, 66], tempo: [110, 126] },
-  },
-  doce: {
-    weight: 20, emoji: ['🍭', '🍬', '🧁', '🍩'],
-    names: [['Reino', 'Pista', 'Circuito', 'Vale', 'Avenida', 'Ladeira'], ['do Chiclete', 'da Jujuba', 'do Pirulito', 'do Brigadeiro', 'da Paçoca', 'do Algodão-Doce', 'do Sorvete', 'do Bombom']],
-    barrel: 'gumball', puddle: 'syrup', crusher: 'candy', obstacles: ['crusher', 'crusher', 'barrel', 'puddle'],
-    music: { scales: ['major', 'major', 'minorPent'], root: [62, 67], tempo: [132, 148] },
-  },
-  vulcao: {
-    weight: 10, minLevel: 3, emoji: ['🌋', '🔥', '🐉'],
-    names: [['Cratera', 'Caldeirão', 'Trilha', 'Abismo', 'Ponte', 'Circuito'], ['do Dragão', 'da Lava', 'do Fogo', 'das Brasas', 'do Magma', 'da Fênix', 'do Meteoro']],
-    barrel: 'boulder', geyser: 'fire', crusher: 'rock', obstacles: ['geyser', 'geyser', 'crusher', 'barrel'],
-    music: { scales: ['minor', 'minor', 'arabic'], root: [50, 55], tempo: [140, 156] },
-  },
-};
-
 function pick(r, arr) { return arr[Math.floor(r() * arr.length)]; }
 
-function pickStyle(r, level) {
-  const keys = Object.keys(STYLES).filter(k => level >= (STYLES[k].minLevel || 1));
-  const total = keys.reduce((a, k) => a + STYLES[k].weight, 0);
-  let x = r() * total;
-  for (const k of keys) { x -= STYLES[k].weight; if (x < 0) return k; }
-  return keys[0];
+// Cidade da semente: é o PRIMEIRO sorteio da pista (a Copa Infinita usa isto para
+// escolher 4 cidades diferentes sem gerar as pistas inteiras).
+export function kitOfSeed(seed) {
+  const r = rng(hashInts(Math.max(1, seed | 0), 1013));
+  return KIT_IDS[Math.floor(r() * KIT_IDS.length)];
 }
 
-function makeTheme(base, style, r) {
-  const th = JSON.parse(JSON.stringify(base.theme));
-  const dh = (r() - 0.5) * 0.08;
-  th.skyTop = shift(th.skyTop, dh, 0, (r() - 0.5) * 0.08);
+function pickTime(r, kit) {
+  const w = kit.times;
+  let x = r() * (w.dia + w.tarde + w.noite);
+  for (const t of TIMES) { x -= w[t]; if (x < 0) return t; }
+  return 'dia';
+}
+
+// Pequenas variações de cor para cada pista não ficar igual às outras da mesma cidade.
+function varyTheme(th, r) {
+  const dh = (r() - 0.5) * 0.05;
+  th.skyTop = shift(th.skyTop, dh, 0, (r() - 0.5) * 0.06);
   th.skyHorizon = shift(th.skyHorizon, dh * 0.5);
-  th.curbA = shift(th.curbA, (r() - 0.5) * 0.12);
-  if (th.wallA === base.theme.curbA) th.wallA = th.curbA;
-  th.sunDir = [th.sunDir[0] * (r() < 0.5 ? -1 : 1), th.sunDir[1], th.sunDir[2] * (r() < 0.5 ? -1 : 1)];
-  let time = 'dia';
-  if (style !== 'vulcao') {
-    const x = r();
-    if (x < 0.18) {
-      time = 'tarde';
-      Object.assign(th, {
-        skyTop: shift('#3b3a8a', dh), skyHorizon: '#ff9e6b', sun: '#ffc48a',
-        sunDir: [th.sunDir[0] < 0 ? -0.6 : 0.6, 0.28, th.sunDir[2] < 0 ? -0.55 : 0.55],
-        fog: shift(th.fog, -0.04, -0.1, -0.08), hemiSky: '#ffc8a8',
-      });
-    } else if (x < 0.27) {
-      time = 'noite';
-      Object.assign(th, {
-        skyTop: '#060a24', skyHorizon: '#2c3a72', skyBottom: '#141a3a', sun: '#b8c4ff',
-        sunDir: [0.3, 0.75, -0.4], fog: '#1c2448', fogNear: 120, fogFar: 640,
-        hemiSky: '#8a9ad8', hemiGround: shift(th.hemiGround, 0, -0.2, -0.2), stars: true, clouds: false,
-      });
-    }
-  }
-  return { theme: th, time };
-}
-
-function makeScenery(base, r) {
-  const sc = JSON.parse(JSON.stringify(base.scenery));
-  for (const k of Object.keys(sc)) if (typeof sc[k] === 'number') sc[k] = Math.round(sc[k] * lerp(0.75, 1.25, r()));
-  // a arquibancada fica sempre; os outros enfeites variam
-  const others = sc.props.filter(p => p !== 'grandstand' && p !== 'skulls');
-  sc.props = ['grandstand', ...others.filter(() => r() < 0.75)];
-  return sc;
+  if (r() < 0.5) th.sunDir = [-th.sunDir[0], th.sunDir[1], th.sunDir[2]];
+  if (r() < 0.5) th.sunDir = [th.sunDir[0], th.sunDir[1], -th.sunDir[2]];
+  return th;
 }
 
 // ---------- Enfeites e obstáculos ----------
-function makeFeatures(r, style, level, m) {
-  const st = STYLES[style];
+function makeFeatures(r, kit, level, m) {
+  const ob = kit.obstacles;
   const { kap } = m;
   const { N } = m.S;
   const step = m.S.step;
@@ -399,7 +345,6 @@ function makeFeatures(r, style, level, m) {
     const t = lerp(0.15, 0.9, r());
     if (!free(t, 0.12)) continue;
     if (kMax(t, 30, 70) > 1 / 160) continue;
-    if (style === 'vulcao' && kMax(t, 30, 110) > 1 / 220) continue;
     F.push({ type: 'ramp', t: r2(take(t)), lat: 0 });
     ramps++;
   }
@@ -422,13 +367,25 @@ function makeFeatures(r, style, level, m) {
   for (let k = 0; k < nBoost; k++) {
     let t = 0.08 + (k + r() * 0.6) * (0.86 / nBoost);
     for (let g = 0; g < 10 && (!free(t, 0.02) || kAt(t) > 1 / 50); g++) t += 0.017;
-    F.push({ type: 'boost', t: r2(take(t)), lat: style === 'vulcao' ? 0 : pick(r, [0, -0.4, 0.4]) });
+    F.push({ type: 'boost', t: r2(take(t)), lat: pick(r, [0, -0.4, 0.4]) });
   }
-  // obstáculos do tema, mais numerosos nos níveis altos
+  // pombos ciscando no asfalto (qualquer cidade pode ter)
+  let flocks = 0;
+  const nFlocks = ob.pigeons ? Math.floor(r() * (ob.pigeons + 1)) : 0;
+  for (let tries = 0; tries < 30 && flocks < nFlocks; tries++) {
+    const t = lerp(0.1, 0.9, r());
+    if (!free(t, 0.05) || kMax(t, 20, 20) > 1 / 70) continue;
+    F.push({ type: 'pigeons', t: r2(take(t)), count: 10 + Math.floor(r() * 4) });
+    flocks++;
+  }
+  // obstáculos da cidade, mais numerosos nos níveis altos
+  const mix = ['barrel', 'barrel', 'puddle', 'geyser'];
+  if (level >= 6) mix.push('crusher');
   const nObs = clamp(Math.round(2 + level * 0.7 + r()), 2, 9);
   let crushers = 0, barrels = 0, geysers = 0;
+  const barrelKinds = new Set();
   for (let k = 0; k < nObs; k++) {
-    const kind = st.obstacles[(k + Math.floor(r() * st.obstacles.length)) % st.obstacles.length];
+    const kind = mix[(k + Math.floor(r() * mix.length)) % mix.length];
     let t = -1;
     for (let tries = 0; tries < 30; tries++) {
       const c = lerp(0.08, 0.94, r());
@@ -436,30 +393,42 @@ function makeFeatures(r, style, level, m) {
       // nada logo depois do pouso de uma rampa
       if (F.some(f => f.type === 'ramp' && c > f.t && c - f.t < 0.05)) continue;
       if ((kind === 'crusher' || kind === 'geyser') && kMax(c, 15, 15) > 1 / 45) continue;
+      // veículos atravessam a rua em trechos retos (dá para ver chegando)
+      if (kind === 'barrel' && kMax(c, 25, 10) > 1 / 60) continue;
       t = c; break;
     }
     if (t < 0) continue;
     take(t);
     const ph = Math.round(r() * 20) / 10;
-    if (kind === 'barrel') { F.push({ type: 'barrel', t: r2(t), speed: Math.round(lerp(0.8, 1.0 + level * 0.03, r()) * 100) / 100, kind: st.barrel }); barrels++; }
-    else if (kind === 'puddle') F.push({ type: 'puddle', t: r2(t), lat: pick(r, [-0.45, 0.45, 0]), kind: st.puddle });
+    if (kind === 'barrel') {
+      const bk = pick(r, ob.barrel);
+      barrelKinds.add(bk);
+      F.push({ type: 'barrel', t: r2(t), speed: Math.round(lerp(0.75, 0.95 + level * 0.03, r()) * 100) / 100, kind: bk });
+      barrels++;
+    } else if (kind === 'puddle') F.push({ type: 'puddle', t: r2(t), lat: pick(r, [-0.45, 0.45, 0]), kind: pick(r, ob.puddle) });
     else if (kind === 'geyser') {
       const lat = pick(r, [-0.4, 0.4, 0, -0.35, 0.35]);
-      F.push({ type: 'geyser', t: r2(t), lat, kind: st.geyser, phase: ph });
-      if (level >= 5 && lat !== 0 && r() < 0.5) F.push({ type: 'geyser', t: r2(t), lat: -lat, kind: st.geyser, phase: Math.round((ph + 1.2) * 10) / 10 });
+      F.push({ type: 'geyser', t: r2(t), lat, kind: ob.geyser, phase: ph });
+      if (level >= 5 && lat !== 0 && r() < 0.5) F.push({ type: 'geyser', t: r2(t), lat: -lat, kind: ob.geyser, phase: Math.round((ph + 1.2) * 10) / 10 });
       geysers++;
     } else if (kind === 'crusher') {
       const lat = pick(r, [-0.45, 0.45, 0]);
-      F.push({ type: 'crusher', t: r2(t), lat, phase: ph, kind: st.crusher });
-      if (level >= 4 && lat !== 0 && r() < 0.5) F.push({ type: 'crusher', t: r2(t), lat: -lat, phase: Math.round((ph + 1.5) * 10) / 10, kind: st.crusher });
+      F.push({ type: 'crusher', t: r2(t), lat, phase: ph, kind: 'crate' });
       crushers++;
     }
   }
   F.sort((a, b) => a.t - b.t);
-  return { features: F, ramps, crushers, barrels, geysers };
+  return { features: F, ramps, crushers, barrels, geysers, flocks, barrelKinds: [...barrelKinds] };
 }
 
-function makeChallenges(r, style, level, info) {
+const NOHIT = {
+  dogcart: 'Não bata no carrinho de cachorro-quente', bonde: 'Não bata no bondinho', crepe: 'Não bata no carrinho de crepe',
+  bus: 'Não bata em nenhum ônibus', taxi: 'Não bata em nenhum táxi', ramen: 'Não bata no carrinho de lámen',
+  camel: 'Não esbarre em nenhum camelo', vespa: 'Não bata em nenhuma lambreta', canguru: 'Não esbarre em nenhum canguru',
+  supercarro: 'Não bata em nenhum carrão', tuktuk: 'Não bata em nenhum tuk-tuk', riquixa: 'Não bata em nenhum riquixá',
+};
+
+function makeChallenges(r, level, info) {
   const place = level <= 3 ? 3 : level <= 6 ? 2 : 1;
   const out = [{ type: 'place', value: place, text: place === 1 ? 'Vença a corrida!' : place === 2 ? 'Termine em 1º ou 2º' : 'Termine entre os 3 primeiros' }];
   const pool = [];
@@ -470,69 +439,115 @@ function makeChallenges(r, style, level, info) {
   const hits = 2 + (level >= 6 ? 1 : 0);
   pool.push({ type: 'hits', value: hits, text: `Acerte ${hits} adversários com itens` });
   if (info.ramps) pool.push({ type: 'tricks', value: info.ramps, text: info.ramps === 1 ? 'Faça uma manobra na rampa' : `Faça ${info.ramps} manobras nas rampas` });
-  if (info.barrels) pool.push({ type: 'nohit', value: 0, text: { boulder: 'Não bata em nenhuma rocha rolante', snowball: 'Não bata em nenhuma bola de neve', gumball: 'Não bata em nenhuma bola de chiclete' }[STYLES[style].barrel] || 'Não bata em nenhum barril' });
-  if (info.crushers) pool.push({ type: 'nosquash', value: 0, text: 'Não seja esmagado pelos pilões' });
-  if (style === 'vulcao') pool.unshift({ type: 'nofall', value: 0, text: 'Não caia na lava' });
-  // escolhe 2 diferentes (no vulcão, "não cair na lava" sempre entra)
-  const first = style === 'vulcao' ? pool.shift() : pool.splice(Math.floor(r() * pool.length), 1)[0];
+  if (info.barrels) pool.push({ type: 'nohit', value: 0, text: info.barrelKinds.length === 1 ? NOHIT[info.barrelKinds[0]] || 'Não bata em nenhum veículo' : 'Não bata em nenhum veículo' });
+  if (info.crushers) pool.push({ type: 'nosquash', value: 0, text: 'Não seja esmagado pelos caixotes' });
+  if (info.flocks) { const v = info.flocks === 1 ? 2 : 3; pool.push({ type: 'pigeons', value: v, text: `Espante ${v} bandos de pombos` }); }
+  const first = pool.splice(Math.floor(r() * pool.length), 1)[0];
   const second = pool.splice(Math.floor(r() * pool.length), 1)[0];
   out.push(first, second);
   return out;
 }
 
-const cache = new Map();
+// Quais marcos aparecem: o principal sempre, os outros por sorteio (pelo menos 2 no total).
+function pickLandmarks(r, kit) {
+  const out = [];
+  const rest = [];
+  for (const L of kit.landmarks) {
+    if (L.hero) out.push(L.id);
+    else if (r() < 0.72) out.push(L.id); else rest.push(L.id);
+  }
+  if (out.length < 2 && rest.length) out.push(rest[0]);
+  return out;
+}
 
-// Gera a definição completa da pista 'gen-<seed>'.
-export function generateTrack(seed) {
-  seed = Math.max(1, Math.floor(Math.abs(+seed) || 1));
-  const id = GEN_PREFIX + seed;
-  if (cache.has(id)) return cache.get(id);
-  const level = levelOfSeed(seed);
+// Monta a definição completa de uma pista de cidade.
+// o: { id, seed, kit, level, time?, weather?, name?, landmarks? }
+export function cityTrack(o) {
+  const seed = o.seed;
+  const level = o.level;
   const r = rng(hashInts(seed, 1013));
-  const style = pickStyle(r, level);
-  const base = TRACKS.find(t => t.id === style);
-  const lava = style === 'vulcao';
-  const lay = generateLayout(seed, level, lava);
-  const st = STYLES[style];
-  const { theme, time } = makeTheme(base, style, r);
-  const fx = makeFeatures(r, style, level, lay.m);
-  const scales = st.music.scales;
+  const kitId = o.kit || KIT_IDS[Math.floor(r() * KIT_IDS.length)];
+  if (o.kit) r(); // mantém a sequência igual à de uma semente que sorteou esta cidade
+  const kit = KITS[kitId];
+  const lay = generateLayout(seed, level, false, true);
+  const time = o.time || pickTime(r, kit);
+  const wr = r();
+  const weatherOn = o.weather ?? (!!kit.weather && wr < kit.weather.chance);
+  const theme = varyTheme(kitTheme(kitId, time, weatherOn), r);
+  const fx = makeFeatures(r, kit, level, lay.m);
+  const picked = pickLandmarks(r, kit);
+  // pistas fixas da Volta ao Mundo mostram todos os marcos da cidade
+  const landmarks = o.landmarks || (o.fixed ? kit.landmarks.map(L => L.id) : picked);
+  const nameR = r();
+  let name = o.name;
+  if (!name) {
+    const suffix = pick(r, kit.names);
+    if (time === 'noite' && nameR < 0.45) name = `${kit.name} à Noite`;
+    else if (time === 'tarde' && nameR < 0.25) name = `${kit.name} ao Pôr do Sol`;
+    else name = `${kit.short || kit.name} — ${suffix}`;
+  }
+  const m = kit.music;
   const def = {
-    id,
-    name: `${pick(r, st.names[0])} ${pick(r, st.names[1])}`,
-    emoji: pick(r, st.emoji),
+    id: o.id,
+    name,
+    emoji: kit.flag,
+    city: kitId,
+    cityName: kit.name,
+    country: kit.country,
     difficulty: level <= 3 ? 1 : level <= 6 ? 2 : 3,
     level,
-    generated: true,
-    style,
+    generated: !o.fixed,
+    style: kitId,
     timeOfDay: time,
+    weather: theme.weather,
     sceneSeed: hashInts(seed, 4242),
-    halfWidth: lava ? 12.5 : pick(r, [12, 12.5, 13]),
-    shoulder: lava ? 2.5 : 7,
-    walls: !lava,
+    halfWidth: pick(r, [12.5, 13, 13]),
+    shoulder: 7,
+    walls: true,
+    groundY: -1.4,
     points: lay.points,
     theme,
-    scenery: makeScenery(base, r),
-    music: { tempo: Math.round(lerp(st.music.tempo[0], st.music.tempo[1], r())), root: Math.round(lerp(st.music.root[0], st.music.root[1], r())), scale: pick(r, scales), seed: 1 + (hashInts(seed, 77) % 9999) },
+    scenery: { props: ['grandstand'] },
+    landmarks,
+    music: { tempo: Math.round(lerp(m.tempo[0], m.tempo[1], r())), root: Math.round(lerp(m.root[0], m.root[1], r())), scale: pick(r, m.scales), seed: 1 + (hashInts(seed, 77) % 9999) },
     features: fx.features,
     challenges: null,
     genInfo: { attempt: lay.attempt, length: Math.round(lay.m.L), minSep: Math.round(lay.m.minSep), minRadius: Math.round(lay.m.minRadius), straight: Math.round(lay.m.straight) },
   };
-  if (style === 'neve') def.icy = true;
-  if (lava) def.lava = true;
-  def.challenges = makeChallenges(r, style, level, fx);
+  def.challenges = makeChallenges(r, level, fx);
+  return def;
+}
+
+const cache = new Map();
+
+// Gera a definição completa da pista 'gen-<seed>' (uma cidade sorteada pela semente).
+export function generateTrack(seed) {
+  seed = Math.max(1, Math.floor(Math.abs(+seed) || 1));
+  const id = GEN_PREFIX + seed;
+  if (cache.has(id)) return cache.get(id);
+  const def = cityTrack({ id, seed, level: levelOfSeed(seed) });
   cache.set(id, def);
   return def;
 }
 
 // ---------- Copa Infinita ----------
-// Copa n (1, 2, 3...): 4 pistas geradas a partir do número da copa; o nível sobe com a copa.
+// Copa n (1, 2, 3...): 4 pistas em 4 cidades diferentes, sorteadas a partir do número da
+// copa; o nível sobe com a copa.
 export const INFINITE_CUP_SIZE = 4;
 export function cupLevel(n, k = 0) { return clamp(n + (k >= 2 ? 1 : 0), 1, MAX_LEVEL); }
 export function infiniteCup(n) {
   n = Math.max(1, n | 0);
   const tracks = [];
-  for (let k = 0; k < INFINITE_CUP_SIZE; k++) tracks.push(GEN_PREFIX + makeSeed(1 + (hashInts(n, k, 31337) % 99999999), cupLevel(n, k)));
+  const used = new Set();
+  for (let k = 0; k < INFINITE_CUP_SIZE; k++) {
+    let seed = 0;
+    for (let a = 0; a < 64; a++) {
+      seed = makeSeed(1 + (hashInts(n, k, 31337, a) % 99999999), cupLevel(n, k));
+      if (!used.has(kitOfSeed(seed))) break;
+    }
+    used.add(kitOfSeed(seed));
+    tracks.push(GEN_PREFIX + seed);
+  }
   // dificuldade do computador (0 = fácil ... 2 = difícil), sobe aos poucos
   const aiDifficulty = Math.min(2, (n - 1) * 0.25);
   return { name: `Copa Infinita ${n}`, number: n, infinite: true, tracks, aiDifficulty };

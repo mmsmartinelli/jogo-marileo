@@ -5,6 +5,7 @@ import * as TX from './textures.js';
 import { damp } from './utils.js';
 import { COLORS } from './effects.js';
 import { PigeonMeshes } from './pigeons.js';
+import { buildVehicle, VEHICLE_KINDS, makeMaterials } from './cities/vehicles.js';
 
 export class Obstacles {
   constructor(race) {
@@ -135,7 +136,7 @@ export class Obstacles {
     const t = this.track;
     const i = t.wrap(Math.floor(f.t * t.N));
     const kind = f.kind || 'barrel';
-    let mesh, radius = 1.6;
+    let mesh, radius = 1.6, parts = [0], hop = 0;
     if (kind === 'barrel') {
       mesh = new THREE.Group();
       const wood = new THREE.MeshStandardMaterial({ color: 0x9a5a2a, roughness: 0.8 });
@@ -168,6 +169,14 @@ export class Obstacles {
       const sau = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 2.0, 4, 8).rotateZ(Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xc0462a }));
       sau.position.y = 0.25; hd.add(bun, sau); mesh.add(hd);
       radius = 2.0;
+    } else if (VEHICLE_KINDS.includes(kind)) {
+      // veículos e bichos das cidades atravessando a rua (táxi, ônibus, camelo...)
+      if (!this.vMats) this.vMats = makeMaterials(this.track.theme.glow ?? 0.3);
+      const v = buildVehicle(kind, this.vMats);
+      mesh = v.obj;
+      radius = v.radius;
+      parts = v.parts;
+      hop = v.hop || 0;
     } else {
       const col = { boulder: 0x8a6a4a, snowball: 0xffffff, gumball: 0xff4fa3 }[kind] || 0x888888;
       const mat = kind === 'gumball'
@@ -180,7 +189,7 @@ export class Obstacles {
     mesh.traverse(o => { if (o.isMesh) o.castShadow = true; });
     this.group.add(mesh);
     const fr = this._frame(i);
-    const b = { mesh, idx: i, fr, radius, speed: f.speed || 1, phase: this.barrels.length * 2.3 + f.t * 7, lat: 0, roll: 0, pos: new THREE.Vector3(), kind };
+    const b = { mesh, idx: i, fr, radius, parts, hop, speed: f.speed || 1, phase: this.barrels.length * 2.3 + f.t * 7, lat: 0, roll: 0, pos: new THREE.Vector3(), kind, vehicle: VEHICLE_KINDS.includes(kind), aiR: radius + Math.max(...parts.map(Math.abs)) };
     this.barrels.push(b);
     this.danger.push(b);
   }
@@ -191,7 +200,7 @@ export class Obstacles {
     const fr = this._frame(p.idx);
     const kind = f.kind || ((this.track.def.style || this.track.def.id) === 'doce' ? 'candy' : 'stone');
     const g = new THREE.Group();
-    const col = { candy: 0xff7ab8, stone: 0x7a7f8f, rock: 0x3a2a28 }[kind] || 0x7a7f8f;
+    const col = { candy: 0xff7ab8, stone: 0x7a7f8f, rock: 0x3a2a28, crate: 0xb07a3a }[kind] || 0x7a7f8f;
     const block = new THREE.Mesh(new THREE.BoxGeometry(5, 5, 5), new THREE.MeshStandardMaterial({ color: col, roughness: 0.7, flatShading: true }));
     block.position.y = 2.5;
     block.castShadow = true;
@@ -257,14 +266,23 @@ export class Obstacles {
     const p = t.pointAt(f.t, f.lat || 0);
     const fr = this._frame(p.idx);
     const kind = f.kind || 'mud';
-    const col = { mud: 0x5a3a1e, quicksand: 0xc99a50, ice: 0xbfeaff, syrup: 0xff5fa8, poop: 0xf3f0e4 }[kind];
-    const mat = new THREE.MeshPhysicalMaterial({ color: col, roughness: kind === 'ice' ? 0.05 : 0.4, clearcoat: kind === 'mud' ? 0.3 : 1, transparent: kind === 'ice', opacity: 0.85, polygonOffset: true, polygonOffsetFactor: -2 });
+    const col = { mud: 0x5a3a1e, quicksand: 0xc99a50, ice: 0xbfeaff, syrup: 0xff5fa8, poop: 0xf3f0e4, water: 0x5aa8e0, gelato: 0xffc8e0 }[kind] ?? 0x5aa8e0;
+    const see = kind === 'ice' || kind === 'water';
+    const mat = new THREE.MeshPhysicalMaterial({ color: col, roughness: see ? 0.05 : 0.4, clearcoat: kind === 'mud' ? 0.3 : 1, transparent: see, opacity: kind === 'water' ? 0.7 : 0.85, polygonOffset: true, polygonOffsetFactor: -2 });
     const m = new THREE.Mesh(new THREE.CircleGeometry(4, 24).rotateX(-Math.PI / 2), mat);
     m.scale.set(1, 1, 1.6);
     m.position.set(p.x, p.y + 0.05, p.z);
     m.rotation.y = fr.heading;
     m.receiveShadow = true;
     this.group.add(m);
+    if (kind === 'gelato') {
+      // sorvete derretido: bolas de três sabores no meio da poça
+      const cols = [0xfff4d6, 0x8a5a3a, 0x9be08a];
+      cols.forEach((c, k) => {
+        const s = new THREE.Mesh(new THREE.SphereGeometry(0.9, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: c, roughness: 0.5 }));
+        s.position.set(Math.sin(k * 2.1) * 1.8, 0, Math.cos(k * 2.1) * 1.6); s.scale.y = 0.6; m.add(s);
+      });
+    }
     if (kind === 'poop') {
       // cocô de pombo: manchas brancas com miolo cinza
       m.material.color.set(0xf3f0e4); m.material.clearcoat = 0.6;
@@ -339,12 +357,18 @@ export class Obstacles {
     }
 
     for (const b of this.barrels) {
-      const span = track.hw - 2;
+      const span = track.hw - 2 - Math.max(...b.parts.map(Math.abs));
       const prev = b.lat;
       b.lat = Math.sin(t * b.speed * 0.8 + b.phase) * span;
       const p = track.pointAtIdx(b.idx, b.lat);
       b.pos.copy(p);
-      if (b.kind === 'dogcart') {
+      if (b.vehicle) {
+        // atravessa a rua de frente: vira no fim de cada travessia
+        const dir = Math.cos(t * b.speed * 0.8 + b.phase) >= 0 ? 1 : -1;
+        const hopY = b.hop ? Math.abs(Math.sin(t * (b.hop > 0.5 ? 6 : 9) + b.phase)) * b.hop : 0;
+        b.mesh.position.set(p.x, p.y + hopY, p.z);
+        b.mesh.rotation.y = b.fr.heading + (dir > 0 ? -Math.PI / 2 : Math.PI / 2);
+      } else if (b.kind === 'dogcart') {
         b.mesh.position.set(p.x, p.y, p.z);
         b.mesh.rotation.y = b.fr.heading + Math.PI / 2;
         b.mesh.rotation.z = Math.sin(t * 9) * 0.03;
@@ -355,15 +379,20 @@ export class Obstacles {
         b.mesh.rotation.z = -b.roll;
       }
       for (const k of karts) {
-        const dx = k.pos.x - p.x, dz = k.pos.z - p.z;
-        const r = b.radius + 1.2;
-        if (dx * dx + dz * dz < r * r && k.pos.y - p.y < b.radius * 2) {
-          if (k.star > 0) continue;
-          if (k.hit('barrel')) fx.dust(k.pos, 6);
-          // empurra para fora
-          const d = Math.hypot(dx, dz) || 1;
-          k.pos.x = p.x + dx / d * r;
-          k.pos.z = p.z + dz / d * r;
+        for (const off of b.parts) {
+          // veículos compridos: um círculo de colisão a cada pedaço do comprimento
+          const cx = p.x + b.fr.rx * off, cz = p.z + b.fr.rz * off;
+          const dx = k.pos.x - cx, dz = k.pos.z - cz;
+          const r = b.radius + 1.2;
+          if (dx * dx + dz * dz < r * r && k.pos.y - p.y < Math.max(b.radius * 2, 3)) {
+            if (k.star > 0) break;
+            if (k.hit('barrel')) fx.dust(k.pos, 6);
+            // empurra para fora
+            const d = Math.hypot(dx, dz) || 1;
+            k.pos.x = cx + dx / d * r;
+            k.pos.z = cz + dz / d * r;
+            break;
+          }
         }
       }
     }

@@ -3,12 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Marileo Kart</title>
+  <title>Race Cities</title>
   <meta name="theme-color" content="#16163a">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Marileo Kart">
+  <meta name="apple-mobile-web-app-title" content="Race Cities">
+  <meta name="description" content="Race Cities: corrida maluca de karts pelas cidades do mundo, da Marileo Studios.">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/favicon-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -36,15 +37,15 @@
 
   <!-- Carregando -->
   <section id="loading" class="screen active">
-    <img class="cover" src="icons/icon-512.png" alt="Leo e Mari nos karts do Marileo Kart">
+    <img class="cover" src="icons/icon-512.png" alt="Leo e Mari nos karts do Race Cities">
     <div class="loadbar"><i id="loadfill"></i></div>
-    <p id="loadtext">Preparando as pistas...</p>
+    <p id="loadtext">Preparando as cidades...</p>
   </section>
 
   <!-- Tela inicial -->
   <section id="title" class="screen">
-    <div class="logo"><span>MARILEO</span><b>KART</b></div>
-    <p class="tagline">Corrida maluca para toda a turma!</p>
+    <div class="logo"><span>RACE</span><b>CITIES</b></div>
+    <p class="tagline">Corrida maluca pelas cidades do mundo!</p>
     <div class="menu">
       <button class="big" data-mode="gp">🏆 Grande Prêmio</button>
       <button class="big" data-mode="race">🏁 Corrida Rápida</button>
@@ -73,16 +74,15 @@
       <p class="hint">Cada jogador troca de personagem com os <b>próprios controles</b> (esquerda/direita) ou clicando nas setas.</p>
 
       <div class="row" id="trackRow">
-        <label>Pista</label>
-        <div id="trackList" class="tracks"></div>
+        <label>Cidade</label>
+        <div id="trackList" class="tracks scroll"></div>
       </div>
       <div class="row" id="cupRow">
         <label>Copa</label>
         <div class="cupbox">
           <div class="cuphead">
-            <div class="seg" id="cupMode">
-              <button data-c="marileo">🏆 Copa Marileo</button><button data-c="infinita">♾️ Copa Infinita</button>
-            </div>
+            <div class="seg scroll" id="cupMode"></div>
+            <b id="cupName" class="cupname"></b>
             <div id="infPick" class="infpick" hidden>
               <button id="infPrev" aria-label="Copa anterior">◀</button><b id="infName">Copa 1</b><button id="infNext" aria-label="Próxima copa">▶</button>
               <span id="infInfo"></span>
@@ -138,7 +138,7 @@
         <div class="on-choices">
           <div class="box">
             <h3>Criar uma sala</h3>
-            <p>Você escolhe a pista e manda o código para os amigos entrarem.</p>
+            <p>Você escolhe a cidade e manda o código para os amigos entrarem.</p>
             <button class="big go" id="onCreate">✨ Criar sala</button>
           </div>
           <div class="box">
@@ -160,7 +160,7 @@
         </div>
         <div id="onPlayers" class="on-players"></div>
         <div id="onHostOpts">
-          <div class="row"><label>Pista</label><div id="onTracks" class="tracks"></div></div>
+          <div class="row"><label>Cidade</label><div id="onTracks" class="tracks scroll"></div></div>
           <div class="row options">
             <div><label>Voltas</label><div class="seg" id="onLaps"><button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button><button data-n="5">5</button></div></div>
             <div><label>Computador</label><div class="seg" id="onDiff"><button data-n="0">Fácil</button><button data-n="1">Normal</button><button data-n="2">Difícil</button></div></div>
@@ -216,8 +216,8 @@
             <li><b>Largada turbo:</b> acelere quando aparecer o <b>2</b> na contagem.</li>
             <li><b>Moedas 🪙</b> deixam seu kart mais rápido (até 10).</li>
             <li>Passe pelas <b>setas amarelas</b> para um turbo e pelas <b>rampas</b> para voar. Aperte derrapar no ar para uma <b>manobra</b>!</li>
-            <li>Cuidado com os <b>obstáculos</b>: barris rolando, pilões esmagadores, gêiseres e lava!</li>
-            <li>Cada pista tem <b>3 desafios ⭐</b>. Complete todos!</li>
+            <li>Cuidado com os <b>obstáculos</b>: táxis, ônibus, camelos e cangurus atravessando a rua, hidrantes jorrando água e bandos de pombos!</li>
+            <li>Cada cidade tem <b>3 desafios ⭐</b>. Complete todos e dê a volta ao mundo!</li>
           </ul>
         </div>
       </div>

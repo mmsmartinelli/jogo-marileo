@@ -2,7 +2,8 @@
 // Topologia em estrela: o anfitrião recebe todos e repassa as mensagens.
 
 const PEERJS_URL = 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js';
-const PREFIX = 'marileo-kart-v1-';
+// v2: Race Cities (as pistas mudaram: aparelhos com versões diferentes não entram na mesma sala)
+const PREFIX = 'marileo-kart-v2-';
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sem letras confusas (I, O, 0, 1)
 
 let loading = null;

@@ -1,9 +1,87 @@
-// Definição das fases (pistas). Coordenadas em [x, y(altura), z].
-import { generateTrack, isGenId, seedOf } from './trackgen.js';
+// Pistas do Race Cities. Coordenadas em [x, y(altura), z].
+// • Volta ao Mundo: uma cidade por pista (Osasco feita à mão; as outras saem do gerador
+//   com cidade, semente, nível e hora do dia fixos — iguais em todos os aparelhos).
+// • Copa Fantasia: as 5 pistas de fantasia do começo do jogo (bônus).
+import { generateTrack, isGenId, seedOf, cityTrack } from './trackgen.js';
+import { kitTheme } from './cities/kits.js';
 
 // Features: t = posição ao longo da pista (0..1), lat = deslocamento lateral (-1 = borda esquerda... 1 = direita).
 
-export const TRACKS = [
+// Osasco: a pista feita à mão, com a Ponte Metálica de verdade (avenida com trânsito embaixo).
+const OSASCO = {
+  id: 'osasco',
+  name: 'Super Osasco',
+  emoji: '🇧🇷',
+  city: 'osasco',
+  cityName: 'Osasco',
+  country: 'Brasil',
+  timeOfDay: 'tarde',
+  difficulty: 3,
+  level: 4,
+  halfWidth: 13,
+  shoulder: 7,
+  walls: true,
+  groundY: -1.4,
+  points: [
+    [0, 0, -140], [0, 0, 0], [0, 0, 150], [25, 0, 240], [100, 0, 290], [200, 0, 290], [290, 0, 250],
+    [320, 0, 160], [300, 0, 70], [300, 2, 0], [345, 7, -60], [390, 10, -120], [435, 7, -180], [455, 2, -250],
+    [410, 0, -320], [310, 0, -330], [200, 0, -300], [130, 0, -240], [50, 0, -250], [5, 0, -215],
+  ],
+  // Ponte Metálica: arcos rosa por cima da pista, avenida com trânsito embaixo
+  bridge: { at: [390, -120], span: 36, archHeight: 22 },
+  rail: { x: -80, z0: -380, z1: 460, station: -60 },
+  // marcos com lugar fixo (t = posição na volta, side = lado, off = distância da mureta)
+  landmarks: [
+    { id: 'dogao', t: 0.03, side: 1, off: 5 },
+    { id: 'pracaPombos', t: 0.8, side: -1, off: 6 },
+    { id: 'shopping', t: 0.205, side: -1, off: 10, opts: { name: 'SHOPPING DA GATINHA', wall: 0xf2e6ee, accent: 0xff5fb0, signBg: '#ff5fb0', signFg: '#ffffff' } },
+    { id: 'shopping', t: 0.4, side: 1, off: 8, opts: { name: 'MEGA SHOPPING ESTRELA', wall: 0xefe6dc, accent: 0xff9f1a, signBg: '#2a2a6a', signFg: '#ffd23f' } },
+    { id: 'condominio', t: 0.3, side: 1, off: 6 },
+    { id: 'bancoLeao', t: 0.67, side: 1, off: 6 },
+  ],
+  theme: kitTheme('osasco', 'tarde'),
+  scenery: { props: ['grandstand'] },
+  music: { tempo: 138, root: 58, scale: 'major', seed: 71 },
+  features: [
+    { type: 'items', t: 0.1 }, { type: 'items', t: 0.28 }, { type: 'items', t: 0.46 }, { type: 'items', t: 0.64 }, { type: 'items', t: 0.86 },
+    { type: 'coins', t: 0.13, lat: -0.4, count: 6 }, { type: 'coins', t: 0.37, lat: 0.4, count: 6 },
+    { type: 'coins', t: 0.49, lat: 0, count: 6 }, { type: 'coins', t: 0.74, lat: -0.4, count: 6 }, { type: 'coins', t: 0.95, lat: 0, count: 6 },
+    { type: 'boost', t: 0.2, lat: 0 }, { type: 'boost', t: 0.44, lat: 0 }, { type: 'boost', t: 0.71, lat: 0.4 }, { type: 'boost', t: 0.9, lat: -0.4 },
+    { type: 'ramp', t: 0.54, lat: 0 },
+    { type: 'pigeons', t: 0.055, count: 12 }, { type: 'pigeons', t: 0.25, count: 12 }, { type: 'pigeons', t: 0.7, count: 12 },
+    { type: 'barrel', t: 0.16, speed: 0.8, kind: 'dogcart' }, { type: 'barrel', t: 0.83, speed: 1.0, kind: 'dogcart' },
+    { type: 'geyser', t: 0.34, lat: -0.4, kind: 'water' }, { type: 'geyser', t: 0.6, lat: 0.35, kind: 'water', phase: 1.4 },
+    { type: 'puddle', t: 0.31, lat: 0.45, kind: 'poop' }, { type: 'puddle', t: 0.77, lat: -0.45, kind: 'poop' },
+  ],
+  challenges: [
+    { type: 'place', value: 2, text: 'Termine em 1º ou 2º' },
+    { type: 'pigeons', value: 3, text: 'Espante 3 bandos de pombos' },
+    { type: 'coins', value: 10, text: 'Termine com 10 moedas' },
+  ],
+};
+
+// Cidades da Volta ao Mundo (semente escolhida a dedo para cada traçado ficar bonito).
+export const WORLD_SPECS = [
+  { id: 'rio', kit: 'rio', seed: 3101, level: 2, time: 'dia' },
+  { id: 'novayork', kit: 'novayork', seed: 3207, level: 3, time: 'tarde' },
+  { id: 'londres', kit: 'londres', seed: 3301, level: 4, time: 'dia', weather: false },
+  { id: 'paris', kit: 'paris', seed: 3409, level: 4, time: 'tarde' },
+  { id: 'roma', kit: 'roma', seed: 3503, level: 5, time: 'dia' },
+  { id: 'cairo', kit: 'cairo', seed: 3607, level: 5, time: 'dia', weather: true },
+  { id: 'dubai', kit: 'dubai', seed: 3701, level: 6, time: 'tarde', weather: false },
+  { id: 'agra', kit: 'agra', seed: 3803, level: 6, time: 'dia' },
+  { id: 'pequim', kit: 'pequim', seed: 3907, level: 7, time: 'dia' },
+  { id: 'toquio', kit: 'toquio', seed: 4001, level: 7, time: 'noite' },
+  { id: 'sydney', kit: 'sydney', seed: 4103, level: 8, time: 'dia' },
+];
+const WORLD = WORLD_SPECS.map(w => {
+  const d = cityTrack({ ...w, fixed: true });
+  d.name = d.cityName;
+  return d;
+});
+
+// Pistas de fantasia (bônus: Copa Fantasia)
+const FANTASY = [
   {
     id: 'vale',
     name: 'Vale Verdejante',
@@ -211,67 +289,20 @@ export const TRACKS = [
       { type: 'hits', value: 3, text: 'Acerte 3 adversários com itens' },
     ],
   },
-  {
-    id: 'osasco',
-    name: 'Super Osasco',
-    emoji: '🌭',
-    difficulty: 3,
-    halfWidth: 13,
-    shoulder: 7,
-    walls: true,
-    city: true,
-    groundY: -1.4,
-    points: [
-      [0, 0, -140], [0, 0, 0], [0, 0, 150], [25, 0, 240], [100, 0, 290], [200, 0, 290], [290, 0, 250],
-      [320, 0, 160], [300, 0, 70], [300, 2, 0], [345, 7, -60], [390, 10, -120], [435, 7, -180], [455, 2, -250],
-      [410, 0, -320], [310, 0, -330], [200, 0, -300], [130, 0, -240], [50, 0, -250], [5, 0, -215],
-    ],
-    // Ponte Metálica: arcos rosa por cima da pista, avenida com trânsito embaixo
-    bridge: { at: [390, -120], span: 36, archHeight: 22 },
-    rail: { x: -80, z0: -380, z1: 460, station: -60 },
-    landmarks: {
-      dogao: { t: 0.03, side: 1, off: 5 },
-      praca: { t: 0.8, side: -1, off: 6 },
-      shoppings: [
-        { name: 'OSASCO PLAZA', t: 0.205, side: -1, off: 10, wall: 0xe9e2d6, accent: 0x1f5fbf, signBg: '#1f5fbf', signFg: '#ffffff' },
-        { name: 'SHOPPING UNIÃO', t: 0.4, side: 1, off: 8, wall: 0xefe6dc, accent: 0xe8262a, signBg: '#ffffff', signFg: '#e8262a' },
-      ],
-      jardins: { t: 0.3, side: 1, off: 6 },
-      bradesco: { t: 0.67, side: 1, off: 6 },
-    },
-    theme: {
-      skyTop: '#2b2f7a', skyHorizon: '#ff9e6b', skyBottom: '#5a4a5e', sun: '#ffc48a', sunDir: [-0.55, 0.28, -0.6],
-      fog: '#b98a95', fogNear: 170, fogFar: 760, hemiSky: '#c7b8ff', hemiGround: '#6a5a55',
-      road: '#4a4b53', roadSpeckle: ['#5a5b63', '#3c3d44', '#6a6a72'],
-      curbA: '#ff3fbf', curbB: '#ffffff', wallA: '#ffffff', wallB: '#8a8f9a',
-      ground: ['#9a9a9c', '#8e8e91', '#a6a6a6', '#86868a', '#b0aea8'],
-      shoulder: ['#b8b4ac', '#aca89f', '#c4c0b6'],
-      terrainColor: '#a19e98', mountainColor: '#5f8a4f', mountainSnow: false,
-      clouds: true, weather: null,
-    },
-    scenery: { props: ['grandstand'] },
-    music: { tempo: 138, root: 58, scale: 'major', seed: 71 },
-    features: [
-      { type: 'items', t: 0.1 }, { type: 'items', t: 0.28 }, { type: 'items', t: 0.46 }, { type: 'items', t: 0.64 }, { type: 'items', t: 0.86 },
-      { type: 'coins', t: 0.13, lat: -0.4, count: 6 }, { type: 'coins', t: 0.37, lat: 0.4, count: 6 },
-      { type: 'coins', t: 0.49, lat: 0, count: 6 }, { type: 'coins', t: 0.74, lat: -0.4, count: 6 }, { type: 'coins', t: 0.95, lat: 0, count: 6 },
-      { type: 'boost', t: 0.2, lat: 0 }, { type: 'boost', t: 0.44, lat: 0 }, { type: 'boost', t: 0.71, lat: 0.4 }, { type: 'boost', t: 0.9, lat: -0.4 },
-      { type: 'ramp', t: 0.54, lat: 0 },
-      { type: 'pigeons', t: 0.055, count: 12 }, { type: 'pigeons', t: 0.25, count: 12 }, { type: 'pigeons', t: 0.7, count: 12 },
-      { type: 'barrel', t: 0.16, speed: 0.8, kind: 'dogcart' }, { type: 'barrel', t: 0.83, speed: 1.0, kind: 'dogcart' },
-      { type: 'geyser', t: 0.34, lat: -0.4, kind: 'water' }, { type: 'geyser', t: 0.6, lat: 0.35, kind: 'water', phase: 1.4 },
-      { type: 'puddle', t: 0.31, lat: 0.45, kind: 'poop' }, { type: 'puddle', t: 0.77, lat: -0.45, kind: 'poop' },
-    ],
-    challenges: [
-      { type: 'place', value: 2, text: 'Termine em 1º ou 2º' },
-      { type: 'pigeons', value: 3, text: 'Espante 3 bandos de pombos' },
-      { type: 'coins', value: 10, text: 'Termine com 10 moedas' },
-    ],
-  },
 ];
 
-export const CUP = { name: 'Copa Marileo', tracks: ['vale', 'deserto', 'neve', 'doce', 'vulcao', 'osasco'] };
+export const TRACKS = [OSASCO, ...WORLD, ...FANTASY];
+export const WORLD_IDS = ['osasco', ...WORLD.map(d => d.id)];
+export const FANTASY_IDS = FANTASY.map(d => d.id);
 
-// Pistas geradas ('gen-<semente>') vêm do gerador; as feitas à mão, da lista acima.
-// (trackgen.js também importa este arquivo, mas só usa TRACKS dentro das funções.)
+// Grande Prêmio: Volta ao Mundo em copas de 4 cidades + a Copa Fantasia (bônus).
+export const CUPS = [
+  { id: 'atlantico', name: 'Copa Atlântico', emoji: '🌊', tracks: ['osasco', 'rio', 'novayork', 'londres'] },
+  { id: 'europa', name: 'Copa Europa & Oriente', emoji: '🏛️', tracks: ['paris', 'roma', 'cairo', 'dubai'] },
+  { id: 'asia', name: 'Copa Ásia & Oceania', emoji: '🐉', tracks: ['agra', 'pequim', 'toquio', 'sydney'] },
+  { id: 'fantasia', name: 'Copa Fantasia', emoji: '🦄', tracks: [...FANTASY_IDS], bonus: true },
+];
+export const getCup = id => CUPS.find(c => c.id === id) || CUPS[0];
+
+// Pistas geradas ('gen-<semente>') vêm do gerador; as fixas, da lista acima.
 export const getTrack = id => TRACKS.find(t => t.id === id) || (isGenId(id) ? generateTrack(seedOf(id)) : undefined);
