@@ -536,3 +536,26 @@ body.touchmode #title .hint { display: none; }
   #title .menu #apkBtn { order: 2; }
   #title .hint { display: none; }
 }
+
+/* ---------- Aviso de segurança do modo online ---------- */
+.on-safety {
+  position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center;
+  padding: 16px; overflow-y: auto; background: rgba(6, 8, 30, 0.8); backdrop-filter: blur(3px);
+}
+.on-safety[hidden] { display: none; }
+.on-safety .panel { width: min(560px, 94vw); }
+.safety-list { margin: 0 0 12px; padding-left: 22px; line-height: 1.5; font-size: 18px; }
+.safety-list li { margin: 4px 0; }
+.on-safety .actions { flex-direction: row; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.howsafe { background: rgba(255, 255, 255, .07); border-radius: 18px; padding: 8px 16px; margin-top: 12px; }
+.howsafe h3 { font-family: var(--font-title); font-weight: normal; margin: 4px 0 6px; font-size: 22px; }
+.howsafe .safety-list { font-size: 16px; margin-bottom: 6px; }
+@media (max-height: 520px) {
+  .on-safety { align-items: flex-start; padding: 6px; }
+  .on-safety .panel { padding: 8px 14px; }
+  .on-safety .panel h2 { font-size: 22px; margin-bottom: 4px; padding-top: 0; }
+  .safety-list { font-size: 14px; line-height: 1.35; margin-bottom: 6px; }
+  .safety-list li { margin: 2px 0; }
+  .on-safety button.big, .on-safety button.mid { min-width: 0; font-size: 16px; padding: 6px 18px; }
+  .howsafe .safety-list { font-size: 13px; }
+}

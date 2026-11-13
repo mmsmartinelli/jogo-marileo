@@ -49,9 +49,15 @@ export class Online {
       this._nameTimer = setTimeout(() => this._sendMe(), 400);
     });
     $('#onCode').addEventListener('input', e => { e.target.value = normalizeCode(e.target.value); });
-    $('#onCode').addEventListener('keydown', e => { if (e.key === 'Enter') this.join(); });
-    $('#onCreate').addEventListener('click', () => this.create());
-    $('#onJoin').addEventListener('click', () => this.join());
+    $('#onCode').addEventListener('keydown', e => { if (e.key === 'Enter') this._gate(() => this.join()); });
+    $('#onCreate').addEventListener('click', () => this._gate(() => this.create()));
+    $('#onJoin').addEventListener('click', () => this._gate(() => this.join()));
+    $('#onSafetyOk').addEventListener('click', () => this._safetyAnswer(true));
+    $('#onSafetyBack').addEventListener('click', () => this._safetyAnswer(false));
+    // Esc fecha o aviso (sem deixar o jogo voltar ao menu por trás)
+    window.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && !$('#onSafety').hidden) { e.preventDefault(); e.stopImmediatePropagation(); this._safetyAnswer(false); }
+    }, true);
     $('#onBack').addEventListener('click', () => { audio.play('back'); this.app.show('title'); });
     // botão do alto: dentro da sala sai da sala; fora dela volta ao menu
     $('#onTopBack').addEventListener('click', () => {
@@ -64,6 +70,25 @@ export class Online {
     $('#onShare').addEventListener('click', () => this.share());
     document.querySelectorAll('#onLaps button').forEach(b => b.addEventListener('click', () => { this.settings.laps = +b.dataset.n; this._settingsChanged(); }));
     document.querySelectorAll('#onDiff button').forEach(b => b.addEventListener('click', () => { this.settings.difficulty = +b.dataset.n; this._settingsChanged(); }));
+  }
+
+  // Aviso de segurança: aparece na 1ª vez de cada aparelho antes de criar/entrar numa sala.
+  _safetySeen() { try { return localStorage.getItem('marileo_online_safety') === '1'; } catch (e) { return false; } }
+  _gate(action) {
+    if (this.busy || this.connected) return;
+    if (this._safetySeen()) { action(); return; }
+    this._pending = action;
+    audio.init(); audio.play('select');
+    $('#onSafety').hidden = false;
+    $('#onSafetyOk').focus();
+  }
+  _safetyAnswer(ok) {
+    $('#onSafety').hidden = true;
+    const act = this._pending; this._pending = null;
+    audio.play(ok ? 'confirm' : 'back');
+    if (!ok) return;
+    try { localStorage.setItem('marileo_online_safety', '1'); } catch (e) { /* sem armazenamento: pergunta de novo da próxima vez */ }
+    if (act) act();
   }
 
   _saveMe() { save('marileo_online', this.me); }
