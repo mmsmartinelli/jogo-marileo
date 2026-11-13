@@ -35,7 +35,7 @@ Valores em US$ são os cobrados pela loja; o valor em R$ muda com o câmbio e im
 - **Riscos:**
   - Jogo "para toda a família" com público de crianças entra na **Política para Famílias** (seção 6).
   - App que é só um site embrulhado (WebView) pode ser recusado se não tiver autorização do dono do site (fonte 5). O nosso carrega o jogo **de dentro do pacote** e o site é nosso, o que ajuda; deixe isso claro na descrição de revisão.
-  - O modo online exige **aviso de segurança online dentro do app** para quem tem crianças no público (fonte 5). Hoje não existe esse aviso: **tarefa de código a pedir ao diretor**.
+  - O modo online exige **aviso de segurança online dentro do app** para quem tem crianças no público (fonte 5). O aviso já existe: tela "Jogue online com segurança" na 1ª vez de cada aparelho (antes de criar/entrar numa sala) e sempre disponível em "Como Jogar".
   - Verificação de desenvolvedor do Android: desde 30/09/2026 vale no Brasil; apps da Play são registrados automaticamente (fonte 6). Isso também afeta o APK solto de `baixar.html`: sem registro, o APK só instala por caminho avançado (fonte 6).
 
 ### 2.2 App Store (iPhone/iPad)
@@ -127,7 +127,7 @@ Valores em US$ são os cobrados pela loja; o valor em R$ muda com o câmbio e im
 - [ ] Criar o app no App Store Connect (nome Race Cities, ID `com.marileostudios.racecities`, SKU `racecities`).
 - [ ] Gerar a chave da API do App Store Connect e criar os 4 segredos no GitHub: `APPLE_TEAM_ID`, `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`.
 - [ ] Rodar Actions > iOS > Run workflow; instalar pelo TestFlight no iPhone e **testar de verdade** (online com dois aparelhos).
-- [ ] Questionários de classificação etária e **Privacidade do app** (tabela em `docs/ANUNCIOS.md` seção 6; hoje `textos.md` diz "Dados não coletados", que **só vale com anúncios desligados**).
+- [ ] Questionários de classificação etária e **Privacidade do app** (tabela em `docs/ANUNCIOS.md` seção 6; `textos.md` traz as duas respostas: "Dados não coletados" **só enquanto os anúncios estiverem desligados**, e a versão com AdMob para quando ligar).
 - [ ] Colar textos, escolher o build, "Enviar para revisão".
 
 **Já pronto:** projeto XcodeGen, robô de build e envio, textos e 12 capturas (iPhone 6,9" e iPad 13"), categoria Corrida, fora de Kids, sem pedido de rastreamento.
@@ -186,7 +186,7 @@ Valores em US$ são os cobrados pela loja; o valor em R$ muda com o câmbio e im
 - **Trailer de 20 a 30 s**: gravar a tela do jogo (QuickTime ou captura automática do diretor), cortar no Adobe Premiere ou Express, música e efeitos do próprio jogo (já são gerados) ou Magnific. Publicar no YouTube em "não listado".
 - **Descrições PT/EN**: PT já existe em `ios/AppStore/textos.md`; falta o **EN** e a versão Android (curta de 80 caracteres + completa). Peço ao diretor para redigir; recomendo revisão do CEO.
 
-**Palavras-chave** (App Store, até 100 caracteres): `kart,corrida,cidades,mundo,família,multiplayer,amigos,online,offline,leão,gatinha,turbo`. A versão atual tem "crianças", que deve sair do campo de palavras por causa da regra 2.3.8 (já anotada em `ios/LEIA-ME.md`). Para Play, as palavras vão naturalmente na descrição; para EN usar `kart racing, family game, race around the world, multiplayer, offline`.
+**Palavras-chave** (App Store, até 100 caracteres): `kart,corrida,cidades,mundo,família,multiplayer,amigos,online,offline,leão,gatinha,turbo`. "Crianças" já foi retirado do campo de palavras e da descrição (regras 2.3.8, 1.3 e 5.1.4; anotado em `ios/LEIA-ME.md`). Para Play, as palavras vão naturalmente na descrição; para EN usar `kart racing, family game, race around the world, multiplayer, offline`.
 
 **Marketing mínimo, sem custo:** página única no site com link das lojas; vídeo no YouTube; posts curtos nas redes (ferramenta Metricool já conectada ao diretor ⚠️ confirmar se o CEO quer usar); pedir avaliações a amigos e família depois do lançamento.
 
