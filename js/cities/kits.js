@@ -243,12 +243,13 @@ export const KITS = {
     sunset: { skyTop: '#4a3a9a', skyHorizon: '#ffaa7a', sun: '#ffcc90', fog: '#e8b0a0', hemiSky: '#ffd8c0' },
     theme: {
       road: '#5e5450', roadSpeckle: ['#6c625e', '#4e4440', '#7a706a'], curbA: '#ff8a1a', curbB: '#ffffff', wallA: '#ffffff', wallB: '#1f9e4a',
-      ground: ['#c8a880', '#bc9c74', '#d4b48c', '#b09068', '#dcbc94'], shoulder: ['#d8c0a0', '#ccb494', '#e2ccae'], sidewalk: 'tiles',
-      terrainColor: '#c0a87c', mountainColor: '#7a9a4a', clouds: true, hills: [300, 500, 30],
+      ground: ['#d4bc94', '#b8b07c', '#dcc8a0', '#a8a46e', '#e0cca4'], shoulder: ['#d8c0a0', '#ccb494', '#e2ccae'], sidewalk: 'tiles',
+      terrainColor: '#d6caa0', mountainColor: '#7a9a4a', clouds: true, hills: [220, 430, 70],
     },
-    buildings: { types: ['indian', 'adobe'], heights: [[8, 16], [10, 20], [12, 24]], far: [10, 22], roof: 'domes', density: 1.0, tints: ['#f2c6a0', '#e8a8a0', '#f6dcb0', '#c8e0d0', '#f0b878', '#e6c8e8'] },
-    trees: 'broadleaf', lamps: 'lantern', props: ['flores', 'bancas'],
-    obstacles: { barrel: ['tuktuk'], puddle: ['water', 'quicksand'], geyser: 'water', pigeons: 1 },
+    // fachadas variadas (rosa, ocre, branco, azul de casarão), telhados com cúpulas e chhatris
+    buildings: { types: ['indian', 'haveli', 'jharokha', 'adobe'], heights: [[8, 16], [10, 22], [12, 26]], far: [10, 24], roof: 'mughal', density: 1.0, tints: ['#f2c6a0', '#f0a8a8', '#f6dcb0', '#c8e0d0', '#f0b878', '#e6c8e8', '#ffffff', '#a8c8e8', '#e89a7a'] },
+    trees: 'broadleaf', treeMix: ['broadleaf', 'palm', 'broadleaf', 'cypress'], lotTrees: 90, lamps: 'lantern', props: ['bandeirinhas', 'templos', 'bazar', 'bichos', 'flores'],
+    obstacles: { barrel: ['tuktuk', 'vaca'], puddle: ['water', 'quicksand'], geyser: 'water', pigeons: 1 },
     landmarks: [{ id: 'tajMahal', hero: true }, { id: 'forteVermelho' }, { id: 'portaoVermelho' }],
     names: ['Circuito do Palácio Branco', 'Volta dos Jardins', 'Grande Prêmio do Tuk-Tuk', 'Avenida do Rio Yamuna', 'Corrida do Forte Vermelho'],
     music: { scales: ['indian', 'arabic'], root: [57, 62], tempo: [124, 138] },

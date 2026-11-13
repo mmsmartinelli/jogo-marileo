@@ -305,6 +305,9 @@ const FACADES = {
   romano2: { wall: '#fff6ea', win: '#352e2a', lit: 0.32, arch: true, small: true, shutters: '#9a5a32', frame: '#fbf3e4', closed: 0.15, flowers: 0.25, laundry: 0.18 },
   indian: { wall: '#ffffff', win: '#3a2a2a', lit: 0.35, arch: true, frame: '#ffffff' },
   chinese: { wall: '#9a9690', win: '#7a1a1a', lit: 0.45, frame: '#c8202a', small: true },
+  // Agra: casarão (haveli) com faixa pintada entre os andares e janelas com balcão (jharokha)
+  haveli: { wall: '#fff4e2', win: '#3a2a22', lit: 0.35, arch: true, small: true, band: '#b8452e', shutters: '#2f8a7a' },
+  jharokha: { wall: '#ffffff', win: '#3a2a2a', lit: 0.35, arch: true, jharokha: '#efdcbc' },
 };
 export const FACADE_KINDS = Object.keys(FACADES);
 export function isGlassFacade(kind) { return !!FACADES[kind].glass; }
@@ -323,6 +326,12 @@ export function facadeTextures(kind, seed) {
     for (let y = 0; y < 256; y += 6) for (let x = (y / 6) % 2 ? 0 : 6; x < 256; x += 12) a.fillRect(x, y, 10, 1);
   }
   if (F.bands) { a.fillStyle = 'rgba(0,0,0,0.08)'; for (let y = 0; y < 256; y += 64) a.fillRect(0, y + 54, 256, 10); }
+  if (F.band) {
+    for (let y = 0; y < 256; y += 64) {
+      a.fillStyle = F.band; a.fillRect(0, y + 57, 256, 6);
+      a.fillStyle = '#ffffff'; for (let x = 2; x < 256; x += 8) a.fillRect(x, y + 59, 3, 2);
+    }
+  }
   for (let row = 0; row < 4; row++) for (let col = 0; col < 4; col++) {
     const x = col * 64, y = row * 64;
     let wx = x + 9, wy = y + 12, ww = 46, wh = 38;
@@ -331,6 +340,14 @@ export function facadeTextures(kind, seed) {
     if (F.glass) { wx = x + 2; wy = y + 3; ww = 60; wh = 58; }
     if (F.frame) { a.fillStyle = F.frame; a.fillRect(wx - 4, wy - 4, ww + 8, wh + 8); }
     if (F.shutters) { a.fillStyle = F.shutters; a.fillRect(wx - 9, wy, 8, wh); a.fillRect(wx + ww + 1, wy, 8, wh); }
+    if (F.jharokha && (row + col) % 2 === 0) {
+      // balcão fechado: cobertura em cúpula em cima e parapeito com mãos-francesas embaixo
+      a.fillStyle = F.jharokha;
+      a.beginPath(); a.ellipse(wx + ww / 2, wy + 2, ww / 2 + 6, 9, 0, Math.PI, 0); a.fill();
+      a.fillRect(wx - 6, wy + wh - 4, ww + 12, 9);
+      for (const bx of [wx, wx + ww - 6]) { a.beginPath(); a.moveTo(bx, wy + wh + 5); a.lineTo(bx + 6, wy + wh + 5); a.lineTo(bx + 3, wy + wh + 12); a.fill(); }
+      a.fillStyle = 'rgba(0,0,0,0.25)'; a.fillRect(wx - 6, wy + wh + 3, ww + 12, 2);
+    }
     a.fillStyle = F.glass ? (r() < 0.5 ? F.win : '#557da3') : F.win;
     if (F.arch) {
       a.beginPath(); a.moveTo(wx, wy + wh); a.lineTo(wx, wy + ww / 2); a.arc(wx + ww / 2, wy + ww / 2, ww / 2, Math.PI, 0); a.lineTo(wx + ww, wy + wh); a.fill();

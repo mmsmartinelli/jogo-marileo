@@ -426,6 +426,7 @@ const NOHIT = {
   bus: 'Não bata em nenhum ônibus', taxi: 'Não bata em nenhum táxi', ramen: 'Não bata no carrinho de lámen',
   camel: 'Não esbarre em nenhum camelo', vespa: 'Não bata em nenhuma lambreta', canguru: 'Não esbarre em nenhum canguru',
   supercarro: 'Não bata em nenhum carrão', tuktuk: 'Não bata em nenhum tuk-tuk', riquixa: 'Não bata em nenhum riquixá',
+  vaca: 'Não esbarre em nenhuma vaca',
 };
 
 function makeChallenges(r, level, info) {

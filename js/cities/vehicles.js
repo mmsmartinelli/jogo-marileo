@@ -122,6 +122,20 @@ const BUILD = {
     for (const [x, z] of [[-0.5, -1], [0.5, -1], [-0.5, 1], [0.5, 1]]) g.add(cyl(0.18, 0.15, 2.2, fur, x, 1.1, z, 5));
     return { obj: g, radius: 1.5, parts: [-0.9, 0.9], hop: 0.15 };
   },
+  // vaca sagrada de Agra atravessando a rua devagar (com colar de flores)
+  vaca(P, M) {
+    const g = new THREE.Group();
+    const fur = P(0xf2eee6, 'smooth');
+    g.add(box(1.4, 1.3, 2.8, fur, 0, 1.9, 0));
+    g.add(box(0.8, 0.6, 0.8, fur, 0, 2.7, 0.7));
+    g.add(box(0.7, 0.75, 1.1, fur, 0, 2.5, 1.85));
+    g.add(box(0.5, 0.4, 0.25, P(0xe8b8a8), 0, 2.3, 2.45));
+    for (const s of [-1, 1]) { const h = cone(0.08, 0.6, P(0x8a7a6a), s * 0.3, 3.1, 1.7, 4); h.rotation.z = -s * 0.5; g.add(h); g.add(sphere(0.07, P(0x111111, 'glow'), s * 0.36, 2.65, 2.3, 4, 3)); }
+    g.add(box(0.9, 0.22, 0.22, P(0xff8a1a), 0, 2.15, 1.3));
+    for (const [x, z] of [[-0.5, -1], [0.5, -1], [-0.5, 1], [0.5, 1]]) g.add(box(0.28, 1.3, 0.28, fur, x, 0.65, z));
+    const tail = cyl(0.05, 0.05, 1.2, fur, 0, 1.8, -1.5, 3); tail.rotation.x = -0.4; g.add(tail);
+    return { obj: g, radius: 1.5, parts: [-0.9, 0.9], hop: 0.08 };
+  },
   canguru(P, M) {
     const g = new THREE.Group();
     const fur = P(0xc87a4a, 'smooth');
