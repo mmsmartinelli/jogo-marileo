@@ -407,6 +407,35 @@ export class CityCtx {
         g.add(cyl(1.6, 1.6, 2, P(0xf6efe2), b.w * 0.25, 1.8, b.d * 0.25, 8));
         g.add(sphere(1.9, P(0xf6efe2, 'smooth'), b.w * 0.25, 2.8, b.d * 0.25, 10, 6, Math.PI / 2));
       }
+    } else if (style === 'mughal') {
+      // Agra: parapeito colorido, cúpula ou chhatri, caixa d'água preta; quem fica de frente
+      // para a pista ganha toldo de loja no térreo e um balcão (jharokha) na fachada.
+      const PC = [0xf2e6d0, 0xffffff, 0xe8c8a0, 0xd8846a, 0xf0d890, 0xc8e0e8];
+      g.add(box(b.w + 0.4, 1.0, b.d + 0.4, P(PC[Math.floor(rand() * PC.length)]), 0, 0.5, 0));
+      const r = rand(), cx = (rand() - 0.5) * b.w * 0.4, cz = (rand() - 0.5) * b.d * 0.4;
+      if (r < 0.38) {
+        g.add(cyl(1.6, 1.6, 1.8, P(0xf6efe2), cx, 1.8, cz, 8));
+        g.add(sphere(1.9, P(rand() < 0.75 ? 0xf6efe2 : 0xe8a050, 'smooth'), cx, 2.7, cz, 8, 4, Math.PI / 2));
+        g.add(cone(0.12, 1.2, P(0xd8b04a, 'metal'), cx, 5, cz, 4));
+      } else if (r < 0.66) {
+        for (const [a, c] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) g.add(box(0.35, 2.4, 0.35, P(0xf2ece0), cx + a * 1.3, 2.2, cz + c * 1.3));
+        g.add(box(3.4, 0.4, 3.4, P(0xf2ece0), cx, 3.5, cz));
+        g.add(sphere(1.5, P(0xfaf6ee, 'smooth'), cx, 3.7, cz, 6, 3, Math.PI / 2));
+      }
+      if (rand() < 0.35) g.add(cyl(1, 1, 1.6, P(0x2a2a2e), -cx * 0.5 + b.w * 0.3, 1.8, -cz * 0.5 - b.d * 0.3, 6));
+      const n = this.near(b.x, b.z);
+      if (n.d < this.e + 45) {
+        const i = n.i, tr = this.track;
+        const s = Math.sign((tr.px[i] - b.x) * Math.cos(b.rot) - (tr.pz[i] - b.z) * Math.sin(b.rot)) || 1;
+        const AW = [0xe8262a, 0xff8a1a, 0x1fae9c, 0xffc81a, 0xff5e9c, 0x2f7bff, 0x7a3fb8];
+        const aw = box(2, 0.14, b.d * 0.8, P(AW[Math.floor(rand() * AW.length)]), s * (b.w / 2 + 0.9), -b.h + 3.6, 0);
+        aw.rotation.z = -s * 0.35; g.add(aw);
+        if (b.h > 11 && rand() < 0.65) {
+          const bz = (rand() - 0.5) * b.d * 0.4, by = -b.h + 7 + rand() * Math.max(0, b.h - 11);
+          g.add(box(1.3, 2.4, 3.2, P(0xf2e2c6), s * (b.w / 2 + 0.6), by, bz));
+          g.add(box(1.7, 0.4, 3.6, P(0xd8846a), s * (b.w / 2 + 0.7), by + 1.4, bz));
+        }
+      }
     }
     this.roofBag.add(g);
   }
@@ -418,6 +447,7 @@ export class CityCtx {
     const lamps = [];
     const lampStep = Math.max(1, Math.round(26 / tr.spacing));
     const spans = this.placed.filter(p => p.span).map(p => p.i);
+    const mix = this.kit.treeMix; // cidades com mais de um tipo de árvore na rua (Agra: palmeiras)
     for (let i = 0; i < N; i += lampStep) {
       if (Math.abs(i) < 8 || N - i < 8) continue;
       const nearBridge = bi !== undefined && Math.abs(((i - bi + N / 2) % N + N) % N - N / 2) * tr.spacing < this.def.bridge.span + 4;
@@ -429,8 +459,14 @@ export class CityCtx {
         const j = tr.wrap(i + Math.round(lampStep / 2));
         const tl = side * (e + 6);
         const tx2 = tr.px[j] + tr.rx[j] * tl, tz2 = tr.pz[j] + tr.rz[j] * tl;
-        if (!nearBridge && this.near(tx2, tz2).d > e + 4 && this.shoreS(tx2, tz2) < -4) this.trees.push({ x: tx2, z: tz2, s: 0.75 + rand() * 0.3, check: true, y: tr.py[j] - 0.9 });
+        if (!nearBridge && this.near(tx2, tz2).d > e + 4 && this.shoreS(tx2, tz2) < -4) this.trees.push({ x: tx2, z: tz2, s: 0.75 + rand() * 0.3, check: true, y: tr.py[j] - 0.9, kind: mix ? mix[Math.floor(rand() * mix.length)] : undefined });
       }
+    }
+    // árvores soltas nos terrenos entre os prédios (só nas cidades que pedem: kit.lotTrees)
+    for (let k = 0; k < (this.kit.lotTrees || 0); k++) {
+      const s = tr._randomSpot(e + 14, e + 240, 20);
+      if (!s || !this.isFree(s.x, s.z, 3) || this.shoreS(s.x, s.z) > -4) continue;
+      this.trees.push({ x: s.x, z: s.z, y: s.y, s: 0.9 + rand() * 0.5, check: true, kind: mix ? mix[Math.floor(rand() * mix.length)] : undefined });
     }
     this._lamps(lamps);
     this._trees();
