@@ -1,0 +1,52 @@
+<!doctype html>
+<!-- RASCUNHO. NÃO PUBLICAR ainda. Só substitui o privacidade.html quando os anúncios reais forem ligados
+     (js/ads-config.js enabled:true) e depois da revisão do advogado. Veja docs/privacidade-checklist.md.
+     Tudo que está entre [colchetes] precisa ser preenchido/decidido antes de publicar. -->
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Race Cities — Privacidade e Suporte</title><link rel="icon" href="icons/favicon-32.png">
+<style>body{margin:0;background:#0b0d24;color:#fff;font:17px/1.6 system-ui,-apple-system,sans-serif;padding:24px 16px}
+main{max-width:720px;margin:0 auto}h1{color:#ffd23f}h2{color:#ff8ac6;margin-top:32px}a{color:#ffd23f}
+table{border-collapse:collapse;width:100%;font-size:15px}th,td{border:1px solid #3a3d66;padding:6px 8px;text-align:left;vertical-align:top}th{color:#ffd23f}</style></head>
+<body><main>
+<h1>Race Cities — Política de Privacidade</h1>
+<p>Race Cities é um jogo da Marileo Studios (antes chamado Marileo Kart), de Osasco, São Paulo, Brasil. Aqui explicamos, em palavras simples, o que acontece com as informações quando você joga.</p>
+<p><b>Resumo:</b> não pedimos cadastro, nome, e-mail nem localização, e não temos compras dentro do jogo. O progresso fica só no seu aparelho. <b>O jogo mostra anúncios</b> (do Google, nos aplicativos e no site), configurados para o público infantil e sem personalização. Os anúncios fazem o Google receber alguns dados técnicos do aparelho, explicados abaixo.</p>
+<p><b>Para quem é responsável por uma criança:</b> o jogo é para toda a família. Leia a seção “Crianças e anúncios”.</p>
+
+<h2>O que fica salvo no seu aparelho</h2>
+<p>O jogo guarda no próprio aparelho (no armazenamento local do app ou do navegador): estrelas dos desafios, recordes de tempo, progresso da Copa Infinita, configurações (pista, voltas, dificuldade, personagens, som ligado ou desligado) e, no modo online, o apelido e o personagem escolhidos. Também guardamos contadores simples dos anúncios (por exemplo, quantos foram mostrados hoje) para controlar a frequência. Esses dados <b>não são enviados para nós</b> e não identificam ninguém. Apagar o app, ou os dados do navegador, apaga tudo.</p>
+
+<h2>Anúncios (Google AdMob e Google AdSense)</h2>
+<p>Depois de algumas corridas, o jogo pode mostrar um anúncio entre uma corrida e outra (nunca durante a corrida, nem ao abrir o jogo, nem em salas online). Esses anúncios são fornecidos pelo Google: <b>AdMob</b> nos aplicativos de Android e iPhone/iPad e <b>AdSense para jogos</b> na versão do site. O jogo também pode mostrar um cartão de patrocinador nosso (por exemplo, um comércio local ou outro jogo nosso). Esse cartão é exibido pelo próprio jogo, sem envio de dados a terceiros.</p>
+<p>Como configuramos os anúncios:</p>
+<ul>
+<li><b>Sem personalização:</b> os anúncios não são escolhidos com base no seu perfil ou interesses.</li>
+<li><b>Tratamento para crianças:</b> pedimos ao Google que trate os anúncios como voltados a crianças e a menores de idade e que mostre só conteúdo de classificação “G” (livre) nos aplicativos. [CONFIRMAR: classificação “G” do site no painel do AdSense.]</li>
+<li><b>Sem ID de publicidade:</b> o app de Android não usa o ID de publicidade e o de iPhone/iPad não pede permissão de rastreamento. Não rastreamos você entre aplicativos ou sites.</li>
+<li><b>Sem localização por GPS:</b> o app de iPhone/iPad desliga a coleta de localização aproximada pelo SDK.</li>
+</ul>
+<p>Mesmo assim, para entregar e medir os anúncios, o SDK do Google pode coletar automaticamente, segundo a documentação do próprio Google: o <b>endereço de internet (IP)</b>, de onde o Google estima uma localização aproximada; <b>informações de uso</b> (por exemplo, que um anúncio foi visto e toques no anúncio); <b>informações de diagnóstico</b> (falhas, tempo de abertura, desempenho); e <b>identificadores do aplicativo ou do aparelho</b> (que não são o ID de publicidade). O Google usa esses dados para exibir e medir anúncios, para análises e para prevenir fraudes. A coleta é feita pelo Google, não por nós, e não recebemos esses dados individualmente; vemos apenas relatórios totais no painel do Google. Veja como o Google usa dados de sites e apps parceiros: <a href="https://policies.google.com/technologies/partner-sites">policies.google.com/technologies/partner-sites</a>. [CONFIRMAR COM O ADVOGADO: se descrevemos corretamente quem é o controlador dos dados no caso do Google.]</p>
+<p>Quando o aparelho está sem internet, nenhum anúncio do Google aparece e o jogo segue normalmente.</p>
+<p>Quando os anúncios estão desligados, o aplicativo nem inicia o SDK do Google.</p>
+<p>Os links de patrocinadores ficam atrás de uma “área para adultos”: é preciso segurar um botão por 3 segundos para abrir o site do patrocinador no navegador. Esse site tem política de privacidade própria, que não controlamos.</p>
+
+<h2>Modo “Online com Amigos”</h2>
+<p>Quando alguém cria ou entra numa sala, os aparelhos se conectam diretamente entre si (tecnologia WebRTC). Para isso, usamos o serviço de conexão <b>PeerJS</b> e servidores STUN do Google, que ajudam os aparelhos a se encontrarem. O serviço PeerJS recebe o <b>código da sala</b> e os <b>endereços de internet (IP)</b> dos aparelhos para conectá-los; os servidores STUN também veem o IP. [CONFIRMAR: qual servidor PeerJS é usado e política dele; ver checklist.] Durante a corrida, os participantes da sala veem o apelido e o personagem escolhidos e a posição do kart, e como a conexão é direta, os outros jogadores da sala também podem ver o seu IP. Nós não guardamos nada disso. Recomendamos usar um apelido em vez do nome completo e jogar só com pessoas conhecidas, usando o código da sala. Não há anúncios em salas online.</p>
+
+<h2>Outros serviços usados pelo jogo</h2>
+<p>A versão do site carrega peças do jogo (biblioteca de gráficos 3D) da rede de distribuição jsDelivr e as fontes de letra do Google Fonts; ao fazer isso, esses serviços podem registrar o IP do aparelho. Os aplicativos de Android e iPhone/iPad trazem essas peças dentro do próprio app. [CONFIRMAR no checklist.]</p>
+
+<h2>Crianças e anúncios</h2>
+<p>O jogo foi feito para a família e pode ser jogado por crianças. Não pedimos nem guardamos informações pessoais de crianças. Os anúncios são do Google, sem personalização e com tratamento voltado a crianças, como descrito acima. Pais e responsáveis podem desligar a internet do aparelho ou do app para jogar sem anúncios do Google. [CONFIRMAR: se haverá a opção “remover anúncios”; hoje não existe.] Os aplicativos para iPhone/iPad não ficam na categoria “Crianças” da App Store. [DECISÃO DO ADVOGADO: texto sobre consentimento dos pais conforme o art. 14 da LGPD, e sobre COPPA/GDPR se o jogo for oferecido nos EUA/Europa.]</p>
+
+<h2>Seus direitos (LGPD)</h2>
+<p>Conforme a Lei Geral de Proteção de Dados (Lei 13.709/2018), você pode pedir: confirmação de que tratamos dados seus, acesso, correção, anonimização ou exclusão, informações sobre com quem compartilhamos, e revogar consentimentos. Como o jogo não nos envia dados pessoais e não temos cadastro, normalmente não temos o que acessar ou excluir; os dados do aparelho você mesmo apaga, apagando o app ou os dados do navegador. Para dados tratados pelo Google (anúncios), valem também os controles e a política do Google. Pais e responsáveis podem fazer pedidos em nome de crianças. Escreva para o contato abaixo. [CONFIRMAR: nome do responsável/encarregado de dados e prazo de resposta.]</p>
+
+<h2>Mudanças nesta política</h2>
+<p>Se mudarmos algo (por exemplo, trocarmos de fornecedor de anúncios), atualizamos esta página e a data abaixo.</p>
+
+<h2 id="suporte">Suporte e contato</h2>
+<p>Dúvidas, problemas, sugestões ou pedidos sobre seus dados: abra um pedido em <a href="https://github.com/mmsmartinelli/jogo-marileo/issues">github.com/mmsmartinelli/jogo-marileo/issues</a>. [PREENCHER E-MAIL] (um e-mail de contato é recomendável, pois uma página pública no GitHub não é um canal adequado para pedidos com dados pessoais).</p>
+<p style="opacity:.7">Vigência: a partir de [PREENCHER]. Última atualização: [PREENCHER].</p>
+<p><a href="./">⬅ Voltar para o jogo</a></p>
+</main></body></html>
