@@ -42,6 +42,7 @@
       </select>
     </label>
     <label>intervalo mínimo (s) <input id="cMin" type="number" value="90" style="width:70px"></label>
+    <label>a cada N corridas <input id="cEvery" type="number" value="1" min="1" style="width:50px"></label>
     <label><input type="checkbox" id="cSkipFirst" checked> pular a 1ª corrida</label>
   </div>
   <div class="row">
@@ -92,7 +93,7 @@ function apply() {
   ads.configure({
     enabled: $('cEnabled').checked, test: $('cTest').checked,
     platform: $('cPlatform').value === 'house' ? 'web' : $('cPlatform').value,
-    minSecondsBetween: +$('cMin').value, skipFirstRace: $('cSkipFirst').checked,
+    minSecondsBetween: +$('cMin').value, skipFirstRace: $('cSkipFirst').checked, everyNRaces: +$('cEvery').value || 1,
     providers: { web: $('cPlatform').value === 'house' ? ['house'] : ['h5', 'house'] },
     h5: { client: 'ca-pub-1234567890123456' },
   });

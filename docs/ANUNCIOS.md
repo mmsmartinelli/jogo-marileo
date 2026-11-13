@@ -24,6 +24,7 @@ Ela sabe falar com vários "fornecedores" de anúncio e escolhe o certo conforme
 
 Regras de bom senso (todas ajustáveis):
 - Nenhum anúncio depois da **primeira corrida** da sessão.
+- Um anúncio **a cada 2 corridas** (depois da 2ª, 4ª, 6ª...). Configurável em `everyNRaces` (1 = toda corrida).
 - No mínimo **90 segundos** entre dois anúncios.
 - Máximo de **8 por sessão**.
 - **Nada em salas online** (os outros jogadores ficam esperando).
@@ -195,7 +196,7 @@ ads.onOpenUrl = url => {};                    // opcional: abrir link de patroci
 ads.isSoundOn = () => true;                   // opcional: informa o som ao AdSense
 ads.stats();  ads.configure({...});  ads.reset();  ads.platform;
 ```
-Motivos de bloqueio (`reason`): `disabled`, `no-ads`, `busy`, `online`, `first-race`, `session-cap`, `too-soon`, `unavailable`/`sdk-unavailable` (sem SDK/sem campanha), `timeout`, `error`, `hard-timeout`.
+Motivos de bloqueio (`reason`): `disabled`, `no-ads`, `busy`, `online`, `first-race`, `every-n` (ainda não é a corrida da vez, regra `everyNRaces`), `session-cap`, `too-soon`, `unavailable`/`sdk-unavailable` (sem SDK/sem campanha), `timeout`, `error`, `hard-timeout`.
 
 Se um provedor não mostrar anúncio (sem SDK, sem preenchimento, timeout), o próximo da lista é tentado; exceção: `frequency-capped` (limite do Google) não cai para o house. Toda chamada resolve dentro de limites de tempo (`loadTimeoutMs`, `startTimeoutMs`, `maxAdMs`).
 
