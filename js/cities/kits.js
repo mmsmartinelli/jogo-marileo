@@ -184,7 +184,7 @@ export const KITS = {
     },
     // ocre, terracota, creme, rosa antigo, amarelo e vermelho pompeiano; alturas bem variadas
     buildings: { types: ['terracotta', 'terracotta2', 'romano', 'romano2'], heights: [[8, 20], [12, 28], [16, 30]], far: [12, 30], roof: 'tiles', density: 1.1, tints: ['#e8a066', '#f0c080', '#d98a5a', '#f6e2bc', '#f2d29a', '#e8b8a0', '#c8664a', '#f4ead6', '#e6c070'] },
-    trees: 'pine', lamps: 'classic', props: ['cafes'],
+    trees: 'pine', lamps: 'classic', props: ['cafes', 'romaRua'], preProps: ['romaBairros'],
     obstacles: { barrel: ['vespa'], puddle: ['gelato', 'water'], geyser: 'water', pigeons: 2 },
     landmarks: [{ id: 'coliseu', hero: true }, { id: 'colunaTriunfal' }, { id: 'arcoRomano' }, { id: 'domo' }],
     names: ['Circuito do Coliseu', 'Volta dos Gladiadores', 'Via das Fontes', 'Grande Prêmio da Pizza', 'Corrida dos Imperadores'],

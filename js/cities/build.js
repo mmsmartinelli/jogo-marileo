@@ -692,6 +692,8 @@ export function buildCity(track) {
 
   const lms = def.landmarks || [];
   lms.forEach((L, k) => ctx.placeLandmark(L, k));
+  // conjuntos grandes que precisam de chão livre antes dos prédios (ex.: bairros de Roma)
+  for (const p of ctx.kit.preProps || []) if (PROPS[p]) PROPS[p](ctx);
 
   ctx.buildBuildings();
   ctx.buildStreet();
