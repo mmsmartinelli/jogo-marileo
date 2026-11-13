@@ -2,12 +2,23 @@
 // Pirâmides e Esfinge (Cairo), Hotel-Vela e Torres (Dubai) e Ópera (Sydney).
 // Tudo procedural e juntado em poucas malhas por marco (uma por material).
 import * as THREE from 'three';
-import { box, cyl, cone, sphere, geo, bar, beam, lathe, onionGeo, archWallGeo, frustumGeo, crenellate } from './common.js';
-import { TAU, ell, gridGeo, ellipseBand, outward, inward, quadGeo, lcg } from './shapes.js';
+import { box, cyl, cone, sphere, geo, bar, beam, lathe, onionGeo, archWallGeo as archRaw, frustumGeo } from './common.js';
+import { TAU, ell, gridGeo, ellipseBand, outward, inward, quadGeo, lcg, Batch } from './shapes.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
+// arcos iguais se repetem muito (extrusão é cara): guarda o primeiro e entrega cópias
+const ARCH = new Map();
+const archWallGeo = (...a) => { const k = a.join('|'); if (!ARCH.has(k)) ARCH.set(k, archRaw(...a)); return ARCH.get(k).clone(); };
 const UPN = V(0, 1, 0);
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+// Lona/casca branca fina (vista dos dois lados) com um brilho próprio, para ficar clara mesmo na sombra.
+const sailMat = ctx => ctx.mats.sail || (ctx.mats.sail = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, side: THREE.DoubleSide, emissive: 0xffffff, emissiveIntensity: 0.16 + ctx.glow * 0.5 }));
+// Telhas da ópera: textura do atlas, dos dois lados, com brilho próprio.
+const tileMat = ctx => ctx.mats.tile || (ctx.mats.tile = new THREE.MeshStandardMaterial({ map: ctx.atlas.tex, emissiveMap: ctx.atlas.tex, emissive: 0xffffff, emissiveIntensity: 0.62 + ctx.glow * 0.4, roughness: 0.45, side: THREE.DoubleSide }));
+
+// Adiciona ao marco a malha juntada de um Batch (se tiver peças), pintada com p.
+const flush = (g, batch, p) => { const gm = batch.geom(); if (gm) g.add(geo(gm, p)); };
 
 // Árvore em coordenadas locais do marco (vai para as árvores instanciadas da cidade).
 const treeAt = (ctx, g, x, z, s, kind) => { const p = ctx.world(g, x, 0, z); ctx.tree(p.x, p.z, s, kind); };
@@ -22,7 +33,7 @@ function pyramid(ctx, g, cx, cz, half, h, rot, opts = {}) {
   const corner = (sx, sz) => [cx + (sx * cr + sz * sr) * half, 0, cz + (-sx * sr + sz * cr) * half];
   const cs = [corner(1, 1), corner(-1, 1), corner(-1, -1), corner(1, -1)];
   const apex = [cx, h, cz];
-  const lit = new THREE.Color(opts.lit || 0xe6a843), dark = new THREE.Color(opts.dark || 0x6e4422), capC = new THREE.Color(opts.cap || 0xfbe9b4);
+  const lit = new THREE.Color(opts.lit || 0xeaae48), dark = new THREE.Color(opts.dark || 0x9a6a34), capC = new THREE.Color(opts.cap || 0xfbe9b4);
   for (let f = 0; f < 4; f++) {
     const A = cs[f], B = cs[(f + 1) % 4];
     const mx = (A[0] + B[0]) / 2 - cx, mz = (A[2] + B[2]) / 2 - cz, ml = Math.hypot(mx, mz);
@@ -30,13 +41,16 @@ function pyramid(ctx, g, cx, cz, half, h, rot, opts = {}) {
     const nwx = nl.x * Math.cos(rY) + nl.z * Math.sin(rY), nwz = -nl.x * Math.sin(rY) + nl.z * Math.cos(rY);
     const L = Math.max(0, Math.min(1, nwx * sd.x + nl.y * sd.y + nwz * sd.z));
     const base = dark.clone().lerp(lit, Math.pow(L, 0.55));
+    const par = [new Batch(), new Batch(), new Batch()]; // fiadas pares, ímpares e topo claro
     for (let j = 0; j < C; j++) {
       const t0 = j / C, t1 = (j + 1) / C;
       const P = (p, t) => [p[0] + (apex[0] - p[0]) * t, p[1] + (apex[1] - p[1]) * t, p[2] + (apex[2] - p[2]) * t];
-      const col = base.clone().multiplyScalar(j % 2 ? 0.94 : 1.03);
-      if (opts.capFrom !== undefined && t0 >= opts.capFrom - 1e-6) col.lerp(capC, 0.55);
-      g.add(geo(quadGeo(P(A, t0), P(B, t0), P(B, t1), P(A, t1), nl), { mat: ctx.mats.solid, color: col }));
+      const top = opts.capFrom !== undefined && t0 >= opts.capFrom - 1e-6;
+      par[top ? 2 : j % 2].add(quadGeo(P(A, t0), P(B, t0), P(B, t1), P(A, t1), nl));
     }
+    flush(g, par[0], { mat: ctx.mats.solid, color: base.clone().multiplyScalar(1.03) });
+    flush(g, par[1], { mat: ctx.mats.solid, color: base.clone().multiplyScalar(0.94) });
+    flush(g, par[2], { mat: ctx.mats.solid, color: base.clone().lerp(capC, 0.55) });
   }
   // base de pedra
   const plat = box(half * 2 + 6, 1.6, half * 2 + 6, ctx.P(0xc9a05a), cx, 0.8, cz);
@@ -46,12 +60,19 @@ function pyramid(ctx, g, cx, cz, half, h, rot, opts = {}) {
 
 
 // Pavilhão com cúpula (chhatri) da Índia: quatro pilares, laje e cúpula de cebola.
+// As formas são montadas uma vez só e copiadas (são dezenas por cidade).
+let CHH = null;
 function chhatri(ctx, g, x, y, z, s, col = 0xfbf3e4, dome) {
-  const P = ctx.P(col), PS = ctx.P(dome ?? col, 'smooth');
-  for (const [a, b] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) g.add(cyl(0.25 * s, 0.25 * s, 2.4 * s, P, x + a * s, y + 1.2 * s, z + b * s, 6));
-  g.add(box(2.9 * s, 0.4 * s, 2.9 * s, P, x, y + 2.6 * s, z));
-  g.add(geo(onionGeo(1.4 * s, 2.6 * s, 10), PS, x, y + 2.8 * s, z));
-  g.add(cone(0.12 * s, 0.9 * s, ctx.P(0xe8b830, 'metal'), x, y + 5.8 * s, z, 4));
+  if (!CHH) {
+    const b = new Batch(), I = new THREE.Quaternion();
+    for (const [a, c] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) b.add(new THREE.CylinderGeometry(0.25, 0.25, 2.4, 6), new THREE.Matrix4().compose(V(a, 1.2, c), I, V(1, 1, 1)));
+    b.box(2.9, 0.4, 2.9, 0, 2.6, 0);
+    CHH = { pil: b.geom(), dome: onionGeo(1.4, 2.6, 10).translate(0, 2.8, 0), fin: new THREE.ConeGeometry(0.12, 0.9, 4).translate(0, 5.8, 0) };
+  }
+  const M = new THREE.Matrix4().compose(V(x, y, z), new THREE.Quaternion(), V(s, s, s));
+  g.add(geo(CHH.pil.clone().applyMatrix4(M), ctx.P(col)));
+  g.add(geo(CHH.dome.clone().applyMatrix4(M), ctx.P(dome ?? col, 'smooth')));
+  if (s > 1.2) g.add(geo(CHH.fin.clone().applyMatrix4(M), ctx.P(0xe8b830, 'metal')));
 }
 // Minarete esbelto com sacadas e pavilhão no topo (Taj Mahal, portões).
 function minaretTall(ctx, g, x, y, z, h, r, col = 0xfbf3e4) {
@@ -249,10 +270,10 @@ export const LANDMARKS_C = {
 
   // ======================= AGRA: TAJ MAHAL =======================
   tajMahal: {
-    w: 124, d: 124, scale: 1.25, dense: true, fit: [1, 0.85, 0.7],
+    w: 124, d: 124, scale: 1.25, heroAlong: 215, dense: true, fit: [1, 0.85, 0.7],
     build(ctx, g) {
       const marble = 0xfffaf0, warm = 0xfaf0dc, recess = 0xd9c9b0;
-      const mS = ctx.P(marble, 'smooth'), mW = ctx.P(warm), red = ctx.P(0xc0562f), redD = ctx.P(0xa4431f), sand = 0xe6d8bc;
+      const mS = ctx.P(marble, 'smooth'), mW = ctx.P(warm), red = ctx.P(0xd87040), redD = ctx.P(0xb85a30), sand = 0xe6d8bc;
       // jardim em quatro quadrantes, com o espelho d'água (brilhante) apontando para a pista
       g.add(geo(new THREE.PlaneGeometry(124, 124).rotateX(-Math.PI / 2), ctx.P(0x66b84c, 'flat'), 0, 0.08, 0));
       g.add(geo(new THREE.PlaneGeometry(12, 60).rotateX(-Math.PI / 2), ctx.P(sand, 'flat'), 0, 0.25, 26));
@@ -272,23 +293,27 @@ export const LANDMARKS_C = {
       refl.rotation.x = -Math.PI / 2; refl.scale.set(1, -1.7, 1); g.add(refl);
       // canteiros de flores e sebes em cada quadrante
       const flowers = [0xff5fa8, 0xffd23f, 0xff8a2a, 0xb06bff, 0xff4a4a];
+      const hedge = new Batch(), fb = flowers.map(() => new Batch());
       let fk = 0;
       for (const sx of [-1, 1]) for (const sz of [0, 1]) for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) {
-        const x = sx * (15 + i * 9), z = 10 + sz * 24 + j * 8 - (sz ? 0 : 0);
-        g.add(box(6, 0.7, 4.4, ctx.P(0x2f8a3a), x, 0.45, z));
-        g.add(box(4.6, 0.8, 3.2, ctx.P(flowers[fk++ % 5]), x, 0.6, z));
+        const x = sx * (15 + i * 9), z = 10 + sz * 24 + j * 8;
+        hedge.box(6, 0.7, 4.4, x, 0.45, z);
+        fb[fk++ % 5].box(4.6, 0.8, 3.2, x, 0.6, z);
       }
+      flush(g, hedge, ctx.P(0x2f8a3a)); fb.forEach((b2, k) => flush(g, b2, ctx.P(flowers[k])));
       // ciprestes em fileiras simétricas ao longo do espelho d'água e dos caminhos
       for (let z = 4; z <= 52; z += 5.6) for (const s of [-1, 1]) treeAt(ctx, g, s * 9.6, z, 1.25, 'cypress');
       for (let z = 8; z <= 50; z += 14) for (const s of [-1, 1]) treeAt(ctx, g, s * 30, z, 1.1, 'cypress');
       for (const s of [-1, 1]) for (let x = 22; x <= 54; x += 10) treeAt(ctx, g, s * x, 60 - 8, 1.0);
       // muro de arenito vermelho em volta, com pavilhões nos cantos
+      const merl = new Batch();
       for (const s of [-1, 1]) {
         g.add(box(2, 6, 118, red, s * 61, 3, 0));
         g.add(box(2.6, 0.8, 118, ctx.P(0xf0e2c8), s * 61, 6.3, 0));
-        for (let z = -54; z <= 54; z += 5) g.add(box(2.2, 1.4, 2.4, redD, s * 61, 7.3, z));
+        for (let z = -54; z <= 54; z += 5) merl.box(2.2, 1.4, 2.4, s * 61, 7.3, z);
         for (let z = -50; z <= 50; z += 10) g.add(geo(archWallGeo(5, 4.6, 0.5, 1.5, 2.2, true), ctx.P(0x7a3418), s * 59.9, 0.6, z).rotateY(Math.PI / 2));
       }
+      flush(g, merl, redD);
       g.add(box(124, 6, 2, red, 0, 3, -61));
       g.add(box(124, 0.8, 2.6, ctx.P(0xf0e2c8), 0, 6.3, -61));
       for (const sx of [-1, 1]) for (const sz of [-1, 1]) chhatri(ctx, g, sx * 59, 6, sz * 59, 2.2, 0xf6e9d2);
@@ -357,7 +382,7 @@ export const LANDMARKS_C = {
   forteVermelho: {
     w: 134, d: 50, scale: 1.45, dense: true, fit: [1, 0.85, 0.7],
     build(ctx, g) {
-      const red = ctx.P(0xc4592f), redD = ctx.P(0xa4431f), redL = ctx.P(0xd46a3a), white = ctx.P(0xfaf1e0), whiteS = ctx.P(0xfaf1e0, 'smooth'), dark = ctx.P(0x4a2010), gold = ctx.P(0xe8b830, 'metal');
+      const red = ctx.P(0xdb7544), redD = ctx.P(0xb85a30), redL = ctx.P(0xe88a58), white = ctx.P(0xfaf1e0), whiteS = ctx.P(0xfaf1e0, 'smooth'), dark = ctx.P(0x4a2010), gold = ctx.P(0xe8b830, 'metal');
       // gramado e fosso azul na frente das muralhas, com a ponte de pedra no portão
       g.add(geo(new THREE.PlaneGeometry(134, 50).rotateX(-Math.PI / 2), ctx.P(0x8fc070, 'flat'), 0, 0.08, 0));
       g.add(box(134, 0.9, 11, ctx.P(0xd9c9a6), 0, 0.45, 16));
@@ -412,7 +437,7 @@ export const LANDMARKS_C = {
     kind: 'span', w: 76, d: 16, pillar: 12,
     build(ctx, g) {
       const e = ctx.e, a = e + 1.6, W = 2 * a + 26, H = 46, D = 16;
-      const red = ctx.P(0xc4592f), redD = ctx.P(0xa4431f), white = ctx.P(0xfaf1e0), whiteS = ctx.P(0xfaf1e0, 'smooth'), gold = ctx.P(0xe8b830, 'metal');
+      const red = ctx.P(0xdb7544), redD = ctx.P(0xb85a30), white = ctx.P(0xfaf1e0), whiteS = ctx.P(0xfaf1e0, 'smooth'), gold = ctx.P(0xe8b830, 'metal');
       g.add(geo(archWallGeo(W, H, D, a, 18, true), red));
       for (const fz of [-1, 1]) {
         const z = fz * (D / 2 + 0.35);
@@ -462,25 +487,27 @@ export const LANDMARKS_C = {
       for (const [x, z, rx, ry, rz, c] of [[-96, -62, 70, 62, 38, 0x6a9a74], [70, -66, 90, 78, 40, 0x6a9a74], [-10, -76, 70, 44, 30, 0x7aa684]]) {
         const h = geo(new THREE.IcosahedronGeometry(1, 1), ctx.P(c), x, 0, z); h.scale.set(rx, ry, rz); g.add(h);
       }
-      // árvores de outono (laranja e verde) e pinheiros nas encostas
+      // árvores de outono (laranja e verde) e pinheiros nas encostas (peças juntadas por cor)
       const rnd = lcg(77);
-      const trunk = ctx.P(0x6a4a2e);
+      const trunks = new Batch(), pines = new Batch(), crowns = {}, rocks = new Batch();
+      const T4 = (x, y, z, sy = 1) => new THREE.Matrix4().compose(V(x, y, z), new THREE.Quaternion(), V(1, sy, 1));
       for (let k = 0; k < 70; k++) {
         const x = X0 + rnd() * (X1 - X0), side = rnd() < 0.5 ? -1 : 1, z = Zc(x) + side * (hillW(x) * (0.4 + rnd() * 0.6));
         const y = hillY(x, z);
         if (y < 5) continue;
         const r = 2.2 + rnd() * 1.6;
-        g.add(cyl(0.35, 0.5, r * 1.2, trunk, x, y + r * 0.5, z, 5));
-        if (k % 3 === 2) { g.add(cone(r * 0.9, r * 3, ctx.P(0x2f6f38), x, y + r * 2.1, z, 6)); continue; }
+        trunks.add(new THREE.CylinderGeometry(0.35, 0.5, r * 1.2, 5), T4(x, y + r * 0.5, z));
+        if (k % 3 === 2) { pines.add(new THREE.ConeGeometry(r * 0.9, r * 3, 6), T4(x, y + r * 2.1, z)); continue; }
         const col = [0xd8692a, 0xe89a30, 0x4a8a3a, 0xc4502a, 0xb8c040][k % 5];
-        const b = geo(new THREE.IcosahedronGeometry(r, 0), ctx.P(col), x, y + r * 1.5, z); b.scale.y = 0.85; g.add(b);
+        (crowns[col] = crowns[col] || new Batch()).add(new THREE.IcosahedronGeometry(r, 0), T4(x, y + r * 1.5, z, 0.85));
       }
-      // rochas claras no pé da muralha
       for (let k = 0; k < 26; k++) {
         const x = X0 + 6 + rnd() * (X1 - X0 - 12), side = rnd() < 0.5 ? -1 : 1, z = Zc(x) + side * (5.2 + rnd() * 5);
         const r = 1.6 + rnd() * 2;
-        const rk = geo(new THREE.IcosahedronGeometry(r, 0), ctx.P(0xb9ad98), x, hillY(x, z) + r * 0.2, z); rk.scale.y = 0.7; g.add(rk);
+        rocks.add(new THREE.IcosahedronGeometry(r, 0), T4(x, hillY(x, z) + r * 0.2, z, 0.7));
       }
+      flush(g, trunks, ctx.P(0x6a4a2e)); flush(g, pines, ctx.P(0x2f6f38)); flush(g, rocks, ctx.P(0xb9ad98));
+      for (const [c, bt] of Object.entries(crowns)) flush(g, bt, ctx.P(+c));
       // a muralha: fita contínua seguindo o topo do morro (seções de 3 m)
       const step = 3, K = Math.round((X1 - X0) / step);
       const prof = [[5.6, -8], [4.9, 1.5], [4.1, 10], [-4.1, 10], [-4.9, 1.5], [-5.6, -8]];
@@ -495,42 +522,44 @@ export const LANDMARKS_C = {
       band(2, 3, 0xf0e4c8, V(0, 1, 0));
       band(3, 4, 0xc8b18c, V(0, 0.2, -1));
       band(4, 5, 0xa08a6c, V(0, -0.2, -1));
-      // ameias na frente, parapeito baixo atrás, e lajotas do caminho
+      // ameias na frente e parapeito baixo atrás (peças juntadas)
       const q = new THREE.Quaternion(), tan = V();
       const sect = k => { const x = X0 + k * step; return V(x, H(x) * taper(x), Zc(x)); };
+      const mer = new Batch(), caps = new Batch(), backs = new Batch();
       for (let k = 0; k < K; k++) {
         const a = sect(k), b = sect(k + 1);
         tan.subVectors(b, a); const len = tan.length(); tan.normalize();
         q.setFromUnitVectors(V(1, 0, 0), tan);
         const mid = a.clone().add(b).multiplyScalar(0.5);
-        const m = box(1.9, 2.5, 1.1, ctx.P(0xc9bda6), mid.x, mid.y + 10 + 1.25, mid.z + 3.55); m.quaternion.copy(q); g.add(m);
-        const cap = box(2.1, 0.5, 1.3, ctx.P(0xece2cc), mid.x, mid.y + 10 + 2.7, mid.z + 3.55); cap.quaternion.copy(q); g.add(cap);
-        const back = box(len + 0.1, 1.3, 0.9, ctx.P(0xcdc1aa), mid.x, mid.y + 10 + 0.65, mid.z - 3.7); back.quaternion.copy(q); g.add(back);
+        mer.box(1.9, 2.5, 1.1, mid.x, mid.y + 10 + 1.25, mid.z + 3.55, 0, q);
+        caps.box(2.1, 0.5, 1.3, mid.x, mid.y + 10 + 2.7, mid.z + 3.55, 0, q);
+        backs.box(len + 0.1, 1.3, 0.9, mid.x, mid.y + 10 + 0.65, mid.z - 3.7, 0, q);
       }
+      flush(g, mer, ctx.P(0xd2c4a8)); flush(g, caps, ctx.P(0xf2e8d0)); flush(g, backs, ctx.P(0xd6c8ae));
       // torres de vigia (grandes, de dois andares, com janelas, ameias e casinha de telhado)
       const towers = [-142, -100, -58, -16, 26, 68, 110, 142];
+      const tBody = new Batch(), tBase = new Batch(), tBand = new Batch(), tWin = new Batch(), tCren = new Batch(), tHut = new Batch(), tRoof = new Batch();
       for (const tx of towers) {
         const y = H(tx) * taper(tx), z = Zc(tx), yaw = -Math.atan((Zc(tx + 1) - Zc(tx - 1)) / 2);
-        const T = new THREE.Group(); T.position.set(tx, y, z); T.rotation.y = yaw; g.add(T);
-        T.add(box(13, 32, 11.6, ctx.P(0xb5a78f), 0, 4, 0));
-        T.add(box(13.8, 4, 12.4, ctx.P(0x95897a), 0, -10, 0));
-        T.add(box(13.8, 1.2, 12.4, ctx.P(0xe6dcc6), 0, 8.2, 0));
-        T.add(box(14.4, 1.4, 13, ctx.P(0xe9e0cc), 0, 20.4, 0));
-        for (const fz of [-1, 1]) {
-          for (const wx of [-3.6, 0, 3.6]) {
-            T.add(geo(archWallGeo(2.2, 4, 0.4, 0.9, 1.8, false), ctx.P(0x3a2c22), wx, 11.6, fz * 5.95).rotateY(fz > 0 ? 0 : Math.PI));
-            T.add(geo(archWallGeo(2.2, 3.4, 0.4, 0.9, 1.4, false), ctx.P(0x3a2c22), wx, 3.2 - 0.4, fz * 5.95).rotateY(fz > 0 ? 0 : Math.PI));
-          }
+        const R = (lx, ly, lz) => { const c = Math.cos(yaw), sn = Math.sin(yaw); return [tx + lx * c + lz * sn, y + ly, z - lx * sn + lz * c]; };
+        const bx = (bt, w, h, d, lx, ly, lz) => bt.box(w, h, d, ...R(lx, ly, lz), yaw);
+        bx(tBody, 13, 32, 11.6, 0, 4, 0);
+        bx(tBase, 13.8, 4, 12.4, 0, -10, 0);
+        bx(tBand, 13.8, 1.2, 12.4, 0, 8.2, 0);
+        bx(tBand, 14.4, 1.4, 13, 0, 20.4, 0);
+        for (const fz of [-1, 1]) for (const wx of [-3.6, 0, 3.6]) {
+          bx(tWin, 2.2, 4, 0.5, wx, 11.6, fz * 5.9);
+          bx(tWin, 2.2, 3.4, 0.5, wx, 2.8, fz * 5.9);
         }
-        for (const fx of [-1, 1]) {
-          T.add(box(0.4, 5.6, 5.2, ctx.P(0x2a2018), fx * 6.55, 11.6, 0));
-        }
-        for (let mx = -6; mx <= 6.1; mx += 2.4) for (const mz of [-5.6, 5.6]) T.add(box(1.4, 1.9, 1.1, ctx.P(0xcbbfa8), mx, 22.2, mz));
-        for (let mz = -3.2; mz <= 3.3; mz += 2.4) for (const mx of [-6.4, 6.4]) T.add(box(1.1, 1.9, 1.4, ctx.P(0xcbbfa8), mx, 22.2, mz));
-        T.add(geo(frustumGeo(9.2, 7.6, 4.6, 0.55), ctx.P(0x7a4636), 0, 24.2, 0));
-        T.add(box(6.4, 3.4, 5, ctx.P(0xcfc3ac), 0, 22.7, 0));
-        T.add(box(2.4, 2.6, 0.3, ctx.P(0x3a2c22), 0, 22.4, 2.55));
+        for (const fx of [-1, 1]) bx(tWin, 0.5, 5.6, 5.2, fx * 6.5, 11.6, 0);
+        for (let mx = -6; mx <= 6.1; mx += 2.4) for (const mz of [-5.6, 5.6]) bx(tCren, 1.4, 1.9, 1.1, mx, 22.2, mz);
+        for (let mz = -3.2; mz <= 3.3; mz += 2.4) for (const mx of [-6.4, 6.4]) bx(tCren, 1.1, 1.9, 1.4, mx, 22.2, mz);
+        bx(tHut, 6.4, 3.4, 5, 0, 22.7, 0);
+        bx(tWin, 2.4, 2.6, 0.3, 0, 22.4, 2.55);
+        const rf = geo(frustumGeo(9.2, 7.6, 4.6, 0.55), ctx.P(0x7a4636), 0, 24.2, 0); rf.position.set(...R(0, 24.2, 0)); rf.rotation.y = yaw; g.add(rf);
       }
+      flush(g, tBody, ctx.P(0xc4b496)); flush(g, tBase, ctx.P(0xa08a6c)); flush(g, tBand, ctx.P(0xeee4cc));
+      flush(g, tWin, ctx.P(0x33261c)); flush(g, tCren, ctx.P(0xd6c8ac)); flush(g, tHut, ctx.P(0xd6c9b0));
     },
   },
 
@@ -558,8 +587,8 @@ export const LANDMARKS_C = {
       });
       for (let k = 0; k < 3; k++) { // escadarias com rampa imperial de pedra no meio
         const r = tiers[k][0], y0 = tiers.slice(0, k).reduce((a, t) => a + t[1], 0);
-        for (let st = 0; st < 6; st++) g.add(box(9, 0.5 * (st + 1), 1.2, marble, 0, 0.25 * (st + 1) + y0, r + 3.4 - st * 1.0 + (k === 0 ? 2 : 0) - (k === 0 ? 0 : 0.8)));
-        g.add(box(2.6, 0.4, 7, marbleD, 0, y0 + 1.5, r + 1.5));
+        for (let st = 0; st < 6; st++) g.add(box(9, 0.5 * (st + 1), 1.05, marble, 0, y0 + 0.25 * (st + 1), r + 1.3 + (5 - st) * 1.0));
+        const ramp = box(2.8, 0.3, 6.6, marbleD, 0, y0 + 1.6, r + 4.2); ramp.rotation.x = 0.46; g.add(ramp);
       }
       // salão da oração: três andares de telhado redondo azul (faixas de telha) sobre paredes vermelhas
       const base = y;
@@ -577,7 +606,7 @@ export const LANDMARKS_C = {
         if (k === 0) for (let i = 0; i < 3; i++) g.add(box(2.6, 5, 0.3, ctx.P(0x4a1810), (i - 1) * 3.4, yy + 3, wr + 0.1)).children;
         const W = 14;
         for (let i = 0; i < W; i++) {
-          const wedge = geo(roofGeo(rr, rh, (i / W) * Math.PI * 2, ((i + 1) / W) * Math.PI * 2), ctx.P(i % 2 ? 0x2a58cc : 0x2150ba, 'smooth'), 0, yy + wh, 0);
+          const wedge = geo(roofGeo(rr, rh, (i / W) * Math.PI * 2, ((i + 1) / W) * Math.PI * 2), ctx.P(i % 2 ? 0x3a70e0 : 0x1c44a8, 'smooth'), 0, yy + wh, 0);
           g.add(wedge);
         }
         g.add(cyl(rr * 1.04, rr * 1.04, 0.5, gold, 0, yy + wh + 0.3, 0, 28));
@@ -614,12 +643,13 @@ export const LANDMARKS_C = {
     kind: 'far', water: 'shore', w: 100, d: 112, scale: 1.3, dense: true, fit: [1, 0.85, 0.7], offs: [10, 25, 45, 70, 100, 140],
     build(ctx, g) {
       const OZ = -14, H = 112, XM = -28, WB = 76;
-      const sailMat = ctx.mats.sail || (ctx.mats.sail = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, side: THREE.DoubleSide, emissive: 0xffffff, emissiveIntensity: 0.16 + ctx.glow * 0.5 }));
+      const sailM = sailMat(ctx);
       const steel = ctx.P(0xe6ebf2, 'metal'), steelD = ctx.P(0xb8c2d0, 'metal'), gold = ctx.P(0xe8b84a, 'metal');
       // ilha artificial redonda e passarela (píer) até a terra, com postes de luz
-      g.add(cyl(33, 36, 4, ctx.P(0xe6dac0), 0, 0, OZ, 28));
-      g.add(cyl(33.2, 33.2, 0.5, ctx.P(0x4fb8d8), 0, 2.1, OZ, 28));
-      g.add(geo(ellipseBand([[0.01, 0.01, 2.3], [31, 31, 2.3]], 0, TAU, 28, () => V(0, 1, 0)), ctx.P(0xefe6d0, 'flat'), 0, 0, OZ));
+      const isl = (r0, r1, h, c, y) => { const m = geo(new THREE.CylinderGeometry(r0, r1, h, 32), c, 12, y, OZ); m.scale.x = 1.55; g.add(m); };
+      isl(33, 36, 4, ctx.P(0xe6dac0), 0);
+      isl(33.2, 33.2, 0.5, ctx.P(0x4fb8d8), 2.1);
+      const deck = geo(new THREE.CircleGeometry(31, 32).rotateX(-Math.PI / 2), ctx.P(0xefe6d0, 'flat'), 12, 2.3, OZ); deck.scale.x = 1.55; g.add(deck);
       g.add(box(8, 1.6, 40, ctx.P(0xd8ccb0), 0, 0.8, OZ + 50));
       g.add(box(6, 0.4, 40, ctx.P(0x4a4a54), 0, 1.7, OZ + 50));
       for (let k = 0; k < 6; k++) for (const s of [-1, 1]) {
@@ -642,7 +672,7 @@ export const LANDMARKS_C = {
       const NB = 14;
       for (let i = 0; i < NB; i++) {
         const t0 = (i / NB) * 0.985, t1 = ((i + 1) / NB) * 0.985;
-        g.add(geo(gridGeo(8, 1, (u, v) => P(u, v ? t1 : t0), () => V(0, 0.15, 1)), { mat: sailMat, color: new THREE.Color(i % 2 ? 0xdde9f6 : 0xffffff) }));
+        g.add(geo(gridGeo(8, 1, (u, v) => P(u, v ? t1 : t0), () => V(0, 0.15, 1)), { mat: sailM, color: new THREE.Color(i % 2 ? 0xdde9f6 : 0xffffff) }));
       }
       // estrutura de aço triangular: mastro duplo, base e borda curva, mais nervuras
       g.add(bar(V(XM, 4, OZ + 4), V(XM, 4 + H + 8, OZ - 5), 2.6, steel));
@@ -728,7 +758,7 @@ export const LANDMARKS_C = {
 
   // ======================= SYDNEY: ÓPERA =======================
   opera: {
-    kind: 'near', water: 'shore', w: 176, d: 116, dense: true, fit: [1, 0.85, 0.7], offs: [6, 16, 30, 48, 70, 95],
+    kind: 'near', water: 'shore', w: 176, d: 116, scale: 1.15, heroAlong: 175, dense: true, fit: [1, 0.85, 0.7], offs: [6, 16, 30, 48, 70, 95],
     build(ctx, g) {
       const rect = ctx.atlas.region(512, 256, (c, w, h) => { // telhas brancas em losangos, com faixas
         c.fillStyle = '#fbf8ee'; c.fillRect(0, 0, w, h);
@@ -758,12 +788,13 @@ export const LANDMARKS_C = {
         const outW = c => V(c.x - cx, 0.3, c.z - cz).multiplyScalar(dir > 0 ? 1 : 1).setX((c.x - cx) * dir * 1 + 0.001);
         const want = c => V((c.x - (cx - dir * R * 0.55)) , 0.5 * (c.y - y0), (c.z - cz) * 0.4);
         const og = gridGeo(10, 9, (a, b) => pt(a * 2 - 1, b), want, (a, b) => uvA(a, b));
-        g.add(geo(og, { mat: ctx.atlas.mat, color: new THREE.Color(1, 1, 1) }));
+        g.add(geo(og, { mat: tileMat(ctx), color: new THREE.Color(1, 1, 1) }));
         const ig = gridGeo(10, 9, (a, b) => { const p = pt(a * 2 - 1, b * 0.995); return [p[0] - dir * 0.5, p[1] - 0.2, p[2]]; }, c => V(-(c.x - (cx - dir * R * 0.55)), -0.5 * (c.y - y0), -(c.z - cz) * 0.4));
-        g.add(geo(ig, ctx.P(0xf6efdc, 'solid')));
-        // vidro no lado aberto (plano em x = cx - dir * 0.55R ... acompanha a borda da casca)
-        const gg = gridGeo(10, 9, (a, b) => { const p = pt(a * 2 - 1, b); return [cx - dir * R * 0.55 + dir * 0.1, p[1], p[2]]; }, () => V(-dir, 0, 0));
-        g.add(geo(gg, ctx.P(0xcfe6ee, 'smooth')));
+        g.add(geo(ig, { mat: sailMat(ctx), color: new THREE.Color(0xf4ecd8) }));
+        // vidro no lado aberto: parede inclinada seguindo a corda da casca (por trás dela)
+        const x0 = pt(0, 0)[0], x1 = pt(0, 1)[0];
+        const gg = gridGeo(10, 9, (a, b) => { const p = pt(a * 2 - 1, b); return [x0 + (x1 - x0) * b - dir * 0.2, p[1], p[2]]; }, () => V(-dir, 0, 0));
+        g.add(geo(gg, { mat: sailMat(ctx), color: new THREE.Color(0xbfdcea) }));
       };
       // sala de concertos (esquerda): velas viradas para a direita em escada; velas opostas atrás
       [[-72, -8, 58], [-57, -8, 46], [-42, -8, 35], [-28, -8, 25]].forEach(([x, z, h]) => shell(x, z, h, 1));

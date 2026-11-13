@@ -361,7 +361,7 @@ export const LANDMARKS_A = {
     },
   },
 
-  // ======================= ROMA =======================
+  // ======================= ROMA (o Coliseu fica em lm-polish.js) =======================
   colunaTriunfal: {
     w: 16, d: 16,
     build(ctx, g) {

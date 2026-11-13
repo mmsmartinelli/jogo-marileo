@@ -1,6 +1,7 @@
 // Formas paramétricas para os marcos (grades de pontos, faixas elípticas, quadriláteros).
 // Tudo devolve BufferGeometry indexada com o lado de fora virado para onde pedimos.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 export const TAU = Math.PI * 2;
 
@@ -69,4 +70,22 @@ export function quadGeo(p0, p1, p2, p3, want) {
 export function lcg(seed) {
   let s = seed >>> 0 || 1;
   return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+}
+
+// Junta várias peças da mesma cor numa malha só (muito mais barato de montar que uma malha por peça).
+export class Batch {
+  constructor() { this.gs = []; this._m = new THREE.Matrix4(); this._q = new THREE.Quaternion(); this._v = new THREE.Vector3(); this._s = new THREE.Vector3(1, 1, 1); }
+  add(g, matrix) {
+    const c = g.index ? g.toNonIndexed() : g.clone();
+    for (const k of Object.keys(c.attributes)) if (k !== 'position' && k !== 'normal' && k !== 'uv') c.deleteAttribute(k);
+    if (matrix) c.applyMatrix4(matrix);
+    this.gs.push(c);
+    return this;
+  }
+  // caixa w x h x d em (x, y, z), girada por um quaternion opcional (ou por rotY)
+  box(w, h, d, x, y, z, rotY = 0, quat = null) {
+    const q = quat || this._q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotY);
+    return this.add(new THREE.BoxGeometry(w, h, d), this._m.compose(this._v.set(x, y, z), q, this._s));
+  }
+  geom() { const out = this.gs.length ? mergeGeometries(this.gs) : null; this.gs.forEach(g => g.dispose()); this.gs = []; return out; }
 }

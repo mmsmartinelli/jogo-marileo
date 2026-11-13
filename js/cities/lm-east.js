@@ -1,4 +1,5 @@
 // Marcos da África, da Ásia e da Oceania: Cairo, Dubai, Agra, Pequim, Tóquio e Sydney.
+// Os marcos principais de Cairo, Dubai, Agra, Pequim e Sydney (e o Coliseu de Roma) ficam em lm-polish.js.
 import * as THREE from 'three';
 import { box, cyl, cone, sphere, geo, bar, beam, lathe, onionGeo, archWallGeo, frustumGeo, latticeTower, crenellate, person, SKINS, SHIRTS } from './common.js';
 
@@ -28,7 +29,7 @@ function minaret(ctx, g, x, z, h, r, col, top = 'onion') {
 }
 
 export const LANDMARKS_B = {
-  // ======================= CAIRO =======================
+  // ======================= CAIRO (pirâmides e esfinge: lm-polish.js) =======================
   mesquita: {
     w: 56, d: 44, scale: 1.3,
     build(ctx, g) {
@@ -52,7 +53,7 @@ export const LANDMARKS_B = {
     },
   },
 
-  // ======================= DUBAI =======================
+  // ======================= DUBAI (agulha e hotel-vela: lm-polish.js) =======================
   moldura: {
     kind: 'span', w: 60, d: 10, pillar: 10,
     build(ctx, g) {
@@ -69,9 +70,7 @@ export const LANDMARKS_B = {
     },
   },
 
-  // ======================= AGRA =======================
-
-  // ======================= PEQUIM =======================
+  // ======================= PEQUIM (muralha e templo: lm-polish.js; Taj Mahal e forte: idem) =======================
   portalChines: {
     kind: 'span', w: 64, d: 6, pillar: 3,
     build(ctx, g) {
@@ -161,7 +160,7 @@ export const LANDMARKS_B = {
     },
   },
 
-  // ======================= SYDNEY =======================
+  // ======================= SYDNEY (ópera: lm-polish.js) =======================
   ponteArco: {
     kind: 'far', water: 'in', w: 220, d: 30, offs: [40, 80, 130, 190],
     build(ctx, g) {
