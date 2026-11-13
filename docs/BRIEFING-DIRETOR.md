@@ -42,3 +42,9 @@ Jogo de corrida de kart 3D (estilo Mario Kart, bichinhos Leo, Mari etc.), chamad
 - Prompt para a sessão do Mac nova: "Leia docs/BRIEFING-DIRETOR.md e docs/QA-cidades-linha-de-base.md, faça git pull e assuma como diretor do Race Cities. Apresente ao CEO em 5 linhas o que está pronto e o que falta, e delegue o próximo lote."
 
 - **Equipe de agentes:** ver docs/EQUIPE-AGENTES.md (8 seções, modelo e esforço de cada um; definições em .claude/agents/).
+
+## Situação em 13/11/2026 à noite
+- **Branch principal agora é `main`** (igual a `claude/bold-dijkstra-nndig4`). O GitHub Pages publica a `main` (pasta raiz): https://mmsmartinelli.github.io/jogo-marileo/ — versão no ar: cache `race-cities-v15`.
+- Push pelo Mac funciona: token "mac-jogo" (só o repositório jogo-marileo, Contents leitura/escrita, vence em 13/12/2026) guardado no Keychain. Quando vencer, gerar outro em github.com/settings/personal-access-tokens e guardar com `git credential approve`.
+- Feito hoje: acabamento das 6 cidades (nuvem + Mac), Roma e Agra com bairros, otimização de peso (karts com menos peças; todas as cidades abaixo de ~350 calls / 230k triângulos na média), aviso de segurança do online, anúncio a cada 2 corridas (anúncios ainda desligados), textos de loja sem "crianças".
+- Próximo: teste do CEO no celular; juntar caixas/moedas/obstáculos (peso); Cristo do Blender no Rio; retenção (desbloqueios/desafios).
