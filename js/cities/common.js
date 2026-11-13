@@ -142,6 +142,55 @@ export function bakeObject(obj, { local = false, shadow = true } = {}) {
   return out;
 }
 
+// Corta uma malha grande (chão, telhados juntados...) em quadrados de `cell` metros.
+// Cada pedaço reaproveita os mesmos vértices (só muda a lista de triângulos) e tem a
+// sua própria "bolha" de visibilidade: o que fica atrás da câmera nem é desenhado.
+// A aparência não muda. Devolve quantos pedaços ficaram.
+export function splitByGrid(mesh, cell, minTris = 0) {
+  const g = mesh.geometry, parent = mesh.parent;
+  if (!parent || !g.attributes.position) return 1;
+  mesh.updateMatrix();
+  const pos = g.attributes.position, idx = g.index;
+  const n = idx ? idx.count : pos.count;
+  if (n / 3 < minTris) return 1;
+  const tiles = new Map();
+  const v = new THREE.Vector3();
+  for (let t = 0; t + 2 < n; t += 3) {
+    let cx = 0, cz = 0;
+    for (let k = 0; k < 3; k++) {
+      const i = idx ? idx.getX(t + k) : t + k;
+      v.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrix);
+      cx += v.x; cz += v.z;
+    }
+    const key = Math.floor(cx / 3 / cell) + ',' + Math.floor(cz / 3 / cell);
+    let a = tiles.get(key);
+    if (!a) tiles.set(key, a = []);
+    for (let k = 0; k < 3; k++) a.push(idx ? idx.getX(t + k) : t + k);
+  }
+  if (tiles.size < 2) return 1;
+  const big = pos.count > 65535;
+  for (const list of tiles.values()) {
+    const tg = new THREE.BufferGeometry();
+    for (const [name, attr] of Object.entries(g.attributes)) tg.setAttribute(name, attr);
+    tg.setIndex(new THREE.BufferAttribute(big ? new Uint32Array(list) : new Uint16Array(list), 1));
+    // caixa e bolha só dos vértices deste pedaço (o three calcularia com todos)
+    const box = new THREE.Box3();
+    for (const i of list) box.expandByPoint(v.fromBufferAttribute(pos, i));
+    tg.boundingBox = box;
+    const c = box.getCenter(new THREE.Vector3());
+    let r2 = 0;
+    for (const i of list) r2 = Math.max(r2, c.distanceToSquared(v.fromBufferAttribute(pos, i)));
+    tg.boundingSphere = new THREE.Sphere(c, Math.sqrt(r2));
+    const m = new THREE.Mesh(tg, mesh.material);
+    m.position.copy(mesh.position); m.quaternion.copy(mesh.quaternion); m.scale.copy(mesh.scale);
+    m.castShadow = mesh.castShadow; m.receiveShadow = mesh.receiveShadow; m.renderOrder = mesh.renderOrder;
+    m.userData = { ...mesh.userData };
+    parent.add(m);
+  }
+  parent.remove(mesh);
+  return tiles.size;
+}
+
 // Saco de geometrias soltas (props espalhados pela cidade) que vira poucas malhas no fim.
 export class Bag {
   constructor() { this.map = new Map(); }
@@ -162,6 +211,7 @@ export class Bag {
       const mm = new THREE.Mesh(merged, mat);
       mm.castShadow = mat.type !== 'MeshBasicMaterial' && !mat.polygonOffset;
       mm.receiveShadow = true;
+      mm.userData.bag = true; // espalhado pela cidade: pode ser cortado em pedaços (splitByGrid)
       parent.add(mm);
     }
     this.map.clear();
