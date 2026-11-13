@@ -152,9 +152,10 @@ export const PROPS = {
       g.add(cyl(0.12, 0.15, 5, ctx.P(0x3a2a20), 0, 2.5, 0, 5));
       g.add(box(2.6, 0.15, 0.15, ctx.P(0x3a2a20), 0, 5, 0));
       for (const x of [-1, 1]) {
-        g.add(sphere(0.6, ctx.P(0xff2a1a, 'neon'), x, 4.1, 0, 8, 6)).children.at(-1).scale.set(1, 1.2, 1);
-        g.add(cyl(0.35, 0.35, 0.15, ctx.P(0xffc81a), x, 4.85, 0, 6));
-        g.add(cyl(0.35, 0.35, 0.15, ctx.P(0xffc81a), x, 3.35, 0, 6));
+        const lan = sphere(0.85, ctx.P(0xff2a1a, 'neon'), x * 1.1, 4, 0, 8, 6); lan.scale.set(1, 1.2, 1); g.add(lan);
+        g.add(cyl(0.5, 0.5, 0.2, ctx.P(0xffc81a), x * 1.1, 4.95, 0, 6));
+        g.add(cyl(0.5, 0.5, 0.2, ctx.P(0xffc81a), x * 1.1, 3.0, 0, 6));
+        g.add(cone(0.18, 1.2, ctx.P(0xff2a1a), x * 1.1, 2.4, 0, 4));
       }
       put(ctx, g, s);
     });

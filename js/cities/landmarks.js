@@ -7,6 +7,7 @@
 import { OSASCO_LANDMARKS } from './osasco.js';
 import { LANDMARKS_A } from './lm-west.js';
 import { LANDMARKS_B } from './lm-east.js';
+import { LANDMARKS_C } from './lm-polish.js';
 
-export const LANDMARKS = { ...OSASCO_LANDMARKS, ...LANDMARKS_A, ...LANDMARKS_B };
+export const LANDMARKS = { ...OSASCO_LANDMARKS, ...LANDMARKS_A, ...LANDMARKS_B, ...LANDMARKS_C };
 

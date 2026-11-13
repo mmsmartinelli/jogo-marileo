@@ -153,8 +153,9 @@ export const KITS = {
     times: { dia: 0.65, tarde: 0.3, noite: 0.05 },
     sky: {
       skyTop: '#3a7bd5', skyHorizon: '#ffe6b8', skyBottom: '#e0b070', sun: '#fff0c8', sunDir: [-0.4, 0.72, 0.5],
-      fog: '#f0d6a6', fogNear: 200, fogFar: 900, hemiSky: '#ffe9c4', hemiGround: '#b98a4a', glow: 0.12,
+      fog: '#f0d6a6', fogNear: 340, fogFar: 1400, hemiSky: '#ffe9c4', hemiGround: '#b98a4a', glow: 0.12,
     },
+    sunset: { fogNear: 300, fogFar: 1250 }, // poeira mais rala no fim de tarde: os marcos continuam à vista
     weather: { kind: 'dust', chance: 0.7 },
     theme: {
       road: '#6d5f55', roadSpeckle: ['#7d6f63', '#5d5048', '#8a7a6c'], lineColor: 'rgba(255,240,200,0.85)',
