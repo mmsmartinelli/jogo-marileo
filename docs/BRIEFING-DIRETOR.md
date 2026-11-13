@@ -32,3 +32,11 @@ Jogo de corrida de kart 3D (estilo Mario Kart, bichinhos Leo, Mari etc.), chamad
 - Feitos: ícones Android, rascunho de privacidade, Plano do Estúdio.
 - Em andamento na nuvem: QA/medição das 12 cidades; script do Cristo no Blender (`tools/blender/`, ainda não integrado ao jogo).
 - A nuvem não alcança o Blender do Mac: o script `tools/blender/cristo.py` deve ser rodado no Mac com `blender --background --python tools/blender/cristo.py`.
+
+## Situação em 13/11/2026 à tarde (sessão do Mac assumiu como diretor)
+- Tudo da nuvem foi puxado para o Mac (branch `claude/bold-dijkstra-nndig4`, commit `666af6d`). A sessão da nuvem só precisa confirmar "nada pendente" e ser arquivada pelo CEO.
+- **Blender no Mac:** versão 5.3.0, configuração rápida concluída (português do Brasil, Blender Dark). Caminho da linha de comando: `/Applications/Blender.app/Contents/MacOS/Blender` (o comando `blender` não está no PATH).
+- **Cristo Redentor:** `tools/blender/cristo.py` rodou no Blender real sem erro (~2 s, 67 KB, 1.940 triângulos, 3 materiais). Comparação: 2.280 triângulos (marco completo) contra 648 do procedural; draw calls iguais (7). **Ainda não ligado ao jogo.** Decisão pendente do CEO: vale o custo de ~1.600 triângulos a mais? Antes, medir o Rio inteiro com o modelo.
+- **Acabamento das cidades fracas, 1º lote:** Roma e Agra, cada uma num agente próprio, em cópias isoladas (worktrees `.claude/worktrees/agent-*`), sem push. Limites: Roma ≤ ~350 calls / 230k triângulos; Agra ≤ ~330 calls / 230k triângulos. Ao terminar, o diretor confere capturas e números, junta na branch e só então faz push.
+- **2º lote (ainda não lançado):** Pequim, Cairo, Dubai e Sydney. Atenção: Cairo, Dubai, Pequim, Tóquio e Sydney compartilham `js/cities/lm-east.js`, então devem rodar em sequência ou com merge cuidadoso.
+- Prompt para a sessão do Mac nova: "Leia docs/BRIEFING-DIRETOR.md e docs/QA-cidades-linha-de-base.md, faça git pull e assuma como diretor do Race Cities. Apresente ao CEO em 5 linhas o que está pronto e o que falta, e delegue o próximo lote."
