@@ -14,6 +14,7 @@ export const ADS_CONFIG = {
 
   // ===== REGRAS =====
   minSecondsBetween: 90,   // intervalo mínimo entre dois anúncios de intervalo
+  everyNRaces: 2,          // anúncio só a cada N corridas (2 = depois da 2ª, 4ª, 6ª...; 1 = toda corrida)
   skipFirstRace: true,     // nenhum anúncio depois da 1ª corrida da sessão
   maxPerSession: 8,        // máximo de anúncios por sessão (0 = sem limite)
   skipOnline: true,        // sem anúncio em salas online (os outros jogadores estão esperando)

@@ -567,6 +567,8 @@ class Ads {
     if (this._busy) return 'busy';
     if (c.skipOnline && opts && opts.online) return 'online';
     if (c.skipFirstRace && this._calls === 1) return 'first-race';
+    // "a cada N corridas": só a 2ª, 4ª, 6ª... (N = 2). Com N <= 1, toda corrida (depois da 1ª) pode ter anúncio.
+    if (c.everyNRaces > 1 && this._calls % c.everyNRaces !== 0) return 'every-n';
     if (c.maxPerSession > 0 && this._shownCount >= c.maxPerSession) return 'session-cap';
     if (this._lastAt && (Date.now() - this._lastAt) < c.minSecondsBetween * 1000) return 'too-soon';
     return null;

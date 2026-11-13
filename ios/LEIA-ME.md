@@ -68,7 +68,7 @@ anúncios de teste mesmo com os IDs reais.
 - O app **não pede permissão de rastreamento** (não aparece "Permitir que o app rastreie…"): os
   anúncios são sem personalização, com tratamento de criança e classificação máxima G.
 - **Privacidade do app** (App Store Connect → seu app → Privacidade do app): com anúncios **não é mais
-  "Dados não coletados"**. Declare o que o SDK do Google coleta (tabela em `docs/ANUNCIOS.md`, seção 6):
+  "Dados não coletados"**. Essa resposta só vale enquanto os anúncios estiverem desligados. Ao ligar, declare o que o SDK do Google coleta (tabela em `docs/ANUNCIOS.md`, seção 6):
   Dados de falhas, Dados de desempenho, ID do dispositivo, Dados de publicidade, Interação com o produto
   e Localização aproximada — finalidade "Publicidade de terceiros" (e "Análises"). Confirme com o
   jurídico se marca "vinculado à identidade"/"rastreamento" (nossa leitura: não).
