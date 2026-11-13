@@ -362,38 +362,6 @@ export const LANDMARKS_A = {
   },
 
   // ======================= ROMA =======================
-  coliseu: {
-    w: 92, d: 78, scale: 1.45,
-    build(ctx, g) {
-      const R = 38, Rz = 0.82;
-      // arcadas desenhadas num pedaço do atlas e enroladas no cilindro
-      const rect = ctx.atlas.region(2048, 256, (c, w, h) => {
-        c.fillStyle = '#e2cfa6'; c.fillRect(0, 0, w, h);
-        for (let row = 0; row < 4; row++) {
-          const y0 = row * h / 4;
-          c.fillStyle = 'rgba(120,90,60,0.35)'; c.fillRect(0, y0 + h / 4 - 6, w, 6);
-          if (row === 0) { for (let k = 0; k < 64; k++) { c.fillStyle = '#5a4630'; c.fillRect(k * 32 + 12, y0 + 22, 8, 12); } continue; }
-          for (let k = 0; k < 32; k++) {
-            const x = k * 64 + 14, ww = 36, top = y0 + 12, bot = y0 + h / 4 - 8;
-            c.fillStyle = '#4a3a2a';
-            c.beginPath(); c.moveTo(x, bot); c.lineTo(x, top + ww / 2); c.arc(x + ww / 2, top + ww / 2, ww / 2, Math.PI, 0); c.lineTo(x + ww, bot); c.fill();
-          }
-        }
-      });
-      const travertine = ctx.atlas.mat;
-      const wallFull = new THREE.CylinderGeometry(R, R, 40, 40, 1, true, 0, Math.PI * 1.25);
-      remapUV(wallFull, { ...rect, u1: rect.u0 + (rect.u1 - rect.u0) * 0.625 });
-      const m1 = new THREE.Mesh(wallFull, travertine); m1.scale.z = Rz; m1.position.y = 20; m1.rotation.y = Math.PI * 0.9; g.add(m1);
-      const wallLow = new THREE.CylinderGeometry(R, R, 30, 30, 1, true, 0, Math.PI * 0.75);
-      remapUV(wallLow, { ...rect, u1: rect.u0 + (rect.u1 - rect.u0) * 0.375, v1: rect.v0 + (rect.v1 - rect.v0) * 0.75 });
-      const m2 = new THREE.Mesh(wallLow, travertine); m2.scale.z = Rz; m2.position.y = 15; m2.rotation.y = Math.PI * 0.9 + Math.PI * 1.25; g.add(m2);
-      // parede de dentro e arquibancadas
-      const inner = geo(new THREE.CylinderGeometry(R - 3, R - 3, 30, 32, 1, true), ctx.P(0xc8b48a), 0, 15, 0); inner.scale.z = Rz; g.add(inner);
-      const seats = geo(new THREE.CylinderGeometry(R - 3, 15, 22, 32, 1, true), ctx.P(0xb8a47c), 0, 11, 0); seats.scale.z = Rz; g.add(seats);
-      const arena = geo(new THREE.CircleGeometry(15.5, 24).rotateX(-Math.PI / 2), ctx.P(0xd8b47a, 'flat'), 0, 0.3, 0); arena.scale.z = Rz; g.add(arena);
-      const rim = geo(new THREE.RingGeometry(R - 3, R + 0.3, 40, 1, 0, Math.PI * 1.25).rotateX(-Math.PI / 2), ctx.P(0xcdb88e), 0, 40.05, 0); rim.scale.z = Rz; rim.rotation.y = Math.PI * 0.9; g.add(rim);
-    },
-  },
   colunaTriunfal: {
     w: 16, d: 16,
     build(ctx, g) {
