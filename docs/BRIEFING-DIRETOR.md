@@ -40,3 +40,5 @@ Jogo de corrida de kart 3D (estilo Mario Kart, bichinhos Leo, Mari etc.), chamad
 - **Acabamento das cidades fracas, 1º lote:** Roma e Agra, cada uma num agente próprio, em cópias isoladas (worktrees `.claude/worktrees/agent-*`), sem push. Limites: Roma ≤ ~350 calls / 230k triângulos; Agra ≤ ~330 calls / 230k triângulos. Ao terminar, o diretor confere capturas e números, junta na branch e só então faz push.
 - **2º lote (ainda não lançado):** Pequim, Cairo, Dubai e Sydney. Atenção: Cairo, Dubai, Pequim, Tóquio e Sydney compartilham `js/cities/lm-east.js`, então devem rodar em sequência ou com merge cuidadoso.
 - Prompt para a sessão do Mac nova: "Leia docs/BRIEFING-DIRETOR.md e docs/QA-cidades-linha-de-base.md, faça git pull e assuma como diretor do Race Cities. Apresente ao CEO em 5 linhas o que está pronto e o que falta, e delegue o próximo lote."
+
+- **Equipe de agentes:** ver docs/EQUIPE-AGENTES.md (8 seções, modelo e esforço de cada um; definições em .claude/agents/).
