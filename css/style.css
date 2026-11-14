@@ -217,6 +217,8 @@ button.back-top {
 /* Cidade Surpresa (pista gerada) */
 .track.surprise { position: relative; background: linear-gradient(180deg, rgba(180, 107, 255, .28), rgba(124, 58, 237, .14)); border-style: dashed; border-color: rgba(200, 160, 255, .6); }
 .track.surprise.on { border-style: solid; border-color: var(--yellow); }
+/* Desafio do Dia: mesmo cartão, em laranja */
+.track.daily { background: linear-gradient(180deg, rgba(255, 159, 26, .30), rgba(255, 95, 31, .14)); border-color: rgba(255, 190, 110, .7); }
 .track .sname { line-height: 1.1; min-height: 2.2em; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 14px; }
 .track .sname span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .track button.reroll {

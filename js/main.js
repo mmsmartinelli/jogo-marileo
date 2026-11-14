@@ -12,6 +12,7 @@ import { PLAYER_COLORS } from './hud.js';
 import { isTouchDevice } from './touch.js';
 import { Online } from './online.js';
 import { ads } from './ads.js';
+import { MEDALS, medalEmoji, improveBest, countMedals, dayKey, dailyInfo, newDailyState, currentStreak, completeDaily, updateTrackRecord } from './progress.js';
 
 const POINTS = [15, 12, 10, 8, 6, 4, 2, 1];
 const $ = s => document.querySelector(s);
@@ -49,6 +50,10 @@ class App {
     this.settings.infCup = Math.max(1, Math.min(this.settings.infCup || this.infinite.unlocked, this.infinite.unlocked));
     if (!isGenId(this.settings.surpriseId)) this.settings.surpriseId = isGenId(this.settings.trackId) ? this.settings.trackId : GEN_PREFIX + randomSeed();
     this.records = load('marileo_tt', {});
+    // retenção: medalhas das copas fixas, Desafio do Dia e recordes por pista (melhor volta e colocação)
+    this.medals = load('marileo_medals', {});
+    this.daily = newDailyState(load('marileo_daily', {}));
+    this.trackRecs = load('marileo_recs', {});
     this.menuInputs = ['kb1', 'kb2', 'gp0', 'gp1', 'gp2', 'gp3'].map(s => new PlayerInput(s));
     this.ready = [false, false, false, false];
 
@@ -315,22 +320,18 @@ class App {
       const el = document.createElement('div');
       el.className = 'track' + (t.id === s.trackId ? ' on' : '') + (t.city ? '' : ' fantasy');
       el.appendChild(this._thumbCanvas(t.id));
-      const st = this.stars[t.id] || [];
-      const rec = this.records[t.id];
-      el.insertAdjacentHTML('beforeend', `<div class="tname">${t.city ? `${t.emoji} ${esc(t.cityName || t.name)}` : esc(t.name)}</div><div class="stars">${[0, 1, 2].map(k => st[k] ? '⭐' : '☆').join('')}${mode === 'tt' && rec ? ' • ' + formatTime(rec) : ''}</div>`);
+      el.insertAdjacentHTML('beforeend', `<div class="tname">${t.city ? `${t.emoji} ${esc(t.cityName || t.name)}` : esc(t.name)}</div><div class="stars">${this._starLine(t.id, mode)}</div>`);
       el.addEventListener('click', () => { s.trackId = t.id; audio.play('select'); this._renderSetup(); });
       return el;
     };
+    // 📅 Desafio do Dia (Corrida Rápida): uma pista nova por dia, a mesma para todo mundo
+    if (mode === 'race') list.appendChild(this._dailyCard());
     for (const id of WORLD_IDS) list.appendChild(card(getTrack(id)));
     // 🎲 Cidade Surpresa: uma cidade com pista nova a cada sorteio
     list.appendChild(this._surpriseCard(s.surpriseId, s.trackId === s.surpriseId,
       () => { s.trackId = s.surpriseId; audio.play('select'); this._renderSetup(); },
       () => { s.surpriseId = s.trackId = GEN_PREFIX + randomSeed(); audio.play('confirm'); this._renderSetup(); },
-      id => {
-        const st = this.stars[id] || [];
-        const rec = this.records[id];
-        return [0, 1, 2].map(k => (st[k] ? '⭐' : '☆')).join('') + (mode === 'tt' && rec ? ' • ' + formatTime(rec) : '');
-      }));
+      id => this._starLine(id, mode)));
     for (const id of FANTASY_IDS) list.appendChild(card(getTrack(id)));
     list.scrollLeft = keepScroll;
     if (!this._scrolledTo || this._scrolledTo !== s.trackId) {
@@ -345,14 +346,20 @@ class App {
       for (const c of [...CUPS, { id: 'infinita', emoji: '♾️', name: 'Copa Infinita' }]) {
         const b = document.createElement('button');
         b.dataset.c = c.id;
-        b.textContent = `${c.emoji} ${c.name.replace(/^Copa /, '')}`;
+        b.dataset.label = `${c.emoji} ${c.name.replace(/^Copa /, '')}`;
         b.title = c.name;
         b.addEventListener('click', () => { this.settings.cup = c.id; audio.play('select'); this._renderSetup(); });
         cm.appendChild(b);
       }
     }
-    $$('#cupMode button').forEach(b => b.classList.toggle('on', b.dataset.c === s.cup));
-    $('#cupName').textContent = cupDef.infinite ? '' : `${cupDef.emoji} ${cupDef.name}${cupDef.bonus ? ' (bônus)' : ''}`;
+    $$('#cupMode button').forEach(b => {
+      b.classList.toggle('on', b.dataset.c === s.cup);
+      // medalha da melhor colocação na copa ao lado do nome
+      const m = b.dataset.c === 'infinita' ? '' : medalEmoji(this.medals[b.dataset.c]);
+      b.textContent = b.dataset.label + (m ? ' ' + m : '');
+    });
+    const cupBest = cupDef.infinite ? 0 : this.medals[cupDef.id];
+    $('#cupName').textContent = cupDef.infinite ? '' : `${cupDef.emoji} ${cupDef.name}${cupDef.bonus ? ' (bônus)' : ''}${cupBest ? ` • ${medalEmoji(cupBest)} Melhor: ${cupBest}º` : ''}`;
     $('#infPick').hidden = !cupDef.infinite;
     if (cupDef.infinite) {
       const n = cupDef.number;
@@ -362,7 +369,7 @@ class App {
       $('#infNext').textContent = n >= this.infinite.unlocked ? '🔒' : '▶';
       const best = this.infinite.best[n];
       const ai = cupDef.aiDifficulty < 0.5 ? 'Fácil' : cupDef.aiDifficulty < 1.5 ? 'Normal' : 'Difícil';
-      $('#infInfo').textContent = `${best ? `Melhor: ${best}º lugar` : 'Copa nova!'} • Computador: ${ai}`;
+      $('#infInfo').textContent = `${best ? `${medalEmoji(best) ? medalEmoji(best) + ' ' : ''}Melhor: ${best}º lugar` : 'Copa nova!'} • Computador: ${ai}`;
     }
     const cup = $('#cupList');
     cup.innerHTML = '';
@@ -384,6 +391,32 @@ class App {
     if (!this.thumbs[id]) { const def = getTrack(id); if (def) this.thumbs[id] = this._trackThumb(def); }
     if (this.thumbs[id]) c.getContext('2d').drawImage(this.thumbs[id], 0, 0);
     return c;
+  }
+
+  // Linha abaixo da miniatura: estrelas + medalha da melhor colocação (ou o recorde no Contra o Relógio).
+  _starLine(id, mode) {
+    const st = this.stars[id] || [];
+    const stars = [0, 1, 2].map(k => (st[k] ? '⭐' : '☆')).join('');
+    if (mode === 'tt') { const rec = this.records[id]; return stars + (rec ? ' • ' + formatTime(rec) : ''); }
+    const m = medalEmoji((this.trackRecs[id] || {}).place);
+    return stars + (m ? ' ' + m : '');
+  }
+
+  // Cartão "📅 Desafio do Dia": pista gerada pela data; meta = as 3 estrelas da pista no dia.
+  _dailyCard() {
+    const s = this.settings;
+    const info = dailyInfo(dayKey());
+    const t = getTrack(info.trackId);
+    const done = this.daily.last === info.key;
+    const streak = currentStreak(this.daily, info.key);
+    const el = document.createElement('div');
+    el.className = 'track surprise daily' + (s.trackId === info.trackId ? ' on' : '');
+    el.appendChild(this._thumbCanvas(info.trackId));
+    el.insertAdjacentHTML('beforeend', `<div class="sname"><small>📅 Desafio do Dia${done ? ' ✔' : ''}</small><span>${t.emoji} ${esc(t.name)}</span></div>` +
+      `<div class="stars">${this._starLine(info.trackId, 'race')}${streak ? ` • 🔥${streak}` : ''}</div>`);
+    el.title = done ? 'Desafio de hoje feito! Amanhã tem pista nova.' : 'Ganhe as 3 estrelas desta pista hoje';
+    el.addEventListener('click', () => { s.trackId = info.trackId; audio.play('select'); this._renderSetup(); });
+    return el;
   }
 
   // Cartão "🎲 Cidade Surpresa" (Corrida Rápida, Contra o Relógio e sala online).
@@ -557,7 +590,20 @@ class App {
         <div class="chal ${n.done ? 'done' : ''}"><span class="star">⭐</span><div>${n.c.text}
         <div style="font-size:13px;opacity:.8">${n.done ? 'Conseguiu: ' + n.who.map(k => k.netName ? esc(k.netName) : 'J' + (k.playerIndex + 1)).join(', ') : (n.wasDone ? 'Já conquistado antes' : 'Ainda não...')}</div></div></div>`).join('');
       const total = TRACKS.reduce((a, t) => a + (this.stars[t.id] || []).filter(Boolean).length, 0);
-      chalHTML += `<p class="hint">Total de estrelas: <b>${total} / ${TRACKS.length * 3}</b>${def.generated ? ' (pistas fixas)' : ''}</p>`;
+      // 📅 Desafio do Dia: as 3 estrelas da pista de hoje (vale somar tentativas no mesmo dia)
+      const today = dayKey();
+      if (!cfg.online && def.id === dailyInfo(today).trackId) {
+        const got = this.stars[def.id].filter(Boolean).length;
+        if (got === 3 && completeDaily(this.daily, today)) {
+          save('marileo_daily', this.daily);
+          const n = this.daily.streak;
+          chalHTML += `<div class="chal done"><span class="star">📅</span><div><b>DESAFIO DO DIA COMPLETO!</b><div style="font-size:13px;opacity:.8">🔥 ${n} ${n === 1 ? 'dia' : 'dias seguidos'} • Amanhã tem pista nova</div></div></div>`;
+        } else if (got < 3) {
+          chalHTML += `<div class="chal"><span class="star">📅</span><div>Desafio do Dia<div style="font-size:13px;opacity:.8">${3 - got === 1 ? 'Falta 1 estrela' : `Faltam ${3 - got} estrelas`} nesta pista hoje</div></div></div>`;
+        }
+      }
+      const md = countMedals(this.medals, this.infinite.best);
+      chalHTML += `<p class="hint">Total de estrelas: <b>${total} / ${TRACKS.length * 3}</b>${def.generated ? ' (pistas fixas)' : ''}${md.gold + md.silver + md.bronze ? ` • Medalhas: ${MEDALS[0]}${md.gold} ${MEDALS[1]}${md.silver} ${MEDALS[2]}${md.bronze}` : ''}</p>`;
     } else {
       const best = Math.min(...humans.map(k => k.finishTime));
       const rec = this.records[def.id];
@@ -568,6 +614,7 @@ class App {
         <div style="font-size:13px;opacity:.8">Voltas: ${k.lapTimes.map(formatTime).join(' • ')}</div></div></div>`).join('') +
         `<div class="chal ${isRec ? 'done' : ''}"><span class="star">🏆</span><div>${isRec ? 'NOVO RECORDE!' : 'Recorde'}: ${formatTime(this.records[def.id])}</div></div>`;
     }
+    chalHTML += this._recordLines(race);
     $('#challenges').innerHTML = chalHTML;
 
     // pontos do GP
@@ -623,6 +670,22 @@ class App {
     this.show('results');
   }
 
+  // Recordes da pista (melhor volta em qualquer modo; melhor colocação fora do Contra o Relógio).
+  _recordLines(race) {
+    const cfg = race.cfg, id = race.def.id;
+    const humans = race.humans.filter(k => k.finished);
+    if (!humans.length) return '';
+    const bestLap = Math.min(...humans.flatMap(k => k.lapTimes));
+    const bestPlace = cfg.mode === 'tt' ? 0 : Math.min(...humans.map(k => k.place));
+    const up = updateTrackRecord(this.trackRecs, id, { lap: bestLap, place: bestPlace });
+    save('marileo_recs', this.trackRecs);
+    const r = this.trackRecs[id];
+    let html = '';
+    if (r.lap) html += `<div class="chal ${up.lap ? 'done' : ''}"><span class="star">⚡</span><div>${up.lap ? '<b>NOVO RECORDE DE VOLTA!</b> ' : 'Melhor volta na pista: '}${formatTime(r.lap)}${up.lap && up.prevLap ? `<div style="font-size:13px;opacity:.8">Antes: ${formatTime(up.prevLap)}</div>` : ''}</div></div>`;
+    if (up.place && up.prevPlace && medalEmoji(r.place)) html += `<div class="chal done"><span class="star">${medalEmoji(r.place)}</span><div>Sua melhor colocação aqui: <b>${r.place}º</b> (antes ${up.prevPlace}º)</div></div>`;
+    return html;
+  }
+
   _checkChallenge(c, k) {
     const st = k.stats;
     switch (c.type) {
@@ -660,6 +723,15 @@ class App {
       acts.appendChild(b);
     };
     let note = '';
+    const hPlace = entries.findIndex(e => e.info.human) + 1;
+    if (!g.cup.infinite && hPlace > 0) {
+      // medalha da copa (guarda a melhor: ouro > prata > bronze)
+      const before = this.medals[g.cup.id];
+      if (improveBest(this.medals, g.cup.id, hPlace)) save('marileo_medals', this.medals);
+      const m = medalEmoji(hPlace);
+      if (m && (!before || hPlace < before)) note = `${m} Medalha de ${['ouro', 'prata', 'bronze'][hPlace - 1]} na ${g.cup.name}!`;
+      else if (!m && !before) note = 'Termine entre os 3 primeiros para ganhar uma medalha.';
+    }
     if (g.cup.infinite) {
       // melhor colocação de um jogador na classificação final da copa
       const n = g.cup.number;
@@ -668,7 +740,7 @@ class App {
         const inf = this.infinite;
         inf.best[n] = Math.min(inf.best[n] || 99, place);
         const won = place <= 3;
-        if (won && inf.unlocked < n + 1) { inf.unlocked = n + 1; note = `🔓 Copa ${n + 1} liberada!`; }
+        if (won && inf.unlocked < n + 1) { inf.unlocked = n + 1; note = `${medalEmoji(place)} 🔓 Copa ${n + 1} liberada!`; }
         else if (!won && inf.unlocked <= n) note = `Termine entre os 3 primeiros para liberar a Copa ${n + 1}.`;
         this._saveInfinite();
       }

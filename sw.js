@@ -1,5 +1,5 @@
 // Service worker: guarda o jogo no aparelho para abrir rápido e jogar sem internet.
-const CACHE = 'race-cities-v15';
+const CACHE = 'race-cities-v16';
 const THREE = 'https://cdn.jsdelivr.net/npm/three@0.160.0/';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
@@ -8,7 +8,7 @@ const FILES = [
   'js/main.js', 'js/race.js', 'js/kart.js', 'js/track.js', 'js/tracks.js', 'js/items.js',
   'js/obstacles.js', 'js/ai.js', 'js/characters.js', 'js/effects.js', 'js/audio.js',
   'js/hud.js', 'js/input.js', 'js/touch.js', 'js/textures.js', 'js/utils.js',
-  'js/net.js', 'js/netrace.js', 'js/online.js', 'js/pigeons.js', 'js/trackgen.js', 'js/ads.js', 'js/ads-config.js', 'css/ads.css',
+  'js/net.js', 'js/netrace.js', 'js/online.js', 'js/pigeons.js', 'js/trackgen.js', 'js/progress.js', 'js/ads.js', 'js/ads-config.js', 'css/ads.css',
   'js/cities/kits.js', 'js/cities/build.js', 'js/cities/common.js', 'js/cities/landmarks.js', 'js/cities/osasco.js',
   'js/cities/lm-west.js', 'js/cities/lm-east.js', 'js/cities/lm-polish.js', 'js/cities/shapes.js', 'js/cities/roma.js', 'js/cities/props.js', 'js/cities/vehicles.js',
   THREE + 'build/three.module.js',
