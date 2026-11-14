@@ -2,6 +2,7 @@
 // Tudo vai para o "saco" da cidade e vira poucas malhas no fim.
 import * as THREE from 'three';
 import { ROMA_PROPS } from './roma.js';
+import { PEQUIM_PROPS } from './pequim.js';
 import { box, cyl, cone, sphere, geo, bar, frustumGeo, person, SKINS, SHIRTS } from './common.js';
 
 function put(ctx, obj, s) {
@@ -292,7 +293,7 @@ export const PROPS = {
 };
 
 // Roma tem os seus próprios enfeites (bairros temáticos e vida da rua): js/cities/roma.js
-Object.assign(PROPS, ROMA_PROPS);
+Object.assign(PROPS, ROMA_PROPS, PEQUIM_PROPS);
 // Tuk-tuk estacionado (enfeite do mercado).
 function tukTuk(ctx, x, z, k) {
   const g = new THREE.Group();

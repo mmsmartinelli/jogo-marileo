@@ -1,5 +1,7 @@
 # Publicação do Race Cities — guia para o CEO
 
+> Passo a passo curto, clique a clique: `docs/PUBLICACAO-PASSO-A-PASSO.md`. Textos do Google Play: `android/PlayStore/textos.md`.
+
 Escrito em 13/11/2026 pelo agente "Publicação". Todas as fontes foram consultadas nesta data.
 Marcação **⚠️ não verificado** = não consegui confirmar em fonte oficial; confirme antes de decidir.
 Valores em US$ são os cobrados pela loja; o valor em R$ muda com o câmbio e impostos.
@@ -98,7 +100,7 @@ Valores em US$ são os cobrados pela loja; o valor em R$ muda com o câmbio e im
 - [ ] Decidir se publica em nome de **pessoa física (CPF)** ou **empresa (CNPJ)** (pergunta 1 na seção 7).
 - [ ] Criar um **e-mail do estúdio** (ex.: contato@seu-domínio) e comprar o **domínio**.
 - [ ] Fazer a **consulta única com o advogado** (`docs/privacidade-checklist.md`, 12 dúvidas) antes de ligar anúncios reais.
-- [ ] Preencher `[PREENCHER]` da política de privacidade (e-mail, datas, responsável) e aprovar a publicação do texto novo.
+- [ ] Preencher `[PREENCHER]` da política de privacidade (datas, responsável; e-mail já definido: mmsmartinelli@gmail.com) e aprovar a publicação do texto novo.
 - [ ] Conta bancária/impostos para receber (AdMob pede dados fiscais; ⚠️ não verifiquei a exigência de CPF/CNPJ no AdMob; na Google Ads é exigido, fonte 9).
 
 **Já pronto no repositório:**
@@ -184,7 +186,7 @@ Valores em US$ são os cobrados pela loja; o valor em R$ muda com o câmbio e im
 - **Capturas**: o diretor gera com Playwright em 1920x1080 e 1080x1920 (já foi usado para as do iOS). Para moldura e texto ("Corra por 12 cidades!"), usar Adobe Express ou Photoshop.
 - **Imagem de destaque 1024x500**: Adobe Express/Photoshop com logo, personagens (Leo, Mari) e uma captura. Magnific para arte de apoio; **a arte não pode mostrar marca real nem personagem protegido**.
 - **Trailer de 20 a 30 s**: gravar a tela do jogo (QuickTime ou captura automática do diretor), cortar no Adobe Premiere ou Express, música e efeitos do próprio jogo (já são gerados) ou Magnific. Publicar no YouTube em "não listado".
-- **Descrições PT/EN**: PT já existe em `ios/AppStore/textos.md`; falta o **EN** e a versão Android (curta de 80 caracteres + completa). Peço ao diretor para redigir; recomendo revisão do CEO.
+- **Descrições PT/EN**: PT já existe em `ios/AppStore/textos.md`; texto EN e versão Android (curta de 80 + completa) prontos em `android/PlayStore/textos.md`; recomendo revisão do CEO.
 
 **Palavras-chave** (App Store, até 100 caracteres): `kart,corrida,cidades,mundo,família,multiplayer,amigos,online,offline,leão,gatinha,turbo`. "Crianças" já foi retirado do campo de palavras e da descrição (regras 2.3.8, 1.3 e 5.1.4; anotado em `ios/LEIA-ME.md`). Para Play, as palavras vão naturalmente na descrição; para EN usar `kart racing, family game, race around the world, multiplayer, offline`.
 
@@ -197,7 +199,7 @@ Valores em US$ são os cobrados pela loja; o valor em R$ muda com o câmbio e im
 | Tema | O que muda para o Race Cities | Fonte |
 |---|---|---|
 | **Classificação etária** | Responder honestamente: sem violência realista; "violência de desenho animado leve" (banana, foguete). Play usa IARC (questionário); Apple, questionário no App Store Connect. No Brasil, as lojas fazem a classificação indicativa a partir das respostas (⚠️ não verificado como é no Brasil hoje). | `ios/AppStore/textos.md` |
-| **Google Play: Políticas para Famílias** | Se marcar público com menos de 13 anos: **só SDKs de anúncio certificados para Famílias** (o AdMob está na lista), **sem anúncios por interesse nem remarketing**, anúncios apropriados; **proibido**: tela cheia sem jeito de fechar, anúncio premiado que não fecha em 5 s, intersticial ao abrir o app, vários anúncios na mesma tela, anúncio disfarçado de conteúdo. Apps só para crianças **não podem enviar ID de publicidade** (já removido). Políticas e declarações (Segurança dos dados, Público-alvo, IARC) precisam bater. **Social/online:** mostrar aviso de segurança online e exigir ação de adulto antes de trocar dados pessoais (hoje o jogo usa só apelido e código de sala; o aviso ainda não existe). | fonte 5 |
+| **Google Play: Políticas para Famílias** | Se marcar público com menos de 13 anos: **só SDKs de anúncio certificados para Famílias** (o AdMob está na lista), **sem anúncios por interesse nem remarketing**, anúncios apropriados; **proibido**: tela cheia sem jeito de fechar, anúncio premiado que não fecha em 5 s, intersticial ao abrir o app, vários anúncios na mesma tela, anúncio disfarçado de conteúdo. Apps só para crianças **não podem enviar ID de publicidade** (já removido). Políticas e declarações (Segurança dos dados, Público-alvo, IARC) precisam bater. **Social/online:** mostrar aviso de segurança online e exigir ação de adulto antes de trocar dados pessoais (hoje o jogo usa só apelido e código de sala; o aviso já existe). | fonte 5 |
 | **App Store 1.3 e 5.1.4** | Categoria **Crianças** não pode ter anúncios de terceiros; por isso fica **fora** de Kids (4+ família). Evitar "para crianças/infantil" em nome, subtítulo e palavras-chave. Privacidade do app deixa de ser "Dados não coletados" quando os anúncios ligam. Sem ATT. | `docs/ANUNCIOS.md` seção 6 (⚠️ texto das diretrizes não reaberto hoje) |
 | **ECA Digital (Lei 15.211/2025)** | Em vigor desde **17/03/2026**; aplica-se a jogos e lojas, inclusive empresas de fora; **proíbe perfilamento para publicidade a crianças e adolescentes** (anúncios não personalizados ajudam); **proíbe "caixas de recompensa" (loot boxes)** em jogos para crianças (o jogo tem "caixas surpresa", mas são itens de corrida gratuitos, **não compras com sorteio**; confirmar com o advogado); verificação de idade por mecanismo confiável, **autodeclaração não basta**, com cronograma da ANPD em 3 fases (as lojas têm obrigações próprias). Multa até R$ 50 milhões por infração. Fonte são escritórios e imprensa, não o texto da lei: ⚠️ conferir o Decreto 12.880/2026 e o cronograma da ANPD com o advogado. | fonte 19 |
 | **LGPD (art. 14)** | Dados de criança exigem melhor interesse e consentimento específico de um dos pais; o rascunho de privacidade e as 12 dúvidas estão em `docs/privacidade-checklist.md`. | repo |

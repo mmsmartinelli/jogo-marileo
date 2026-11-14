@@ -51,7 +51,7 @@ export class Race {
     this.humans = [];
     this.drivers = new Map();
     const entries = [];
-    cfg.players.forEach((p, i) => entries.push({ char: p.char, human: true, playerIndex: i, source: p.source }));
+    cfg.players.forEach((p, i) => entries.push({ char: p.char, human: true, playerIndex: i, source: p.source, paint: p.paint }));
     if (cfg.mode !== 'tt') {
       const total = 8;
       const used = new Set(cfg.players.map(p => p.char));
@@ -80,11 +80,12 @@ export class Race {
     const tr = this.track;
     const rowGap = Math.max(2, Math.round(5.5 / tr.spacing));
     order.forEach((e, slot) => {
-      const k = new Kart(this, CHARACTERS[e.char], { id: slot, human: e.human, playerIndex: e.playerIndex });
+      const k = new Kart(this, CHARACTERS[e.char], { id: slot, human: e.human, playerIndex: e.playerIndex, paint: e.paint });
       const row = Math.floor(slot / 2) + 1;
       const lat = (slot % 2 === 0 ? -1 : 1) * tr.hw * 0.42 + (slot % 2 === 0 ? 0 : 0);
       k.placeAt(tr.wrap(-row * rowGap - (slot % 2) * Math.round(rowGap / 2)), lat);
       k.charIndex = e.char;
+      k.paintId = e.paint;
       k.gridSlot = slot;
       this.karts.push(k);
       if (this.online && e.owner !== 'ai') {

@@ -211,6 +211,15 @@
     </div>
   </div>
 
+  <!-- Pinturas do kart: quadro grande para escolher (cada pintura mostra o nome e o que falta para liberar) -->
+  <div id="paintPick" class="on-safety paint-pick" hidden role="dialog" aria-modal="true" aria-labelledby="paintTitle">
+    <div class="panel">
+      <h2 id="paintTitle">🎨 Pintura do kart</h2>
+      <div id="paintGrid" class="paintgrid"></div>
+      <div class="actions"><button class="big go" id="paintOk">Pronto 👍</button></div>
+    </div>
+  </div>
+
   <!-- Como jogar (em abas: cabe em qualquer tela sem rolar) -->
   <section id="howto" class="screen">
     <div class="panel wide fit" id="howPanel">
@@ -287,11 +296,14 @@
 
   <!-- Resultados -->
   <section id="results" class="screen overlay">
-    <div class="panel wide">
-      <h2 id="resultsTitle">Resultado</h2>
+    <div class="panel wide" id="resPanel">
+      <div class="phead">
+        <h2 id="resultsTitle">Resultado</h2>
+        <div class="tabs" id="resTabs"><button data-tab="table">🏁 Classificação</button><button data-tab="chal">⭐ Desafios</button></div>
+      </div>
       <div class="resultsgrid">
-        <table id="resultsTable" class="standings"></table>
-        <div id="challenges"></div>
+        <table id="resultsTable" class="standings" data-pane="table"></table>
+        <div id="challenges" data-pane="chal"></div>
       </div>
       <div class="actions" id="resultsActions"></div>
     </div>

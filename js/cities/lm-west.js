@@ -2,6 +2,8 @@
 // Tudo procedural e estilizado (poucos polígonos, cores alegres).
 import * as THREE from 'three';
 import { box, cyl, cone, sphere, geo, bar, beam, lathe, archWallGeo, frustumGeo, gableGeo, remapUV, latticeTower, crenellate, person, SKINS, SHIRTS } from './common.js';
+import { modelMeshes } from '../models/modelo.js';
+import CRISTO from '../models/cristo.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const flag = (ctx, g, x, y, z, cols, w = 6, h = 4, vertical = true) => {
@@ -20,17 +22,10 @@ export const LANDMARKS_A = {
       const hill = geo(new THREE.IcosahedronGeometry(1, 2), green, 0, 0, 0); hill.scale.set(62, 92, 52); g.add(hill);
       const h2 = geo(new THREE.IcosahedronGeometry(1, 1), green2, -34, 0, 14); h2.scale.set(40, 56, 34); g.add(h2);
       const face = geo(new THREE.IcosahedronGeometry(1, 1), rock, 12, 30, 22); face.scale.set(30, 40, 22); g.add(face);
-      // estátua de braços abertos no topo
+      // estátua de braços abertos no topo: modelo feito no Blender (tools/blender/cristo.py),
+      // com pedestal, rosto, manto e a luz dos pés (que acende de noite)
       const st = new THREE.Group(); st.position.set(0, 88, 0); st.scale.setScalar(1.5); g.add(st);
-      const stone = ctx.P(0xf1ece2, 'smooth');
-      st.add(box(5, 6, 5, ctx.P(0xd8d2c4), 0, 3, 0));
-      st.add(cyl(1.9, 3.1, 15, stone, 0, 13.5, 0, 10));
-      st.add(cyl(2.2, 1.9, 3, stone, 0, 22, 0, 10));
-      st.add(box(24, 2.2, 2.2, stone, 0, 21.6, 0));
-      for (const s of [-1, 1]) st.add(box(2.6, 1.6, 1.8, stone, s * 12.6, 21.5, 0));
-      st.add(sphere(1.6, stone, 0, 25.2, 0.2, 10, 8));
-      // luz nos pés (de noite fica iluminado)
-      st.add(cyl(3, 3, 0.4, ctx.P(0xfff0c8, 'neon'), 0, 6.2, 0, 10));
+      for (const m of modelMeshes(CRISTO, ctx)) st.add(m);
     },
   },
   paoDeAcucar: {
