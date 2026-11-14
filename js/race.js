@@ -134,7 +134,7 @@ export class Race {
     if (this.online && this.hud) this.hud.messageAll('ESPERANDO OS AMIGOS...', 60);
 
     this.engines = cfg.mode === 'demo' ? [] : this.humans.map(() => audio.createEngine());
-    if (cfg.mode !== 'demo') audio.startMusic(this.def.music);
+    if (cfg.mode !== 'demo') audio.raceMusic(this.def);
     this.phaseTime = 0;
     this.countStep = -1;
   }
@@ -200,6 +200,8 @@ export class Race {
         if (this.cfg.mode === 'tt') this.hud.message(k, 'CHEGADA!', 99);
         else this.hud.message(k, place === 1 ? '1º LUGAR!' : `CHEGADA! ${place}º`, 99);
         audio.play(place <= 3 || this.cfg.mode === 'tt' ? 'finish' : 'lose');
+        // trilha: vinheta de vitória/chegada quando o último jogador humano cruza a linha
+        if (this.humans.every(h => h.finished)) audio.finishMusic(this.humans.some(h => this._placeOf(h) <= 3) || this.cfg.mode === 'tt');
         this.effects.confetti(k.pos, 80);
         this.track.cheer = 1;
       }

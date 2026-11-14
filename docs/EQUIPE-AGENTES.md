@@ -24,6 +24,7 @@ O **diretor** (esta sessão do Mac) fala com o CEO e delega o trabalho a agentes
 | 6. Monetização e comerciais | `monetizacao-anuncios` | Sonnet / alto + web | Anúncios após cada fase, premiados, remover anúncios, patrocinadores; números com fonte | `docs/MONETIZACAO.md`, `docs/ANUNCIOS.md`, `js/ads*.js` |
 | 7. Privacidade e conformidade | `juridico-privacidade` | Sonnet / médio + web | Política de privacidade e lista de dúvidas para a consulta ao advogado (não é parecer jurídico) | `docs/privacidade-*` |
 | 8. Arte de loja e marketing | `arte-marketing` | Sonnet / médio | Ícone, capturas 1920x1080, trailer curto, textos PT/EN | material de loja |
+| 9. Som e música | `som-musica` | Opus / alto | Trilha do Suno (menu, 6 corridas por região, vitória, chegada e pódio), cortes de repetição e efeitos menos robóticos; volta para a música sintetizada se faltar arquivo | `js/audio.js`, `audio/musica/`, `docs/SOM-MUSICA.md` |
 
 ## Decisões do CEO que todos respeitam
 
@@ -32,6 +33,7 @@ O **diretor** (esta sessão do Mac) fala com o CEO e delega o trabalho a agentes
 - Não migrar para Unity. iOS fora da categoria Kids (4+, família).
 - Advogado: **uma única consulta** antes de ligar anúncios reais.
 - Contas de App Store e Google Play: o CEO já tem.
+- Trilha: **Suno Pro, que o CEO já assina** (termina em 30/11/2026). Baixar as faixas escolhidas antes dessa data; nada de comprar outro plano.
 
 ## Fila de trabalho (ordem proposta)
 
