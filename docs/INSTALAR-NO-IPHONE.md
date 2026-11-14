@@ -32,3 +32,10 @@ Copie a mensagem **exatamente** como aparece e mande ao assistente. Erros comuns
 
 ## Depois
 Esta é só a instalação de teste. Para a TestFlight/loja é outro caminho (precisa do app criado no App Store Connect; ver `docs/PUBLICACAO-PASSO-A-PASSO.md`).
+
+## Atualização (trilha nova + som com silencioso ligado)
+
+- App refeito com a trilha nova (pasta `audio`, 10 faixas, app ~10 MB) e com a sessão de áudio "playback":
+  o som toca mesmo com o botão de silencioso do iPhone ligado.
+- Simulador: música do menu decodificou e tocou (sessão WebAudio "Playing").
+- Instalado no iPhone do CEO pelo cabo. Falta o CEO ouvir e confirmar.
