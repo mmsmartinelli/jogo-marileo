@@ -98,7 +98,7 @@ Valores em US$ são os cobrados pela loja; o valor em R$ muda com o câmbio e im
 - [ ] Decidir se publica em nome de **pessoa física (CPF)** ou **empresa (CNPJ)** (pergunta 1 na seção 7).
 - [ ] Criar um **e-mail do estúdio** (ex.: contato@seu-domínio) e comprar o **domínio**.
 - [ ] Fazer a **consulta única com o advogado** (`docs/privacidade-checklist.md`, 12 dúvidas) antes de ligar anúncios reais.
-- [ ] Preencher `[PREENCHER]` da política de privacidade (e-mail, datas, responsável) e aprovar a publicação do texto novo.
+- [ ] Preencher `[PREENCHER]` da política de privacidade (datas, responsável; e-mail já definido: mmsmartinelli@gmail.com) e aprovar a publicação do texto novo.
 - [ ] Conta bancária/impostos para receber (AdMob pede dados fiscais; ⚠️ não verifiquei a exigência de CPF/CNPJ no AdMob; na Google Ads é exigido, fonte 9).
 
 **Já pronto no repositório:**
