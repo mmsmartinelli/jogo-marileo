@@ -77,7 +77,29 @@ Como usar: modo **Advanced**, letra **vazia** (assim sai instrumental), modelo v
 
 Os títulos no Suno são "Race Cities - Menu", "Race Cities - Corrida Brasil" e assim por diante. Algumas versões vieram curtas (de 17 a 35 s) ⚠️ isso precisa ser conferido ouvindo. Uma corrida precisa de pelo menos ~60 s; se a versão ficar curta, **gere de novo** em vez de usar "extend".
 
-## 5. Passo a passo até a música entrar no jogo
+## 5. Situação em 14/11/2026
+
+- As 10 faixas foram geradas, escolhidas, **baixadas em MP3** (10 dos 24 downloads) e preparadas em `audio/musica/` (7,0 MB). A prova de uso comercial está em `docs/TRILHA-LICENCA.md`.
+- Metrópole, Europa e Fantasia foram geradas de novo pedindo "full-length… about 2 minutes", porque as primeiras saíram com menos de 1 minuto.
+- Cada emenda de repetição foi conferida depois da conversão: o "degrau" na junta ficou abaixo do normal da própria música (de 0,06 a 0,59), ou seja, sem estalo pela medida. **Ninguém ouviu ainda**: a escolha entre as 2 versões foi feita pela duração.
+- **Ainda não está ligada no jogo** (`MUSIC_FILES` vazio). Para ligar, depois do OK do CEO, cole isto em `js/audio.js`:
+
+```js
+export const MUSIC_FILES = {
+  menu: { file: 'menu.m4a', loop: [3.301, 48.278] },
+  'corrida-brasil': { file: 'corrida-brasil.m4a', loop: [13.524, 73.517] },
+  'corrida-metropole': { file: 'corrida-metropole.m4a', loop: [12.184, 70.609] },
+  'corrida-europa': { file: 'corrida-europa.m4a', loop: [3.763, 77.298] },
+  'corrida-deserto': { file: 'corrida-deserto.m4a', loop: [15.836, 89.488] },
+  'corrida-asia': { file: 'corrida-asia.m4a', loop: [15.204, 75.204] },
+  'corrida-fantasia': { file: 'corrida-fantasia.m4a', loop: [12.062, 87.859] },
+  vitoria: { file: 'vitoria.m4a', once: true },
+  chegada: { file: 'chegada.m4a', once: true },
+  podio: { file: 'podio.m4a', loop: [6.104, 52.945] },
+};
+```
+
+## 5b. Passo a passo original
 
 1. **CEO:** na Biblioteca do Suno, ouvir as 2 versões de cada faixa e marcar a preferida com o coração. Se nenhuma ficar boa, pedir para gerar de novo.
 2. **Som e música (com OK do CEO):** baixar em **WAV** só as preferidas (9 downloads), **antes de 30/11/2026**. Guardar os WAV originais fora do repositório, numa pasta de originais com a data.
