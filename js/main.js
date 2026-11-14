@@ -73,6 +73,7 @@ class App {
     window.addEventListener('resize', () => {
       r.setSize(window.innerWidth, window.innerHeight);
       if (this.race && this.race.hud) this.race.hud.resize();
+      this._relayout();
     });
   }
 
@@ -165,8 +166,70 @@ class App {
     this.screen = id;
     $$('.screen').forEach(s => s.classList.toggle('active', s.id === id));
     this.focusIdx = 0;
-    this._applyFocus();
     if (id === 'setup') this._renderSetup();
+    if (id === 'howto') this._tabs($('#howPanel'), this.howTab || 'ctrl');
+    this._applyFocus();
+  }
+
+  // ---------- Menus que cabem numa tela só ----------
+  // Abas/passos: em tela pequena mostra só a aba escolhida; se o painel tiver data-all e a tela for grande, mostra tudo junto.
+  _tabs(panel, tab) {
+    const all = !!panel.dataset.all && matchMedia(panel.dataset.all).matches;
+    panel.classList.toggle('steps', !all);
+    panel.dataset.tab = tab;
+    panel.querySelectorAll('[data-pane]').forEach(p => p.classList.toggle('pane-off', !all && p.dataset.pane !== tab));
+    panel.querySelectorAll('.tabs [data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+    this._fitGrids(panel);
+    return all;
+  }
+
+  // Grade de cidades: escolhe quantas colunas deixam os cartões maiores no espaço que sobra (sem rolar).
+  _fitGrids(root = document) {
+    if (!this._gridRO && window.ResizeObserver) this._gridRO = new ResizeObserver(es => es.forEach(e => this._fitGrid(e.target)));
+    root.querySelectorAll('.tracks.grid').forEach(el => {
+      if (this._gridRO && !el._observed) { el._observed = true; this._gridRO.observe(el); }
+      this._fitGrid(el);
+    });
+  }
+
+  _fitGrid(el) {
+    const n = el.children.length;
+    const W = el.clientWidth, H = el.clientHeight;
+    if (!n || !W || !H) return;
+    const gap = parseFloat(getComputedStyle(el).columnGap) || 0;
+    const ratio = +el.dataset.ratio || 1.6;
+    let best = 1, bestS = 0;
+    for (let c = 1; c <= n; c++) {
+      const r = Math.ceil(n / c);
+      const sz = Math.min((W - gap * (c - 1)) / c / ratio, (H - gap * (r - 1)) / r);
+      if (sz > bestS + 0.5) { bestS = sz; best = c; }
+    }
+    el.style.setProperty('--tc', best);
+    el.style.setProperty('--tr', Math.ceil(n / best));
+  }
+
+  // Tela girou ou mudou de tamanho: refaz abas e grades do menu aberto.
+  _relayout() {
+    if (this.screen === 'setup') { this._tabs($('#setupPanel'), this.setupTab || 'players'); this._setupFooter(); }
+    else if (this.screen === 'howto') this._tabs($('#howPanel'), this.howTab || 'ctrl');
+    else if (this.screen === 'online') this.online.render();
+  }
+
+  _setSetupTab(tab) {
+    this.setupTab = tab;
+    this._tabs($('#setupPanel'), tab);
+    this._setupFooter();
+    this.focusIdx = 0;
+    this._applyFocus();
+  }
+
+  // Rodapé da configuração: no passo 1 "Escolher pista ▶"; no passo 2 (ou com tudo junto) "CORRER!"
+  _setupFooter() {
+    const steps = $('#setupPanel').classList.contains('steps');
+    const first = steps && this.setupTab !== 'track';
+    $('#setupNext').hidden = !first;
+    $('#startBtn').hidden = first;
+    $('#setupBack').textContent = steps && this.setupTab === 'track' ? '⬅ Pilotos' : '⬅ Voltar';
   }
 
   toast(text) {
@@ -206,6 +269,7 @@ class App {
     $$('[data-mode]').forEach(b => b.addEventListener('click', () => {
       audio.play('confirm');
       this.settings.mode = b.dataset.mode;
+      this.setupTab = 'players';
       this.show('setup');
     }));
     $$('[data-go]').forEach(b => b.addEventListener('click', () => { audio.play('back'); this.show(b.dataset.go); }));
@@ -215,6 +279,10 @@ class App {
     $$('#difficulty button').forEach(b => b.addEventListener('click', () => { this.settings.difficulty = +b.dataset.n; audio.play('select'); this._renderSetup(); }));
     $$('#autoAccel button').forEach(b => b.addEventListener('click', () => { this.settings.autoAccel = +b.dataset.n; audio.play('select'); this._renderSetup(); }));
     $('#startBtn').addEventListener('click', () => this.startFromSetup());
+    $('#setupNext').addEventListener('click', () => { audio.play('confirm'); this._setSetupTab('track'); });
+    $('#setupBack').addEventListener('click', () => this._setupBackAct());
+    $$('#setupTabs [data-tab]').forEach(b => b.addEventListener('click', () => { audio.play('select'); this._setSetupTab(b.dataset.tab); }));
+    $$('#howTabs [data-tab]').forEach(b => b.addEventListener('click', () => { audio.play('select'); this.howTab = b.dataset.tab; this._tabs($('#howPanel'), b.dataset.tab); }));
     // no Android (fora do app) oferece o app de verdade
     if (/Android/i.test(navigator.userAgent) && !window.AndroidApp) $('#apkBtn').hidden = false;
     $('#apkBtn').addEventListener('click', () => { location.href = 'baixar.html'; });
@@ -242,7 +310,8 @@ class App {
       if (this.screen === 'race' && (code === 'Escape' || code === 'KeyP')) this.pause();
       else if (this.screen === 'pause' && (code === 'Escape' || code === 'KeyP')) this.resume();
       else if (code === 'Escape') {
-        if (this.screen === 'setup' || this.screen === 'howto') { audio.play('back'); this.show('title'); }
+        if (this.screen === 'setup') this._setupBackAct();
+        else if (this.screen === 'howto') { audio.play('back'); this.show('title'); }
         else if (this.screen === 'online' && !this.online.connected) { audio.play('back'); this.show('title'); }
       }
     });
@@ -277,8 +346,8 @@ class App {
     segOn('#autoAccel', s.autoAccel);
     // na Copa Infinita o computador fica mais esperto sozinho a cada copa
     $('#diffBox').style.visibility = mode === 'tt' || (mode === 'gp' && cupDef.infinite) ? 'hidden' : 'visible';
-    $('#trackRow').style.display = mode === 'gp' ? 'none' : 'flex';
-    $('#cupRow').style.display = mode === 'gp' ? 'flex' : 'none';
+    $('#trackRow').hidden = mode === 'gp';
+    $('#cupRow').hidden = mode !== 'gp';
 
     // cartões
     const cards = $('#playerCards');
@@ -298,10 +367,12 @@ class App {
       }).join('');
       card.innerHTML = `
         <div class="pnum" style="background:${PLAYER_COLORS[i]}">Jogador ${i + 1}${this.ready[i] && on ? ' ✔' : ''}</div>
+        <div class="cin">
         <img class="portrait" src="${this.portraits[p.char]}" alt="">
-        <div class="pick"><button data-d="-1">◀</button><div><div class="cname">${ch.name}</div><div style="font-size:14px;opacity:.8">${ch.species}</div></div><button data-d="1">▶</button></div>
+        <div class="pick"><button data-d="-1" aria-label="Personagem anterior">◀</button><div><div class="cname">${ch.name}</div><div class="species">${ch.species}</div></div><button data-d="1" aria-label="Próximo personagem">▶</button></div>
         <div class="stats">${stat('Velocidade', ch.stats.speed)}${stat('Aceleração', ch.stats.accel)}${stat('Curvas', ch.stats.handling)}${stat('Peso', ch.stats.weight)}</div>
-        <select ${on ? '' : 'disabled'}>${opts}</select>`;
+        <select ${on ? '' : 'disabled'}>${opts}</select>
+        </div>`;
       card.querySelectorAll('.pick button').forEach(b => b.addEventListener('click', () => this._changeChar(i, +b.dataset.d)));
       card.querySelector('select').addEventListener('change', e => { p.source = e.target.value; this._resetReady(); });
       cards.appendChild(card);
@@ -309,7 +380,6 @@ class App {
 
     // cidades (e as pistas de fantasia no fim da fila)
     const list = $('#trackList');
-    const keepScroll = list.scrollLeft;
     list.innerHTML = '';
     const card = t => {
       const el = document.createElement('div');
@@ -332,12 +402,6 @@ class App {
         return [0, 1, 2].map(k => (st[k] ? '⭐' : '☆')).join('') + (mode === 'tt' && rec ? ' • ' + formatTime(rec) : '');
       }));
     for (const id of FANTASY_IDS) list.appendChild(card(getTrack(id)));
-    list.scrollLeft = keepScroll;
-    if (!this._scrolledTo || this._scrolledTo !== s.trackId) {
-      this._scrolledTo = s.trackId;
-      const on = list.querySelector('.track.on');
-      if (on && (on.offsetLeft < list.scrollLeft || on.offsetLeft + on.offsetWidth > list.scrollLeft + list.clientWidth)) list.scrollLeft = on.offsetLeft - 8;
-    }
 
     // copa do Grande Prêmio: as copas da Volta ao Mundo, a Copa Fantasia ou a Copa Infinita
     const cm = $('#cupMode');
@@ -345,7 +409,7 @@ class App {
       for (const c of [...CUPS, { id: 'infinita', emoji: '♾️', name: 'Copa Infinita' }]) {
         const b = document.createElement('button');
         b.dataset.c = c.id;
-        b.textContent = `${c.emoji} ${c.name.replace(/^Copa /, '')}`;
+        b.innerHTML = `${c.emoji}<span class="cn"> ${esc(c.name.replace(/^Copa /, ''))}</span>`;
         b.title = c.name;
         b.addEventListener('click', () => { this.settings.cup = c.id; audio.play('select'); this._renderSetup(); });
         cm.appendChild(b);
@@ -374,6 +438,7 @@ class App {
       el.insertAdjacentHTML('beforeend', `<div class="tname">${n + 1}. ${t.city ? `${t.emoji} ${esc(t.cityName || t.name)}` : esc(t.name)}</div>`);
       cup.appendChild(el);
     });
+    if (this.screen === 'setup') { this._tabs($('#setupPanel'), this.setupTab || 'players'); this._setupFooter(); }
     save('marileo_settings', s);
   }
 
@@ -392,15 +457,17 @@ class App {
     const el = document.createElement('div');
     el.className = 'track surprise' + (on ? ' on' : '');
     el.appendChild(this._thumbCanvas(id));
-    el.insertAdjacentHTML('beforeend', `<div class="sname"><small>🎲 Cidade Surpresa</small><span>${t.emoji} ${esc(t.name)}</span></div>${extra ? `<div class="stars">${extra(id)}</div>` : ''}`);
+    el.insertAdjacentHTML('beforeend', `<div class="sname"><small>🎲 Surpresa</small><span>${t.emoji} ${esc(t.name)}</span></div>${extra ? `<div class="stars">${extra(id)}</div>` : ''}`);
+    el.addEventListener('click', onPick);
+    // o sorteio de outra cidade é um cartão próprio, grande o bastante para o dedo
     const b = document.createElement('button');
-    b.className = 'reroll';
-    b.textContent = '🎲 Outra';
+    b.className = 'track reroll';
+    b.innerHTML = '<b>🎲</b><span>Sortear outra</span>';
     b.title = 'Sortear outra cidade surpresa';
     b.addEventListener('click', e => { e.stopPropagation(); onReroll(); });
-    el.appendChild(b);
-    el.addEventListener('click', onPick);
-    return el;
+    const f = document.createDocumentFragment();
+    f.append(el, b);
+    return f;
   }
 
   // Copa escolhida para o Grande Prêmio: { name, tracks, infinite?, number?, aiDifficulty? }
@@ -420,6 +487,13 @@ class App {
   }
 
   _resetReady() { this.ready = [false, false, false, false]; }
+
+  // Voltar na configuração: do passo 2 volta para os pilotos; do passo 1 volta ao menu.
+  _setupBackAct() {
+    audio.play('back');
+    if ($('#setupPanel').classList.contains('steps') && this.setupTab === 'track') this._setSetupTab('players');
+    else this.show('title');
+  }
 
   // No celular: tela cheia e trava na horizontal (quando o navegador permite).
   _goFullscreen() {
@@ -555,7 +629,7 @@ class App {
       save('marileo_stars', this.stars);
       chalHTML = `<h3>⭐ Desafios — ${def.name}</h3>` + now.map(n => `
         <div class="chal ${n.done ? 'done' : ''}"><span class="star">⭐</span><div>${n.c.text}
-        <div style="font-size:13px;opacity:.8">${n.done ? 'Conseguiu: ' + n.who.map(k => k.netName ? esc(k.netName) : 'J' + (k.playerIndex + 1)).join(', ') : (n.wasDone ? 'Já conquistado antes' : 'Ainda não...')}</div></div></div>`).join('');
+        <div class="sub">${n.done ? 'Conseguiu: ' + n.who.map(k => k.netName ? esc(k.netName) : 'J' + (k.playerIndex + 1)).join(', ') : (n.wasDone ? 'Já conquistado antes' : 'Ainda não...')}</div></div></div>`).join('');
       const total = TRACKS.reduce((a, t) => a + (this.stars[t.id] || []).filter(Boolean).length, 0);
       chalHTML += `<p class="hint">Total de estrelas: <b>${total} / ${TRACKS.length * 3}</b>${def.generated ? ' (pistas fixas)' : ''}</p>`;
     } else {
@@ -565,7 +639,7 @@ class App {
       if (isRec) { this.records[def.id] = best; save('marileo_tt', this.records); }
       chalHTML = `<h3>⏱️ Tempos</h3>` + humans.map(k => `
         <div class="chal done"><span class="star">🏁</span><div><b>J${k.playerIndex + 1} ${k.ch.name}</b>: ${formatTime(k.finishTime)}
-        <div style="font-size:13px;opacity:.8">Voltas: ${k.lapTimes.map(formatTime).join(' • ')}</div></div></div>`).join('') +
+        <div class="sub">Voltas: ${k.lapTimes.map(formatTime).join(' • ')}</div></div></div>`).join('') +
         `<div class="chal ${isRec ? 'done' : ''}"><span class="star">🏆</span><div>${isRec ? 'NOVO RECORDE!' : 'Recorde'}: ${formatTime(this.records[def.id])}</div></div>`;
     }
     $('#challenges').innerHTML = chalHTML;
@@ -617,7 +691,7 @@ class App {
       btn('🏠 Sair', 'mid ghost', () => this.toMenu());
     } else {
       btn('🔄 Correr de novo', 'big go', () => this._adBreak(() => this.startRace(cfg), cfg));
-      btn('🗺️ Escolher outra pista', 'mid', () => { this.startDemo(); this.show('setup'); });
+      btn('🗺️ Outra pista', 'mid', () => { this.startDemo(); this.setupTab = 'track'; this.show('setup'); });
       btn('🏠 Menu', 'mid ghost', () => this.toMenu());
     }
     this.show('results');
@@ -690,7 +764,7 @@ class App {
   _navButtons() {
     const sc = document.getElementById(this.screen);
     if (!sc) return [];
-    return [...sc.querySelectorAll('.menu button, .actions button')].filter(b => b.offsetParent !== null);
+    return [...sc.querySelectorAll('.menu button, .tabs:not([hidden]) button, .actions button')].filter(b => b.offsetParent !== null);
   }
 
   _applyFocus() {
