@@ -25,6 +25,10 @@ def keystorePath = prop('ANDROID_KEYSTORE_FILE')
 def hasReleaseKey = keystorePath != null && file(keystorePath).exists()
 
 // O jogo vai dentro do APK (pasta assets/www), gerado por ios/build-web.mjs.
+// Pasta de build opcional (ex.: -PRC_BUILD_DIR=$HOME/RaceCitiesBuild) para ficar fora do iCloud/Documentos.
+def customBuildDir = prop('RC_BUILD_DIR')
+if (customBuildDir != null) layout.buildDirectory = file(customBuildDir)
+
 def remoteGame = prop('remoteGame', 'false') == 'true'
 def gameRoot = rootProject.file('..')
 def webOut = layout.buildDirectory.dir('generated/webgame')
@@ -82,7 +86,7 @@ android {
 
     androidResources {
         // não comprimir os arquivos do jogo (o WebView lê mais rápido)
-        noCompress += ['js', 'css', 'html', 'png', 'woff2', 'json']
+        noCompress += ['js', 'css', 'html', 'png', 'woff2', 'json', 'm4a']
     }
 }
 
@@ -100,9 +104,17 @@ def buildWeb = tasks.register('buildWebGame', Exec) {
     inputs.dir(new File(gameRoot, 'icons'))
     inputs.dir(new File(gameRoot, 'audio'))
     inputs.file(new File(gameRoot, 'ios/build-web.mjs'))
+    inputs.file(new File(gameRoot, 'ios/build-web.py'))
     outputs.dir(webOut)
     def out = webOut.get().dir('www').asFile
-    commandLine 'node', new File(gameRoot, 'ios/build-web.mjs').absolutePath, out.absolutePath
+    // Usa Node se existir; senão, o equivalente em Python (o Mac do estúdio não tem Node).
+    def hasNode = ['/usr/local/bin/node', '/opt/homebrew/bin/node', '/usr/bin/node'].any { new File(it).exists() } ||
+        (System.getenv('PATH') ?: '').split(File.pathSeparator).any { new File(it, 'node').exists() }
+    if (hasNode) {
+        commandLine 'node', new File(gameRoot, 'ios/build-web.mjs').absolutePath, out.absolutePath
+    } else {
+        commandLine 'python3', '-I', new File(gameRoot, 'ios/build-web.py').absolutePath, out.absolutePath
+    }
     doFirst {
         if (!out.parentFile.exists()) out.parentFile.mkdirs()
     }
