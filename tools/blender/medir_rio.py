@@ -28,7 +28,7 @@ def serve(route):
     if not f.startswith(ROOT) or not os.path.isfile(f):
         return route.fulfill(status=404, body='')
     route.fulfill(status=200, path=f, content_type=TYPES.get(os.path.splitext(f)[1], 'application/octet-stream'))
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'capturas')
+OUT = os.environ.get('CAPTURAS') or os.path.join(os.path.dirname(os.path.abspath(__file__)), 'capturas')
 
 # Código que roda dentro da página: troca a estátua, monta o Rio, mede e posiciona câmeras.
 SETUP_JS = r"""

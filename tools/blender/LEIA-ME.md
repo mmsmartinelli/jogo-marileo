@@ -1,7 +1,8 @@
 # Monumentos feitos no Blender (teste: Cristo Redentor)
 
-O `cristo.py` é um script que monta o Cristo sozinho dentro do Blender e salva o modelo em
-`assets/models/cristo.glb`. Você não precisa mexer em nada no Blender: é só rodar um comando.
+O `cristo.py` é um script que monta o Cristo sozinho dentro do Blender e salva o modelo em dois
+arquivos: `js/models/cristo.js`, que é o que **o jogo usa**, e `assets/models/cristo.glb`, para olhar
+e comparar. Você não precisa mexer em nada no Blender: é só rodar um comando.
 
 ## Como rodar no Mac
 
@@ -35,7 +36,17 @@ Tudo está no `cristo.py`, em blocos com comentários (pedestal, túnica, manto,
 coração). As medidas estão em "unidades do jogo" e as cores são as mesmas do jogo (hex).
 Depois de mudar, rode o comando de novo.
 
-Ainda **não** está ligado ao jogo: é só o teste para comparar.
+## Ligado ao jogo (13/11/2026)
+
+O Rio usa o Cristo do Blender. Em `js/cities/lm-west.js`, a estátua lê `js/models/cristo.js` com
+`js/models/modelo.js`. O modelo vai dentro do código (em base64, 36 KB) e não como `.glb`, por três motivos:
+- a cidade é montada toda de uma vez, sem esperar arquivo baixar;
+- os apps Android e iOS copiam só as pastas `js`, `css` e `icons`, então o modelo entra sozinho;
+- o modo offline (`sw.js`, cache `race-cities-v16`) já guarda os dois arquivos.
+
+Depois de mudar o `cristo.py`, rode o comando de novo e faça commit do `js/models/cristo.js`.
+Conferido no Chrome: o Rio do jogo deu os mesmos 276.101 triângulos e a mesma imagem do `.glb`, de dia e de noite.
+Desde que foi ligado, o lado "hoje" do `medir_rio.py` mede o jogo como ele está, ou seja, já com o Cristo novo.
 
 ## Medição do Rio inteiro com o Cristo do Blender (13/11/2026)
 
