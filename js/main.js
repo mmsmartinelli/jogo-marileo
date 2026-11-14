@@ -82,6 +82,7 @@ class App {
     window.addEventListener('resize', () => {
       r.setSize(window.innerWidth, window.innerHeight);
       if (this.race && this.race.hud) this.race.hud.resize();
+      this._relayout();
     });
   }
 
@@ -191,8 +192,87 @@ class App {
     this.screen = id;
     $$('.screen').forEach(s => s.classList.toggle('active', s.id === id));
     this.focusIdx = 0;
-    this._applyFocus();
     if (id === 'setup') this._renderSetup();
+    if (id === 'howto') this._tabs($('#howPanel'), this.howTab || 'ctrl');
+    if (id === 'results') this._fitResults(true);
+    this._applyFocus();
+  }
+
+  // Resultado: tabela e desafios lado a lado; se não couber na tela (muitas linhas), vira abas.
+  _fitResults(reset) {
+    const panel = $('#resPanel'), grid = panel.querySelector('.resultsgrid');
+    if (reset) this.resTab = 'table';
+    panel.classList.remove('steps');
+    panel.querySelectorAll('[data-pane]').forEach(p => p.classList.remove('pane-off'));
+    const gb = grid.getBoundingClientRect().bottom;
+    const over = grid.scrollHeight > grid.clientHeight + 1 || [...grid.children].some(c => c.getBoundingClientRect().bottom > gb + 1);
+    if (over) {
+      panel.classList.add('steps');
+      panel.querySelectorAll('[data-pane]').forEach(p => p.classList.toggle('pane-off', p.dataset.pane !== this.resTab));
+      panel.querySelectorAll('.tabs [data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === this.resTab));
+    }
+  }
+
+  // ---------- Menus que cabem numa tela só ----------
+  // Abas/passos: em tela pequena mostra só a aba escolhida; se o painel tiver data-all e a tela for grande, mostra tudo junto.
+  _tabs(panel, tab) {
+    const all = !!panel.dataset.all && matchMedia(panel.dataset.all).matches;
+    panel.classList.toggle('steps', !all);
+    panel.dataset.tab = tab;
+    panel.querySelectorAll('[data-pane]').forEach(p => p.classList.toggle('pane-off', !all && p.dataset.pane !== tab));
+    panel.querySelectorAll('.tabs [data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+    this._fitGrids(panel);
+    return all;
+  }
+
+  // Grade de cidades: escolhe quantas colunas deixam os cartões maiores no espaço que sobra (sem rolar).
+  _fitGrids(root = document) {
+    if (!this._gridRO && window.ResizeObserver) this._gridRO = new ResizeObserver(es => es.forEach(e => this._fitGrid(e.target)));
+    root.querySelectorAll('.tracks.grid').forEach(el => {
+      if (this._gridRO && !el._observed) { el._observed = true; this._gridRO.observe(el); }
+      this._fitGrid(el);
+    });
+  }
+
+  _fitGrid(el) {
+    const n = el.children.length;
+    const W = el.clientWidth, H = el.clientHeight;
+    if (!n || !W || !H) return;
+    const gap = parseFloat(getComputedStyle(el).columnGap) || 0;
+    const ratio = +el.dataset.ratio || 1.6;
+    let best = 1, bestS = 0;
+    for (let c = 1; c <= n; c++) {
+      const r = Math.ceil(n / c);
+      const sz = Math.min((W - gap * (c - 1)) / c / ratio, (H - gap * (r - 1)) / r);
+      if (sz > bestS + 0.5) { bestS = sz; best = c; }
+    }
+    el.style.setProperty('--tc', best);
+    el.style.setProperty('--tr', Math.ceil(n / best));
+  }
+
+  // Tela girou ou mudou de tamanho: refaz abas e grades do menu aberto.
+  _relayout() {
+    if (this.screen === 'setup') { this._tabs($('#setupPanel'), this.setupTab || 'players'); this._setupFooter(); }
+    else if (this.screen === 'howto') this._tabs($('#howPanel'), this.howTab || 'ctrl');
+    else if (this.screen === 'results') this._fitResults(false);
+    else if (this.screen === 'online') this.online.render();
+  }
+
+  _setSetupTab(tab) {
+    this.setupTab = tab;
+    this._tabs($('#setupPanel'), tab);
+    this._setupFooter();
+    this.focusIdx = 0;
+    this._applyFocus();
+  }
+
+  // Rodapé da configuração: no passo 1 "Escolher pista ▶"; no passo 2 (ou com tudo junto) "CORRER!"
+  _setupFooter() {
+    const steps = $('#setupPanel').classList.contains('steps');
+    const first = steps && this.setupTab !== 'track';
+    $('#setupNext').hidden = !first;
+    $('#startBtn').hidden = first;
+    $('#setupBack').textContent = steps && this.setupTab === 'track' ? '⬅ Pilotos' : '⬅ Voltar';
   }
 
   toast(text) {
@@ -232,6 +312,7 @@ class App {
     $$('[data-mode]').forEach(b => b.addEventListener('click', () => {
       audio.play('confirm');
       this.settings.mode = b.dataset.mode;
+      this.setupTab = 'players';
       this.show('setup');
     }));
     $$('[data-go]').forEach(b => b.addEventListener('click', () => { audio.play('back'); this.show(b.dataset.go); }));
@@ -241,6 +322,12 @@ class App {
     $$('#difficulty button').forEach(b => b.addEventListener('click', () => { this.settings.difficulty = +b.dataset.n; audio.play('select'); this._renderSetup(); }));
     $$('#autoAccel button').forEach(b => b.addEventListener('click', () => { this.settings.autoAccel = +b.dataset.n; audio.play('select'); this._renderSetup(); }));
     $('#startBtn').addEventListener('click', () => this.startFromSetup());
+    $('#setupNext').addEventListener('click', () => { audio.play('confirm'); this._setSetupTab('track'); });
+    $('#setupBack').addEventListener('click', () => this._setupBackAct());
+    $('#paintOk').addEventListener('click', () => this._closePaints());
+    $$('#resTabs [data-tab]').forEach(b => b.addEventListener('click', () => { audio.play('select'); this.resTab = b.dataset.tab; this._fitResults(false); }));
+    $$('#setupTabs [data-tab]').forEach(b => b.addEventListener('click', () => { audio.play('select'); this._setSetupTab(b.dataset.tab); }));
+    $$('#howTabs [data-tab]').forEach(b => b.addEventListener('click', () => { audio.play('select'); this.howTab = b.dataset.tab; this._tabs($('#howPanel'), b.dataset.tab); }));
     // no Android (fora do app) oferece o app de verdade
     if (/Android/i.test(navigator.userAgent) && !window.AndroidApp) $('#apkBtn').hidden = false;
     $('#apkBtn').addEventListener('click', () => { location.href = 'baixar.html'; });
@@ -268,7 +355,9 @@ class App {
       if (this.screen === 'race' && (code === 'Escape' || code === 'KeyP')) this.pause();
       else if (this.screen === 'pause' && (code === 'Escape' || code === 'KeyP')) this.resume();
       else if (code === 'Escape') {
-        if (this.screen === 'setup' || this.screen === 'howto') { audio.play('back'); this.show('title'); }
+        if (this._paintsOpen()) this._closePaints();
+        else if (this.screen === 'setup') this._setupBackAct();
+        else if (this.screen === 'howto') { audio.play('back'); this.show('title'); }
         else if (this.screen === 'online' && !this.online.connected) { audio.play('back'); this.show('title'); }
       }
     });
@@ -279,6 +368,7 @@ class App {
       if (sc === 'race') { this.pause(); return true; }
       if (sc === 'pause') { this.resume(); return true; }
       if (this.online.connected && (sc === 'online' || sc === 'results')) { this.online.leave(); return true; }
+      if (this._paintsOpen()) { this._closePaints(); return true; }
       if (sc === 'title') return false;
       audio.play('back');
       if (sc === 'results' || sc === 'podium') this.toMenu();
@@ -304,8 +394,8 @@ class App {
     segOn('#autoAccel', s.autoAccel);
     // na Copa Infinita o computador fica mais esperto sozinho a cada copa
     $('#diffBox').style.visibility = mode === 'tt' || (mode === 'gp' && cupDef.infinite) ? 'hidden' : 'visible';
-    $('#trackRow').style.display = mode === 'gp' ? 'none' : 'flex';
-    $('#cupRow').style.display = mode === 'gp' ? 'flex' : 'none';
+    $('#trackRow').hidden = mode === 'gp';
+    $('#cupRow').hidden = mode !== 'gp';
 
     // cartões
     const cards = $('#playerCards');
@@ -326,20 +416,23 @@ class App {
       }).join('');
       card.innerHTML = `
         <div class="pnum" style="background:${PLAYER_COLORS[i]}">Jogador ${i + 1}${this.ready[i] && on ? ' ✔' : ''}</div>
+        <div class="cin">
         <img class="portrait" src="${this._portraitFor(p.char, p.paint)}" alt="">
         ${this._paintRow(p)}
-        <div class="pick"><button data-d="-1">◀</button><div><div class="cname">${ch.name}</div><div style="font-size:14px;opacity:.8">${ch.species}</div></div><button data-d="1">▶</button></div>
+        <div class="pick"><button data-d="-1" aria-label="Personagem anterior">◀</button><div><div class="cname">${ch.name}</div><div class="species">${ch.species}</div></div><button data-d="1" aria-label="Próximo personagem">▶</button></div>
+        <button type="button" class="paintbtn" aria-label="Escolher pintura do kart" title="Pintura: ${esc(paintById(p.paint || 'classica').name)}" style="--a:${paintById(p.paint || 'classica').body || ch.color};--b:${paintById(p.paint || 'classica').accent || ch.accent}">🎨</button>
         <div class="stats">${stat('Velocidade', ch.stats.speed)}${stat('Aceleração', ch.stats.accel)}${stat('Curvas', ch.stats.handling)}${stat('Peso', ch.stats.weight)}</div>
-        <select ${on ? '' : 'disabled'}>${opts}</select>`;
+        <select ${on ? '' : 'disabled'}>${opts}</select>
+        </div>`;
       card.querySelectorAll('.pick button').forEach(b => b.addEventListener('click', () => this._changeChar(i, +b.dataset.d)));
       card.querySelectorAll('.paints button').forEach(b => b.addEventListener('click', () => this._pickPaint(i, b.dataset.p)));
+      card.querySelector('.paintbtn').addEventListener('click', () => { if (on) this._openPaints(i); });
       card.querySelector('select').addEventListener('change', e => { p.source = e.target.value; this._resetReady(); });
       cards.appendChild(card);
     }
 
     // cidades (e as pistas de fantasia no fim da fila)
     const list = $('#trackList');
-    const keepScroll = list.scrollLeft;
     list.innerHTML = '';
     const card = t => {
       const el = document.createElement('div');
@@ -358,12 +451,6 @@ class App {
       () => { s.surpriseId = s.trackId = GEN_PREFIX + randomSeed(); audio.play('confirm'); this._renderSetup(); },
       id => this._starLine(id, mode)));
     for (const id of FANTASY_IDS) list.appendChild(card(getTrack(id)));
-    list.scrollLeft = keepScroll;
-    if (!this._scrolledTo || this._scrolledTo !== s.trackId) {
-      this._scrolledTo = s.trackId;
-      const on = list.querySelector('.track.on');
-      if (on && (on.offsetLeft < list.scrollLeft || on.offsetLeft + on.offsetWidth > list.scrollLeft + list.clientWidth)) list.scrollLeft = on.offsetLeft - 8;
-    }
 
     // copa do Grande Prêmio: as copas da Volta ao Mundo, a Copa Fantasia ou a Copa Infinita
     const cm = $('#cupMode');
@@ -371,7 +458,8 @@ class App {
       for (const c of [...CUPS, { id: 'infinita', emoji: '♾️', name: 'Copa Infinita' }]) {
         const b = document.createElement('button');
         b.dataset.c = c.id;
-        b.dataset.label = `${c.emoji} ${c.name.replace(/^Copa /, '')}`;
+        b.dataset.emoji = c.emoji;
+        b.dataset.label = c.name.replace(/^Copa /, '');
         b.title = c.name;
         b.addEventListener('click', () => { this.settings.cup = c.id; audio.play('select'); this._renderSetup(); });
         cm.appendChild(b);
@@ -381,7 +469,7 @@ class App {
       b.classList.toggle('on', b.dataset.c === s.cup);
       // medalha da melhor colocação na copa ao lado do nome
       const m = b.dataset.c === 'infinita' ? '' : medalEmoji(this.medals[b.dataset.c]);
-      b.textContent = b.dataset.label + (m ? ' ' + m : '');
+      b.innerHTML = `${b.dataset.emoji}<span class="cn"> ${esc(b.dataset.label)}</span>${m ? ' ' + m : ''}`;
     });
     const cupBest = cupDef.infinite ? 0 : this.medals[cupDef.id];
     $('#cupName').textContent = cupDef.infinite ? '' : `${cupDef.emoji} ${cupDef.name}${cupDef.bonus ? ' (bônus)' : ''}${cupBest ? ` • ${medalEmoji(cupBest)} Melhor: ${cupBest}º` : ''}`;
@@ -406,6 +494,7 @@ class App {
       el.insertAdjacentHTML('beforeend', `<div class="tname">${n + 1}. ${t.city ? `${t.emoji} ${esc(t.cityName || t.name)}` : esc(t.name)}</div>`);
       cup.appendChild(el);
     });
+    if (this.screen === 'setup') { this._tabs($('#setupPanel'), this.setupTab || 'players'); this._setupFooter(); }
     save('marileo_settings', s);
   }
 
@@ -450,15 +539,17 @@ class App {
     const el = document.createElement('div');
     el.className = 'track surprise' + (on ? ' on' : '');
     el.appendChild(this._thumbCanvas(id));
-    el.insertAdjacentHTML('beforeend', `<div class="sname"><small>🎲 Cidade Surpresa</small><span>${t.emoji} ${esc(t.name)}</span></div>${extra ? `<div class="stars">${extra(id)}</div>` : ''}`);
+    el.insertAdjacentHTML('beforeend', `<div class="sname"><small>🎲 Surpresa</small><span>${t.emoji} ${esc(t.name)}</span></div>${extra ? `<div class="stars">${extra(id)}</div>` : ''}`);
+    el.addEventListener('click', onPick);
+    // o sorteio de outra cidade é um cartão próprio, grande o bastante para o dedo
     const b = document.createElement('button');
-    b.className = 'reroll';
-    b.textContent = '🎲 Outra';
+    b.className = 'track reroll';
+    b.innerHTML = '<b>🎲</b><span>Sortear outra</span>';
     b.title = 'Sortear outra cidade surpresa';
     b.addEventListener('click', e => { e.stopPropagation(); onReroll(); });
-    el.appendChild(b);
-    el.addEventListener('click', onPick);
-    return el;
+    const f = document.createDocumentFragment();
+    f.append(el, b);
+    return f;
   }
 
   // Copa escolhida para o Grande Prêmio: { name, tracks, infinite?, number?, aiDifficulty? }
@@ -481,7 +572,8 @@ class App {
   // Pinturas que acabaram de ser liberadas (e marca como vistas).
   _newUnlocks() {
     const now = unlockedPaintIds(this._progressStats());
-    const fresh = now.filter(id => !this.seenPaints.includes(id));
+    // a Clássica (sem condição) já vem com o jogo: nunca aparece como novidade
+    const fresh = now.filter(id => paintById(id).need && !this.seenPaints.includes(id));
     if (fresh.length) { this.seenPaints = [...new Set([...this.seenPaints, ...now])]; save('marileo_paints_seen', this.seenPaints); }
     return fresh.map(paintById);
   }
@@ -496,6 +588,41 @@ class App {
       const a = pt.body || ch.color, b = pt.accent || ch.accent;
       return `<button type="button" data-p="${pt.id}" class="${pt.id === cur ? 'on' : ''}${open ? '' : ' locked'}" style="--a:${a};--b:${b}" title="${esc(open ? pt.name : `🔒 ${pt.name}: ${pt.text}`)}" aria-label="${esc(pt.name)}">${open ? '' : '🔒'}</button>`;
     }).join('')}</div>`;
+  }
+
+  // Quadro "🎨 Pintura do kart" (o botão do cartão abre): pinturas grandes, fáceis de tocar, com o que falta para liberar.
+  _openPaints(i) {
+    this._paintFor = i;
+    const st = this._stats || this._progressStats();
+    const p = this.settings.players[i];
+    const ch = CHARACTERS[p.char];
+    const cur = p.paint || 'classica';
+    $('#paintTitle').textContent = `🎨 Pintura do kart: Jogador ${i + 1}`;
+    const g = $('#paintGrid');
+    g.innerHTML = '';
+    for (const pt of PAINTS) {
+      const open = paintUnlocked(pt, st);
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'paintopt' + (pt.id === cur ? ' on' : '') + (open ? '' : ' locked');
+      b.dataset.p = pt.id;
+      b.innerHTML = `<i style="--a:${pt.body || ch.color};--b:${pt.accent || ch.accent}">${open ? '' : '🔒'}</i><span><b>${esc(pt.name)}</b>${open ? '' : `<small>${esc(pt.text)}</small>`}</span>`;
+      b.addEventListener('click', () => {
+        if (!open) { audio.play('back'); this.toast(`🔒 ${pt.name}: ${pt.text}`); return; }
+        this._closePaints(false);
+        this._pickPaint(i, pt.id);
+      });
+      g.appendChild(b);
+    }
+    audio.play('select');
+    $('#paintPick').hidden = false;
+  }
+
+  _paintsOpen() { return !$('#paintPick').hidden; }
+
+  _closePaints(sound = true) {
+    if (sound) audio.play('back');
+    $('#paintPick').hidden = true;
   }
 
   _pickPaint(i, id) {
@@ -524,6 +651,13 @@ class App {
   }
 
   _resetReady() { this.ready = [false, false, false, false]; }
+
+  // Voltar na configuração: do passo 2 volta para os pilotos; do passo 1 volta ao menu.
+  _setupBackAct() {
+    audio.play('back');
+    if ($('#setupPanel').classList.contains('steps') && this.setupTab === 'track') this._setSetupTab('players');
+    else this.show('title');
+  }
 
   // No celular: tela cheia e trava na horizontal (quando o navegador permite).
   _goFullscreen() {
@@ -660,7 +794,7 @@ class App {
       save('marileo_stars', this.stars);
       chalHTML = `<h3>⭐ Desafios — ${def.name}</h3>` + now.map(n => `
         <div class="chal ${n.done ? 'done' : ''}"><span class="star">⭐</span><div>${n.c.text}
-        <div style="font-size:13px;opacity:.8">${n.done ? 'Conseguiu: ' + n.who.map(k => k.netName ? esc(k.netName) : 'J' + (k.playerIndex + 1)).join(', ') : (n.wasDone ? 'Já conquistado antes' : 'Ainda não...')}</div></div></div>`).join('');
+        <div class="sub">${n.done ? 'Conseguiu: ' + n.who.map(k => k.netName ? esc(k.netName) : 'J' + (k.playerIndex + 1)).join(', ') : (n.wasDone ? 'Já conquistado antes' : 'Ainda não...')}</div></div></div>`).join('');
       const total = TRACKS.reduce((a, t) => a + (this.stars[t.id] || []).filter(Boolean).length, 0);
       // 📅 Desafio do Dia: as 3 estrelas da pista de hoje (vale somar tentativas no mesmo dia)
       const today = dayKey();
@@ -669,9 +803,9 @@ class App {
         if (got === 3 && completeDaily(this.daily, today)) {
           save('marileo_daily', this.daily);
           const n = this.daily.streak;
-          chalHTML += `<div class="chal done"><span class="star">📅</span><div><b>DESAFIO DO DIA COMPLETO!</b><div style="font-size:13px;opacity:.8">🔥 ${n} ${n === 1 ? 'dia' : 'dias seguidos'} • Amanhã tem pista nova</div></div></div>`;
+          chalHTML += `<div class="chal done"><span class="star">📅</span><div><b>DESAFIO DO DIA COMPLETO!</b><div class="sub">🔥 ${n} ${n === 1 ? 'dia' : 'dias seguidos'} • Amanhã tem pista nova</div></div></div>`;
         } else if (got < 3) {
-          chalHTML += `<div class="chal"><span class="star">📅</span><div>Desafio do Dia<div style="font-size:13px;opacity:.8">${3 - got === 1 ? 'Falta 1 estrela' : `Faltam ${3 - got} estrelas`} nesta pista hoje</div></div></div>`;
+          chalHTML += `<div class="chal"><span class="star">📅</span><div>Desafio do Dia<div class="sub">${3 - got === 1 ? 'Falta 1 estrela' : `Faltam ${3 - got} estrelas`} nesta pista hoje</div></div></div>`;
         }
       }
       const md = countMedals(this.medals, this.infinite.best);
@@ -683,12 +817,12 @@ class App {
       if (isRec) { this.records[def.id] = best; save('marileo_tt', this.records); }
       chalHTML = `<h3>⏱️ Tempos</h3>` + humans.map(k => `
         <div class="chal done"><span class="star">🏁</span><div><b>J${k.playerIndex + 1} ${k.ch.name}</b>: ${formatTime(k.finishTime)}
-        <div style="font-size:13px;opacity:.8">Voltas: ${k.lapTimes.map(formatTime).join(' • ')}</div></div></div>`).join('') +
+        <div class="sub">Voltas: ${k.lapTimes.map(formatTime).join(' • ')}</div></div></div>`).join('') +
         `<div class="chal ${isRec ? 'done' : ''}"><span class="star">🏆</span><div>${isRec ? 'NOVO RECORDE!' : 'Recorde'}: ${formatTime(this.records[def.id])}</div></div>`;
     }
     chalHTML += this._recordLines(race);
     // 🎨 desbloqueios novos
-    if (!cfg.online) chalHTML += this._newUnlocks().map(pt => `<div class="chal done unlock"><span class="star paintdot" style="--a:${pt.body};--b:${pt.accent}"></span><div><b>NOVA PINTURA LIBERADA: ${esc(pt.name)}!</b><div style="font-size:13px;opacity:.8">Escolha nas bolinhas de cor do seu piloto</div></div></div>`).join('');
+    if (!cfg.online) chalHTML += this._newUnlocks().map(pt => `<div class="chal done unlock"><span class="star paintdot" style="--a:${pt.body};--b:${pt.accent}"></span><div><b>NOVA PINTURA LIBERADA: ${esc(pt.name)}!</b><div class="sub">Escolha no botão 🎨 do seu piloto</div></div></div>`).join('');
     $('#challenges').innerHTML = chalHTML;
 
     // pontos do GP
@@ -738,7 +872,7 @@ class App {
       btn('🏠 Sair', 'mid ghost', () => this.toMenu());
     } else {
       btn('🔄 Correr de novo', 'big go', () => this._adBreak(() => this.startRace(cfg), cfg));
-      btn('🗺️ Escolher outra pista', 'mid', () => { this.startDemo(); this.show('setup'); });
+      btn('🗺️ Outra pista', 'mid', () => { this.startDemo(); this.setupTab = 'track'; this.show('setup'); });
       btn('🏠 Menu', 'mid ghost', () => this.toMenu());
     }
     this.show('results');
@@ -755,7 +889,7 @@ class App {
     save('marileo_recs', this.trackRecs);
     const r = this.trackRecs[id];
     let html = '';
-    if (r.lap) html += `<div class="chal ${up.lap ? 'done' : ''}"><span class="star">⚡</span><div>${up.lap ? '<b>NOVO RECORDE DE VOLTA!</b> ' : 'Melhor volta na pista: '}${formatTime(r.lap)}${up.lap && up.prevLap ? `<div style="font-size:13px;opacity:.8">Antes: ${formatTime(up.prevLap)}</div>` : ''}</div></div>`;
+    if (r.lap) html += `<div class="chal ${up.lap ? 'done' : ''}"><span class="star">⚡</span><div>${up.lap ? '<b>NOVO RECORDE DE VOLTA!</b> ' : 'Melhor volta na pista: '}${formatTime(r.lap)}${up.lap && up.prevLap ? `<div class="sub">Antes: ${formatTime(up.prevLap)}</div>` : ''}</div></div>`;
     if (up.place && up.prevPlace && medalEmoji(r.place)) html += `<div class="chal done"><span class="star">${medalEmoji(r.place)}</span><div>Sua melhor colocação aqui: <b>${r.place}º</b> (antes ${up.prevPlace}º)</div></div>`;
     return html;
   }
@@ -838,7 +972,7 @@ class App {
   _navButtons() {
     const sc = document.getElementById(this.screen);
     if (!sc) return [];
-    return [...sc.querySelectorAll('.menu button, .actions button')].filter(b => b.offsetParent !== null);
+    return [...sc.querySelectorAll('.menu button, .tabs:not([hidden]) button, .actions button')].filter(b => b.offsetParent !== null);
   }
 
   _applyFocus() {

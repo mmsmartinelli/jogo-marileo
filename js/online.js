@@ -103,6 +103,8 @@ export class Online {
     $('#onLeave').addEventListener('click', () => this.leave());
     $('#onGo').addEventListener('click', () => this.start());
     $('#onShare').addEventListener('click', () => this.share());
+    // anfitrião em tela pequena: abas "Sala" e "Pista"
+    document.querySelectorAll('#onTabs [data-tab]').forEach(b => b.addEventListener('click', () => { audio.play('select'); this.tab = b.dataset.tab; this.render(); }));
     document.querySelectorAll('#onLaps button').forEach(b => b.addEventListener('click', () => { this.settings.laps = +b.dataset.n; this._settingsChanged(); }));
     document.querySelectorAll('#onDiff button').forEach(b => b.addEventListener('click', () => { this.settings.difficulty = +b.dataset.n; this._settingsChanged(); }));
   }
@@ -368,9 +370,18 @@ export class Online {
   // ---------- tela ----------
   render() {
     const inRoom = !!this.net && (this.isHost || this.members.length > 0);
+    const host = this.isHost;
     $('#onStart').hidden = inRoom;
     $('#onTopBack').textContent = inRoom ? '🚪 Sair' : '⬅ Menu';
     $('#onLobby').hidden = !inRoom;
+    $('#onBack').hidden = inRoom;
+    $('#onLeave').hidden = !inRoom;
+    $('#onGo').hidden = !inRoom || !host;
+    $('#onPanel').classList.toggle('inroom', inRoom);
+    const tabbed = inRoom && host;
+    if (!tabbed) this.tab = 'room';
+    const all = this.app._tabs($('#onPanel'), this.tab || 'room');
+    $('#onTabs').hidden = !tabbed || all;
     const ch = CHARACTERS[this.me.char];
     $('#onPortrait').src = this.app._portraitFor(this.me.char, this.myPaint) || '';
     this._renderPaints();
@@ -394,26 +405,15 @@ export class Online {
         const c = CHARACTERS[m.char] || CHARACTERS[0];
         el.innerHTML = `<img src="${this.app._portraitFor(m.char, cleanPaint(m.paint)) || ''}" alt=""><div><div class="n"></div><div class="s">${c.name}${m.host ? ' • 👑 anfitrião' : ''}${me ? ' • você' : ''}${m.waiting ? ' • próxima corrida' : ''}</div></div>`;
         el.querySelector('.n').textContent = m.name;
-        if (me) {
-          const arrows = document.createElement('div');
-          arrows.className = 'arrows';
-          arrows.innerHTML = '<button aria-label="Personagem anterior">◀</button><button aria-label="Próximo personagem">▶</button>';
-          const [p, n] = arrows.querySelectorAll('button');
-          p.addEventListener('click', () => this.changeChar(-1));
-          n.addEventListener('click', () => this.changeChar(1));
-          el.appendChild(arrows);
-        }
+        // o próprio piloto troca de personagem pelas setas grandes ao lado da foto
       }
       list.appendChild(el);
     }
 
-    const host = this.isHost;
     $('#onHostOpts').hidden = !host;
-    $('#onGo').hidden = !host;
     $('#onGo').disabled = this.inRace;
     if (host) {
       const tracks = $('#onTracks');
-      const keep = tracks.scrollLeft;
       tracks.innerHTML = '';
       const card = t => {
         const el = document.createElement('div');
@@ -433,7 +433,7 @@ export class Online {
         () => { this.settings.trackId = this.surpriseId; this._settingsChanged(); },
         () => { this.surpriseId = this.settings.trackId = GEN_PREFIX + randomSeed(); this._settingsChanged(); }));
       for (const id of FANTASY_IDS) tracks.appendChild(card(getTrack(id)));
-      tracks.scrollLeft = keep;
+      this.app._fitGrids($('#onPanel'));
       document.querySelectorAll('#onLaps button').forEach(b => b.classList.toggle('on', +b.dataset.n === this.settings.laps));
       document.querySelectorAll('#onDiff button').forEach(b => b.classList.toggle('on', +b.dataset.n === this.settings.difficulty));
       $('#onWait').textContent = this.members.length < 2

@@ -57,64 +57,69 @@
     <p class="hint">Até 4 jogadores na mesma tela • Teclado ou controles (gamepad) • <kbd>M</kbd> liga/desliga o som</p>
   </section>
 
-  <!-- Configuração da corrida -->
+  <!-- Configuração da corrida: em tela pequena vira 2 passos (Pilotos → Pista); em tela grande fica tudo junto -->
   <section id="setup" class="screen">
-    <div class="panel wide">
-      <button class="back-top" data-go="title" aria-label="Voltar ao menu">⬅ Menu</button>
-      <h2 id="setupTitle">Corrida Rápida</h2>
-
-      <div class="row">
-        <label>Jogadores</label>
-        <div class="seg" id="playerCount">
-          <button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button><button data-n="4">4</button>
+    <div class="panel wide fit" id="setupPanel" data-all="(min-height: 700px) and (min-width: 900px)">
+      <div class="phead">
+        <h2 id="setupTitle">Corrida Rápida</h2>
+        <div class="tabs" id="setupTabs">
+          <button data-tab="players">1 · Pilotos</button><button data-tab="track">2 · Pista</button>
         </div>
       </div>
 
-      <div id="playerCards" class="cards"></div>
-      <p class="hint">Cada jogador troca de personagem com os <b>próprios controles</b> (esquerda/direita) ou clicando nas setas.</p>
+      <div class="pbody">
+        <div class="pane pane-players" data-pane="players">
+          <div class="prow">
+            <label>Jogadores</label>
+            <div class="seg" id="playerCount">
+              <button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button><button data-n="4">4</button>
+            </div>
+            <p class="hint long-hint">Cada jogador troca de personagem com os <b>próprios controles</b> (esquerda/direita) ou nas setas.</p>
+          </div>
+          <div id="playerCards" class="cards"></div>
+        </div>
 
-      <div class="row" id="trackRow">
-        <label>Cidade</label>
-        <div id="trackList" class="tracks scroll"></div>
-      </div>
-      <div class="row" id="cupRow">
-        <label>Copa</label>
-        <div class="cupbox">
-          <div class="cuphead">
-            <div class="seg scroll" id="cupMode"></div>
-            <b id="cupName" class="cupname"></b>
-            <div id="infPick" class="infpick" hidden>
-              <button id="infPrev" aria-label="Copa anterior">◀</button><b id="infName">Copa 1</b><button id="infNext" aria-label="Próxima copa">▶</button>
-              <span id="infInfo"></span>
+        <div class="pane pane-track" data-pane="track">
+          <div class="trackmain">
+            <div id="trackRow" class="gridbox"><div id="trackList" class="tracks grid" data-ratio="1.6"></div></div>
+            <div id="cupRow" class="cupbox">
+              <div class="seg cupmode" id="cupMode"></div>
+              <div class="cuphead">
+                <b id="cupName" class="cupname"></b>
+                <div id="infPick" class="infpick" hidden>
+                  <button id="infPrev" aria-label="Copa anterior">◀</button><b id="infName">Copa 1</b><button id="infNext" aria-label="Próxima copa">▶</button>
+                  <span id="infInfo"></span>
+                </div>
+              </div>
+              <div class="gridbox"><div id="cupList" class="tracks grid cup" data-ratio="1.3"></div></div>
             </div>
           </div>
-          <div id="cupList" class="tracks cup"></div>
-        </div>
-      </div>
-
-      <div class="row options">
-        <div>
-          <label>Voltas</label>
-          <div class="seg" id="lapCount">
-            <button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button><button data-n="5">5</button>
-          </div>
-        </div>
-        <div id="diffBox">
-          <label>Dificuldade</label>
-          <div class="seg" id="difficulty">
-            <button data-n="0">Fácil</button><button data-n="1">Normal</button><button data-n="2">Difícil</button>
-          </div>
-        </div>
-        <div>
-          <label>Acelerar sozinho</label>
-          <div class="seg" id="autoAccel">
-            <button data-n="1">Sim</button><button data-n="0">Não</button>
+          <div class="opts">
+            <div>
+              <label>Voltas</label>
+              <div class="seg" id="lapCount">
+                <button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button><button data-n="5">5</button>
+              </div>
+            </div>
+            <div id="diffBox">
+              <label>Dificuldade</label>
+              <div class="seg" id="difficulty">
+                <button data-n="0">Fácil</button><button data-n="1">Normal</button><button data-n="2">Difícil</button>
+              </div>
+            </div>
+            <div>
+              <label>Acelerar sozinho</label>
+              <div class="seg" id="autoAccel">
+                <button data-n="1">Sim</button><button data-n="0">Não</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       <div class="actions">
-        <button class="mid ghost" data-go="title">⬅ Voltar</button>
+        <button class="mid ghost" id="setupBack">⬅ Voltar</button>
+        <button class="big go" id="setupNext">Escolher pista ▶</button>
         <button class="big go" id="startBtn">CORRER! 🏁</button>
       </div>
     </div>
@@ -122,55 +127,68 @@
 
   <!-- Online com amigos -->
   <section id="online" class="screen">
-    <div class="panel wide">
-      <button class="back-top" id="onTopBack" aria-label="Voltar">⬅ Menu</button>
-      <h2>🌐 Online com Amigos</h2>
-
-      <div class="on-me">
-        <img id="onPortrait" class="on-portrait" alt="">
-        <div class="on-me-fields">
-          <div class="pick"><button id="onPrev" aria-label="Personagem anterior">◀</button><div><div class="cname" id="onCharName"></div><div id="onSpecies" class="on-species"></div></div><button id="onNext" aria-label="Próximo personagem">▶</button></div>
-          <label for="onName">Seu nome</label>
-          <input id="onName" maxlength="12" autocomplete="off" placeholder="Seu nome">
+    <div class="panel wide fit" id="onPanel" data-all="(min-height: 700px) and (min-width: 900px)">
+      <button class="back-top" id="onTopBack" hidden aria-label="Voltar">⬅ Menu</button>
+      <div class="phead">
+        <h2>🌐 Online com Amigos</h2>
+        <div class="tabs" id="onTabs" hidden>
+          <button data-tab="room">👥 Sala</button><button data-tab="track">🗺️ Pista</button>
         </div>
       </div>
-      <div id="onStart" class="on-step">
-        <div class="on-choices">
-          <div class="box">
-            <h3>Criar uma sala</h3>
-            <p>Você escolhe a cidade e manda o código para os amigos entrarem.</p>
-            <button class="big go" id="onCreate">✨ Criar sala</button>
-          </div>
-          <div class="box">
-            <h3>Entrar numa sala</h3>
-            <p>Digite o código de 4 letras que o amigo mandou.</p>
-            <input id="onCode" class="on-code" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CÓDIGO">
-            <button class="big" id="onJoin">🚪 Entrar</button>
+
+      <div class="pbody on-body">
+        <div class="on-me" data-pane="room">
+          <img id="onPortrait" class="on-portrait" alt="">
+          <div class="on-me-fields">
+            <div class="pick"><button id="onPrev" aria-label="Personagem anterior">◀</button><div><div class="cname" id="onCharName"></div><div id="onSpecies" class="on-species"></div></div><button id="onNext" aria-label="Próximo personagem">▶</button></div>
+            <label for="onName">Seu nome</label>
+            <input id="onName" maxlength="12" autocomplete="off" placeholder="Seu nome">
           </div>
         </div>
-        <p class="hint">Até 8 amigos, cada um no seu celular, tablet ou computador. Todos precisam estar com internet.</p>
-        <div class="actions"><button class="mid ghost" id="onBack">⬅ Voltar</button></div>
+
+        <div id="onStart" class="on-step">
+          <div class="on-choices">
+            <div class="box">
+              <h3>Criar uma sala</h3>
+              <p>Você escolhe a cidade e manda o código para os amigos.</p>
+              <button class="big go" id="onCreate">✨ Criar sala</button>
+            </div>
+            <div class="box">
+              <h3>Entrar numa sala</h3>
+              <p>Digite o código de 4 letras do amigo.</p>
+              <input id="onCode" class="on-code" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CÓDIGO">
+              <button class="big" id="onJoin">🚪 Entrar</button>
+            </div>
+          </div>
+          <p class="hint">Até 8 amigos, cada um no seu aparelho. Todos precisam de internet.</p>
+        </div>
+
+        <div id="onLobby" class="on-step" hidden>
+          <div class="on-roompane" data-pane="room">
+            <div class="on-room">
+              <span>Código da sala</span>
+              <b id="onRoomCode">----</b>
+              <button class="mid" id="onShare">📨 Convidar amigos</button>
+            </div>
+            <div id="onPlayers" class="on-players"></div>
+            <p class="hint" id="onWait"></p>
+          </div>
+          <div id="onHostOpts" class="pane pane-track" data-pane="track">
+            <div class="trackmain">
+              <div class="gridbox"><div id="onTracks" class="tracks grid" data-ratio="1.6"></div></div>
+            </div>
+            <div class="opts">
+              <div><label>Voltas</label><div class="seg" id="onLaps"><button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button><button data-n="5">5</button></div></div>
+              <div><label>Computador</label><div class="seg" id="onDiff"><button data-n="0">Fácil</button><button data-n="1">Normal</button><button data-n="2">Difícil</button></div></div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div id="onLobby" class="on-step" hidden>
-        <div class="on-room">
-          <span>Código da sala</span>
-          <b id="onRoomCode">----</b>
-          <button class="mid" id="onShare">📨 Convidar amigos</button>
-        </div>
-        <div id="onPlayers" class="on-players"></div>
-        <div id="onHostOpts">
-          <div class="row"><label>Cidade</label><div id="onTracks" class="tracks scroll"></div></div>
-          <div class="row options">
-            <div><label>Voltas</label><div class="seg" id="onLaps"><button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button><button data-n="5">5</button></div></div>
-            <div><label>Computador</label><div class="seg" id="onDiff"><button data-n="0">Fácil</button><button data-n="1">Normal</button><button data-n="2">Difícil</button></div></div>
-          </div>
-        </div>
-        <p class="hint" id="onWait"></p>
-        <div class="actions">
-          <button class="mid ghost" id="onLeave">🚪 Sair da sala</button>
-          <button class="big go" id="onGo">CORRER! 🏁</button>
-        </div>
+      <div class="actions">
+        <button class="mid ghost" id="onBack">⬅ Voltar</button>
+        <button class="mid ghost" id="onLeave" hidden>🚪 Sair da sala</button>
+        <button class="big go" id="onGo" hidden>CORRER! 🏁</button>
       </div>
     </div>
   </section>
@@ -193,60 +211,72 @@
     </div>
   </div>
 
-  <!-- Como jogar -->
+  <!-- Pinturas do kart: quadro grande para escolher (cada pintura mostra o nome e o que falta para liberar) -->
+  <div id="paintPick" class="on-safety paint-pick" hidden role="dialog" aria-modal="true" aria-labelledby="paintTitle">
+    <div class="panel">
+      <h2 id="paintTitle">🎨 Pintura do kart</h2>
+      <div id="paintGrid" class="paintgrid"></div>
+      <div class="actions"><button class="big go" id="paintOk">Pronto 👍</button></div>
+    </div>
+  </div>
+
+  <!-- Como jogar (em abas: cabe em qualquer tela sem rolar) -->
   <section id="howto" class="screen">
-    <div class="panel wide">
-      <button class="back-top" data-go="title" aria-label="Voltar ao menu">⬅ Menu</button>
-      <h2>Como Jogar</h2>
-      <div class="howgrid">
-        <div class="box">
-          <h3>🎮 Controles</h3>
+    <div class="panel wide fit" id="howPanel">
+      <div class="phead">
+        <h2>Como Jogar</h2>
+        <div class="tabs" id="howTabs">
+          <button data-tab="ctrl">🎮 Controles</button><button data-tab="items">🎁 Itens</button><button data-tab="tips">🏁 Dicas</button><button data-tab="safe">🛡️ Segurança</button>
+        </div>
+      </div>
+      <div class="pbody howbody">
+        <div class="box how-ctrl" data-pane="ctrl">
+          <div class="how-touch">
+            <p><b>📱 No celular:</b> arraste o dedo no lado esquerdo da tela para virar. Os botões do lado direito aceleram, freiam, derrapam e usam itens.</p>
+            <p><b>🎮 Controles:</b> os jogadores 3 e 4 usam controles (gamepads) USB ou Bluetooth. Aperte um botão do controle para ele ser reconhecido.</p>
+          </div>
           <table class="keys">
             <tr><th></th><th>Jogador 1</th><th>Jogador 2</th><th>Controle</th></tr>
             <tr><td>Acelerar</td><td><kbd>W</kbd></td><td><kbd>↑</kbd></td><td>A / RT</td></tr>
             <tr><td>Frear / Ré</td><td><kbd>S</kbd></td><td><kbd>↓</kbd></td><td>B / LT</td></tr>
-            <tr><td>Virar</td><td><kbd>A</kbd> <kbd>D</kbd></td><td><kbd>←</kbd> <kbd>→</kbd></td><td>Analógico / Direcional</td></tr>
+            <tr><td>Virar</td><td><kbd>A</kbd> <kbd>D</kbd></td><td><kbd>←</kbd> <kbd>→</kbd></td><td>Analógico</td></tr>
             <tr><td>Usar item</td><td><kbd>Espaço</kbd></td><td><kbd>Enter</kbd></td><td>X / LB</td></tr>
-            <tr><td>Derrapar</td><td><kbd>Shift</kbd> esq.</td><td><kbd>Shift</kbd> dir. ou <kbd>0</kbd></td><td>RB / Y</td></tr>
+            <tr><td>Derrapar</td><td><kbd>Shift</kbd> esq.</td><td><kbd>Shift</kbd> dir. / <kbd>0</kbd></td><td>RB / Y</td></tr>
             <tr><td>Pausar</td><td colspan="2"><kbd>Esc</kbd> ou <kbd>P</kbd></td><td>Start</td></tr>
           </table>
-          <p>Jogadores 3 e 4 usam controles (gamepads) USB ou Bluetooth. Aperte qualquer botão do controle para ele ser reconhecido.</p>
-          <p><b>📱 No celular:</b> arraste o dedo no lado esquerdo da tela para virar e use os botões do lado direito para acelerar, frear, derrapar e usar itens.</p>
         </div>
-        <div class="box">
-          <h3>🎁 Caixas Surpresa</h3>
+        <div class="box" data-pane="items">
           <ul class="items">
-            <li><b>⚡ Turbo</b> — dispara para frente!</li>
-            <li><b>⚡⚡⚡ Turbo Triplo</b> — três turbos seguidos.</li>
-            <li><b>🛡️ Escudo</b> — protege de uma pegadinha.</li>
-            <li><b>⭐ Estrela</b> — fica invencível e super rápido.</li>
-            <li><b>🍌 Banana</b> — pegadinha deixada para trás.</li>
-            <li><b>🛢️ Óleo</b> — poça escorregadia.</li>
-            <li><b>🎁 Caixa Falsa</b> — parece surpresa, mas é pegadinha!</li>
-            <li><b>🚀 Foguete</b> — persegue quem está na sua frente.</li>
-            <li><b>🦑 Tinta de Lula</b> — suja a tela de quem está na frente.</li>
+            <li><b>⚡ Turbo</b>: dispara para frente!</li>
+            <li><b>⚡⚡⚡ Turbo Triplo</b>: três turbos seguidos.</li>
+            <li><b>🛡️ Escudo</b>: protege de uma pegadinha.</li>
+            <li><b>⭐ Estrela</b>: invencível e super rápido.</li>
+            <li><b>🍌 Banana</b>: pegadinha deixada para trás.</li>
+            <li><b>🛢️ Óleo</b>: poça escorregadia.</li>
+            <li><b>🎁 Caixa Falsa</b>: parece surpresa, mas é pegadinha!</li>
+            <li><b>🚀 Foguete</b>: persegue quem está na sua frente.</li>
+            <li><b>🦑 Tinta de Lula</b>: suja a tela de quem está na frente.</li>
           </ul>
         </div>
-        <div class="box">
-          <h3>🏁 Dicas de Piloto</h3>
-          <ul>
-            <li><b>Derrape</b> nas curvas segurando o botão de derrapar: as faíscas ficam <span style="color:#5cf">azuis</span>, <span style="color:#fa3">laranjas</span> e <span style="color:#d6f">roxas</span>. Solte para ganhar um turbo!</li>
+        <div class="box" data-pane="tips">
+          <ul class="tips">
+            <li><b>Derrape</b> nas curvas: as faíscas ficam <span style="color:#5cf">azuis</span>, <span style="color:#fa3">laranjas</span> e <span style="color:#d6f">roxas</span>. Solte para ganhar turbo!</li>
             <li><b>Largada turbo:</b> acelere quando aparecer o <b>2</b> na contagem.</li>
             <li><b>Moedas 🪙</b> deixam seu kart mais rápido (até 10).</li>
-            <li>Passe pelas <b>setas amarelas</b> para um turbo e pelas <b>rampas</b> para voar. Aperte derrapar no ar para uma <b>manobra</b>!</li>
-            <li>Cuidado com os <b>obstáculos</b>: táxis, ônibus, camelos e cangurus atravessando a rua, hidrantes jorrando água e bandos de pombos!</li>
+            <li><b>Setas amarelas</b> dão turbo e <b>rampas</b> fazem voar. Derrape no ar para uma <b>manobra</b>!</li>
+            <li>Cuidado com <b>táxis, ônibus, camelos, cangurus</b>, hidrantes jorrando e bandos de pombos!</li>
             <li>Cada cidade tem <b>3 desafios ⭐</b>. Complete todos e dê a volta ao mundo!</li>
           </ul>
         </div>
-      </div>
-      <div class="box howsafe">
-        <h3>🛡️ Jogue online com segurança</h3>
-        <ul class="safety-list">
-          <li>Só jogue online com <b>amigos e família que você conhece</b>.</li>
-          <li><b>Não há chat</b>: ninguém escreve para você no jogo.</li>
-          <li>Use só um <b>apelido</b>. Não coloque nome completo, endereço, telefone nem escola.</li>
-          <li>Se aparecer algo estranho, <b>saia da sala</b> e <b>chame um adulto</b>.</li>
-        </ul>
+        <div class="box howsafe" data-pane="safe">
+          <h3>🛡️ Jogue online com segurança</h3>
+          <ul class="safety-list">
+            <li>Só jogue online com <b>amigos e família que você conhece</b>.</li>
+            <li><b>Não há chat</b>: ninguém escreve para você no jogo.</li>
+            <li>Use só um <b>apelido</b>. Não coloque nome completo, endereço, telefone nem escola.</li>
+            <li>Se aparecer algo estranho, <b>saia da sala</b> e <b>chame um adulto</b>.</li>
+          </ul>
+        </div>
       </div>
       <div class="actions"><button class="big" data-go="title">Entendi! 👍</button></div>
     </div>
@@ -266,11 +296,14 @@
 
   <!-- Resultados -->
   <section id="results" class="screen overlay">
-    <div class="panel wide">
-      <h2 id="resultsTitle">Resultado</h2>
+    <div class="panel wide" id="resPanel">
+      <div class="phead">
+        <h2 id="resultsTitle">Resultado</h2>
+        <div class="tabs" id="resTabs"><button data-tab="table">🏁 Classificação</button><button data-tab="chal">⭐ Desafios</button></div>
+      </div>
       <div class="resultsgrid">
-        <table id="resultsTable" class="standings"></table>
-        <div id="challenges"></div>
+        <table id="resultsTable" class="standings" data-pane="table"></table>
+        <div id="challenges" data-pane="chal"></div>
       </div>
       <div class="actions" id="resultsActions"></div>
     </div>
@@ -281,8 +314,10 @@
     <div class="panel wide">
       <h2 id="podiumTitle">🏆 Campeões da Copa! 🏆</h2>
       <p class="hint podium-note" id="podiumNote" hidden></p>
-      <div id="podiumBox" class="podium"></div>
-      <table id="podiumTable" class="standings"></table>
+      <div class="podwrap">
+        <div id="podiumBox" class="podium"></div>
+        <table id="podiumTable" class="standings"></table>
+      </div>
       <div class="actions" id="podiumActions"></div>
     </div>
   </section>

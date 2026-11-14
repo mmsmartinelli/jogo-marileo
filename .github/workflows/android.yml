@@ -3,7 +3,7 @@
 # - "Run workflow" (Actions → Android → Run workflow): gera o APK e o AAB (o arquivo que vai
 #   para a Google Play) da versão final, assinados com a chave do estúdio.
 #   Segredos do repositório (Settings → Secrets and variables → Actions):
-#     ANDROID_KEYSTORE_B64      a chave (.jks) em base64:  base64 -w0 race-cities.jks
+#     ANDROID_KEYSTORE_B64      a chave (.jks) em base64. No Mac: base64 -i race-cities.jks | tr -d "\n" | pbcopy   (no Linux: base64 -w0)
 #     ANDROID_KEYSTORE_PASSWORD senha da chave
 #     ANDROID_KEY_ALIAS         apelido (alias) da chave
 #     ANDROID_KEY_PASSWORD      senha do alias (se for a mesma, repita)

@@ -12,6 +12,7 @@
 //
 // API do Google Mobile Ads SDK 13.x (nomes conferidos nos cabeçalhos do GoogleMobileAds.xcframework 13.12.0).
 import UIKit
+#if canImport(GoogleMobileAds)
 import GoogleMobileAds
 
 @MainActor
@@ -220,3 +221,15 @@ final class GameAds: NSObject, FullScreenContentDelegate {
         js("window.__adDone && window.__adDone({\"shown\":\(shown),\"rewarded\":\(rewarded),\"reason\":\"\(reason)\"})")
     }
 }
+#else
+// Versão local de teste (sem o SDK do AdMob, ex.: ios/gerar-xcodeproj.py): não mostra anúncio,
+// mas sempre responde ao jogo para a corrida seguir normalmente.
+@MainActor
+final class GameAds: NSObject {
+    private let js: (String) -> Void
+    init(host: UIViewController, js: @escaping (String) -> Void) { self.js = js; super.init() }
+    func prepare(test: Bool) {}
+    func showInterstitial() { js("window.__adDone && window.__adDone({shown:false,rewarded:false,reason:'sem-sdk'})") }
+    func showRewarded() { js("window.__adDone && window.__adDone({shown:false,rewarded:false,reason:'sem-sdk'})") }
+}
+#endif

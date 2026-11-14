@@ -5,7 +5,7 @@ Rascunho: `docs/privacidade-com-anuncios.html`. O `privacidade.html` atual conti
 **Só troque o arquivo público quando, no mesmo dia, os anúncios reais forem ligados.** Passos: revisar, preencher os `[PREENCHER]`/`[CONFIRMAR]`, copiar o conteúdo para `privacidade.html` (tirando o comentário do topo), e só então `enabled: true`.
 
 ## 1. O que o CEO preenche
-- [ ] `[PREENCHER E-MAIL]`: o `privacidade.html` atual só tem o link de issues do GitHub (sem e-mail). Definir um e-mail de contato do estúdio.
+- [x] E-mail de contato: mmsmartinelli@gmail.com (confirmado pelo CEO; já está em `privacidade-com-anuncios.html`). Falta só copiar para `privacidade.html` na troca do dia. Pergunta ao advogado: e-mail pessoal serve como canal oficial?
 - [ ] `[PREENCHER]` data de vigência e de atualização.
 - [ ] Nome/cargo do responsável por pedidos de dados (encarregado, art. 41 da LGPD) e prazo de resposta.
 - [ ] Endereço/CNPJ da Marileo Studios, se o advogado quiser que conste (hoje só consta "Osasco, SP" no rascunho, vindo da descrição da tarefa; não está no `privacidade.html` atual).
