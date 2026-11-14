@@ -447,7 +447,8 @@ export class CityCtx {
           g.add(box(W * 0.38 + 1, 0.55, 0.6, p, 0, rh + 0.2, 0));
           for (const s of [-1, 1]) g.add(box(0.5, 1.2, 0.7, p, s * (W * 0.19 + 0.5), rh + 0.55, 0));
         }
-        for (const [sx, sz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+        // pontas levantadas: só perto da pista (de longe não aparecem e custam 32 triângulos por casa)
+        if (!farB) for (const [sx, sz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
           const tip = cone(0.35, 2, p, sx * W / 2, 0.5, sz * D / 2, 4);
           tip.rotation.set(sz * 0.9, 0, -sx * 0.9);
           g.add(tip);
@@ -459,7 +460,7 @@ export class CityCtx {
           g.add(box(0.25, 3, 2.4, P(0x8e1c1c), s * (b.w / 2 + 0.1), -b.h + 1.5, 0));
           g.add(box(0.4, 0.45, 3, P(0x1f6a8a), s * (b.w / 2 + 0.15), -b.h + 3.2, 0));
           for (const k of [-1, 1]) {
-            const l = sphere(0.55, P(0xff2a1a, 'neon'), s * (b.w / 2 + 0.7), -b.h + 3.4, k * 1.9, 6, 4); l.scale.y = 1.2; g.add(l);
+            const l = sphere(0.55, P(0xff2a1a, 'neon'), s * (b.w / 2 + 0.7), -b.h + 3.4, k * 1.9, 5, 3); l.scale.y = 1.2; g.add(l);
           }
         }
       } else if (b.h < 16) {

@@ -7,6 +7,26 @@ import { COLORS } from './effects.js';
 import { PigeonMeshes } from './pigeons.js';
 import { buildVehicle, VEHICLE_KINDS, makeMaterials } from './cities/vehicles.js';
 
+// textura do jato dos gêiseres: faixas verticais e gotas, para não parecer um tubo liso
+let jetTex = null;
+function jetTexture() {
+  if (jetTex) return jetTex;
+  const c = document.createElement('canvas'); c.width = 64; c.height = 128;
+  const g = c.getContext('2d');
+  for (let x = 0; x < 64; x += 4) {
+    const v = 140 + Math.floor(Math.random() * 115);
+    g.fillStyle = `rgba(${v},${v},${v},${(0.35 + Math.random() * 0.55).toFixed(2)})`;
+    g.fillRect(x, 0, 4, 128);
+  }
+  g.fillStyle = 'rgba(255,255,255,0.95)';
+  for (let i = 0; i < 70; i++) g.fillRect(Math.random() * 64, Math.random() * 128, 2, 4 + Math.random() * 10);
+  jetTex = new THREE.CanvasTexture(c);
+  jetTex.wrapS = jetTex.wrapT = THREE.RepeatWrapping;
+  jetTex.repeat.set(3, 1.5);
+  jetTex.colorSpace = THREE.SRGBColorSpace;
+  return jetTex;
+}
+
 export class Obstacles {
   constructor(race) {
     this.race = race;
@@ -250,8 +270,16 @@ export class Obstacles {
     rim.position.y = 0.2;
     const hole = new THREE.Mesh(new THREE.CircleGeometry(1.8, 20).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: colors[0] }));
     hole.position.y = 0.1;
+    // água e areia com mistura normal (somar cor clara ao céu claro deixava o jato branco liso); fogo continua brilhando
+    const glow = kind === 'fire';
+    const jetCol = { fire: 0xffd04a, sand: 0xe0b060, water: 0x6cc0f0 }[kind] ?? colors[1];
     const col = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 2.0, 12, 16, 1, true),
-      new THREE.MeshBasicMaterial({ color: colors[1], transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+      new THREE.MeshBasicMaterial({ color: jetCol, map: jetTexture(), transparent: true, opacity: glow ? 0.75 : 0.85, blending: glow ? THREE.AdditiveBlending : THREE.NormalBlending, depthWrite: false, side: THREE.DoubleSide }));
+    // espuma no topo do jato
+    const cap = new THREE.Mesh(new THREE.IcosahedronGeometry(2.1, 0),
+      new THREE.MeshBasicMaterial({ color: kind === 'water' ? 0xeaf6ff : colors[1], transparent: true, opacity: 0.8, depthWrite: false }));
+    cap.position.y = 6; cap.scale.set(1, 0.55, 1);
+    col.add(cap);
     col.position.y = 6;
     col.visible = false;
     g.add(rim, hole, col);
@@ -434,6 +462,7 @@ export class Obstacles {
     }
 
     const GP = 4.2;
+    if (jetTex && this.geysers.length) jetTex.offset.y = 1 - (t * 1.6) % 1; // água subindo
     for (const g of this.geysers) {
       const ph = ((t + g.phase) % GP + GP) % GP;
       const warn = ph > 2.2 && ph < 3.0;
