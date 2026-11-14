@@ -19,7 +19,7 @@ Nenhum app foi aberto em celular de verdade, e o robô nunca rodou com as suas c
 ---
 
 ## Passo 1 — Decidir (10 min)
-Responda ao diretor: **que e-mail** de contato do estúdio no Race Cities, e se lança **só no Brasil**. (Como as contas já existem, o vendedor que aparece nas lojas já está definido.) Antes: **que e-mail** de contato do estúdio? **Só Brasil** no início? (Recomendo: só Brasil, para ter menos regras.)
+Responda ao diretor: **que e-mail** de contato do estúdio usar no Race Cities, e se lança **só no Brasil** (recomendo: menos regras). Como as contas já existem, o vendedor que aparece nas lojas já está definido.
 
 ## Passo 2 — Contas: você JÁ TEM as duas (nada a pagar)
 Apple Developer e Google Play Console são os mesmos do Teleprompter Easy e do Hub Martinelli (confirmado nas anotações dessas sessões em 13/11/2026). Então **não** precisa pagar US$ 25 nem US$ 99. O que fazer:
