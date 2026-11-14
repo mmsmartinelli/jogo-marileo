@@ -29,6 +29,10 @@ def hasReleaseKey = keystorePath != null && file(keystorePath).exists()
 def customBuildDir = prop('RC_BUILD_DIR')
 if (customBuildDir != null) layout.buildDirectory = file(customBuildDir)
 
+// Anúncios (AdMob): a build da LOJA sai SEM o SDK (padrão). Para ligar: -PwithAds=true (ou WITH_ADS=true).
+// Sem anúncios usa src/noads/ (GameAds vazio); com anúncios usa src/ads/ (SDK + manifesto com o ID do AdMob).
+def withAds = prop('WITH_ADS', prop('withAds', 'false')) == 'true'
+
 def remoteGame = prop('remoteGame', 'false') == 'true'
 def gameRoot = rootProject.file('..')
 def webOut = layout.buildDirectory.dir('generated/webgame')
@@ -44,9 +48,11 @@ android {
         versionCode = prop('VERSION_CODE', prop('appVersionCode', '1')).toInteger()
         versionName = prop('VERSION_NAME', prop('appVersionName', '1.0'))
 
-        manifestPlaceholders = [admobAppId: ADMOB_APP_ID]
-        resValue 'string', 'admob_interstitial_id', ADMOB_INTERSTITIAL_ID
-        resValue 'string', 'admob_rewarded_id', ADMOB_REWARDED_ID
+        if (withAds) {
+            manifestPlaceholders = [admobAppId: ADMOB_APP_ID]
+            resValue 'string', 'admob_interstitial_id', ADMOB_INTERSTITIAL_ID
+            resValue 'string', 'admob_rewarded_id', ADMOB_REWARDED_ID
+        }
     }
 
     signingConfigs {
@@ -80,6 +86,8 @@ android {
 
     sourceSets {
         main {
+            java.srcDir(withAds ? 'src/ads/java' : 'src/noads/java')
+            if (withAds) manifest.srcFile('src/ads/AndroidManifest.xml')
             if (!remoteGame) assets.srcDir(webOut)
         }
     }
@@ -91,7 +99,7 @@ android {
 }
 
 dependencies {
-    implementation 'com.google.android.gms:play-services-ads:25.5.0'
+    if (withAds) implementation 'com.google.android.gms:play-services-ads:25.5.0'
     implementation 'androidx.webkit:webkit:1.18.0'
 }
 
