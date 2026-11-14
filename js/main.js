@@ -195,6 +195,8 @@ class App {
     if (id === 'setup') this._renderSetup();
     if (id === 'howto') this._tabs($('#howPanel'), this.howTab || 'ctrl');
     if (id === 'results') this._fitResults(true);
+    // trilha do menu nas telas de escolha (sem arquivo de música, fica em silêncio como antes)
+    if (id === 'title' || id === 'setup' || id === 'howto' || id === 'online') audio.menuMusic();
     this._applyFocus();
   }
 
@@ -299,8 +301,8 @@ class App {
     document.addEventListener('keydown', () => audio.init());
 
     // intervalo comercial entre as corridas (desligado até ser ativado em js/ads-config.js)
-    ads.onPause = () => { if (audio.ctx) audio.ctx.suspend(); };
-    ads.onResume = () => { if (audio.ctx) audio.ctx.resume(); };
+    ads.onPause = () => audio.hold('ad', true);
+    ads.onResume = () => audio.hold('ad', false);
     ads.isSoundOn = () => !audio.muted;
     ads.onOpenUrl = url => {
       if (window.AndroidApp && window.AndroidApp.openUrl) window.AndroidApp.openUrl(url);

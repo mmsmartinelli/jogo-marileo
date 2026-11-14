@@ -1,5 +1,5 @@
 // Service worker: guarda o jogo no aparelho para abrir rápido e jogar sem internet.
-const CACHE = 'race-cities-v18';
+const CACHE = 'race-cities-v19';
 const THREE = 'https://cdn.jsdelivr.net/npm/three@0.160.0/';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
@@ -12,6 +12,8 @@ const FILES = [
   'js/cities/kits.js', 'js/cities/build.js', 'js/cities/common.js', 'js/cities/landmarks.js', 'js/cities/osasco.js',
   'js/cities/lm-west.js', 'js/cities/lm-east.js', 'js/cities/lm-polish.js', 'js/cities/shapes.js', 'js/cities/roma.js', 'js/cities/pequim.js', 'js/cities/props.js', 'js/cities/vehicles.js',
   'js/models/modelo.js', 'js/models/cristo.js',
+  // músicas comuns a todas as corridas; as de cada cidade ficam guardadas na primeira vez que tocam
+  'audio/musica/menu.m4a', 'audio/musica/vitoria.m4a', 'audio/musica/chegada.m4a', 'audio/musica/podio.m4a',
   THREE + 'build/three.module.js',
   THREE + 'examples/jsm/geometries/RoundedBoxGeometry.js',
   THREE + 'examples/jsm/utils/BufferGeometryUtils.js',
