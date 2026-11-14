@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { buildKart } from './characters.js';
 import { clamp, damp, dampAngle, wrapAngle } from './utils.js';
 import { COLORS } from './effects.js';
+import { paintModel } from './progress.js';
 
 export const BASE_SPEED = 42;
 const GRAVITY = 34;
@@ -20,6 +21,8 @@ export class Kart {
     this.human = !!opts.human;
     this.playerIndex = opts.playerIndex ?? -1;
     this.model = buildKart(ch);
+    // pintura especial desbloqueada (só muda a cor; a física é a mesma)
+    if (opts.paint) paintModel(this.model, opts.paint);
     race.scene.add(this.model.root);
 
     const st = ch.stats;

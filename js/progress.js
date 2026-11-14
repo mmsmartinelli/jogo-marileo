@@ -86,3 +86,45 @@ export function updateTrackRecord(recs, trackId, { lap, place }) {
   if (place >= 1 && (!r.place || place < r.place)) { r.place = place; out.place = true; }
   return out;
 }
+
+// ---------- Desbloqueios: pinturas especiais do kart ----------
+// Nada que o jogador já tem fica trancado: as pinturas são prêmios a mais.
+// body/accent = cores do kart; metal/rough = brilho da lataria (metal até ~0.5: a cena não tem
+// reflexo de ambiente, e metal puro ficaria escuro).
+export const PAINTS = [
+  { id: 'classica', name: 'Clássica', body: null, accent: null, need: null },
+  { id: 'noite', name: 'Noite', body: '#1d1d2c', accent: '#39ff88', metal: 0.3, rough: 0.45, need: { stars: 5 }, text: 'Ganhe 5 estrelas' },
+  { id: 'fogo', name: 'Fogo', body: '#ff3d00', accent: '#ffd000', metal: 0.35, rough: 0.3, need: { daily: 1 }, text: 'Complete 1 Desafio do Dia' },
+  { id: 'bronze', name: 'Bronze', body: '#c07a3e', accent: '#5a3418', metal: 0.45, rough: 0.3, need: { medals: 1 }, text: 'Ganhe uma medalha numa copa' },
+  { id: 'gelo', name: 'Gelo', body: '#bfeaff', accent: '#ffffff', metal: 0.2, rough: 0.2, need: { stars: 15 }, text: 'Ganhe 15 estrelas' },
+  { id: 'doce', name: 'Algodão-Doce', body: '#ff7ad9', accent: '#7af0ff', metal: 0.1, rough: 0.35, need: { streak: 3 }, text: 'Faça o Desafio do Dia 3 dias seguidos' },
+  { id: 'prata', name: 'Prata', body: '#dfe3ea', accent: '#2a2f3a', metal: 0.45, rough: 0.18, need: { medals: 3 }, text: 'Ganhe 3 medalhas' },
+  { id: 'galaxia', name: 'Galáxia', body: '#3a1c71', accent: '#ffd23f', metal: 0.3, rough: 0.25, need: { infinite: 5 }, text: 'Libere a Copa Infinita 5' },
+  { id: 'ouro', name: 'Ouro', body: '#ffc72c', accent: '#8a5a00', metal: 0.45, rough: 0.2, need: { worldGold: 3 }, text: 'Ouro nas 3 copas da Volta ao Mundo' },
+];
+export const paintById = id => PAINTS.find(p => p.id === id) || PAINTS[0];
+
+// st = { stars, medals (quantas), worldGold (copas do mundo com ouro), daily (total), streak (melhor), infinite (copa liberada) }
+export function paintUnlocked(p, st) {
+  const n = p.need;
+  if (!n) return true;
+  if (n.stars && (st.stars || 0) < n.stars) return false;
+  if (n.medals && (st.medals || 0) < n.medals) return false;
+  if (n.worldGold && (st.worldGold || 0) < n.worldGold) return false;
+  if (n.daily && (st.daily || 0) < n.daily) return false;
+  if (n.streak && (st.streak || 0) < n.streak) return false;
+  if (n.infinite && (st.infinite || 1) < n.infinite) return false;
+  return true;
+}
+export const unlockedPaintIds = st => PAINTS.filter(p => paintUnlocked(p, st)).map(p => p.id);
+
+// Pinta um kart já montado (buildKart devolve os materiais `paint` e `accent`).
+export function paintModel(model, id) {
+  const p = paintById(id);
+  if (!p.body || !model) return;
+  model.paint.color.set(p.body);
+  model.paint.metalness = p.metal ?? 0.15;
+  model.paint.roughness = p.rough ?? 0.32;
+  model.accent.color.set(p.accent);
+  model.accent.metalness = Math.min(1, (p.metal ?? 0.1) * 0.8);
+}
