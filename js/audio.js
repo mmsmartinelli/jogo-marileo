@@ -13,9 +13,16 @@ import { rng } from './utils.js';
 //   final: faixa própria da última volta (opcional); sem ela, a música acelera um pouco
 const MUSIC_DIR = 'audio/musica/';
 export const MUSIC_FILES = {
-  // menu: { file: 'menu.m4a', loop: [3.2, 67.2] },
-  // 'corrida-brasil': { file: 'corrida-brasil.m4a', loop: [1.6, 84.8] },
-  // vitoria: { file: 'vitoria.m4a', once: true },
+  menu: { file: 'menu.m4a', loop: [3.301, 48.278] },
+  'corrida-brasil': { file: 'corrida-brasil.m4a', loop: [13.524, 73.517] },
+  'corrida-metropole': { file: 'corrida-metropole.m4a', loop: [12.184, 70.609] },
+  'corrida-europa': { file: 'corrida-europa.m4a', loop: [3.763, 77.298] },
+  'corrida-deserto': { file: 'corrida-deserto.m4a', loop: [15.836, 89.488] },
+  'corrida-asia': { file: 'corrida-asia.m4a', loop: [15.204, 75.204] },
+  'corrida-fantasia': { file: 'corrida-fantasia.m4a', loop: [12.062, 87.859] },
+  vitoria: { file: 'vitoria.m4a', once: true },
+  chegada: { file: 'chegada.m4a', once: true },
+  podio: { file: 'podio.m4a', loop: [6.104, 52.945] },
 };
 // Qual faixa de corrida toca em cada cidade (as pistas da Copa Infinita usam a da cidade-base).
 export const CITY_MUSIC = {

@@ -82,7 +82,7 @@ Os títulos no Suno são "Race Cities - Menu", "Race Cities - Corrida Brasil" e 
 - As 10 faixas foram geradas, escolhidas, **baixadas em MP3** (10 dos 24 downloads) e preparadas em `audio/musica/` (7,0 MB). A prova de uso comercial está em `docs/TRILHA-LICENCA.md`.
 - Metrópole, Europa e Fantasia foram geradas de novo pedindo "full-length… about 2 minutes", porque as primeiras saíram com menos de 1 minuto.
 - Cada emenda de repetição foi conferida depois da conversão: o "degrau" na junta ficou abaixo do normal da própria música (de 0,06 a 0,59), ou seja, sem estalo pela medida. **Ninguém ouviu ainda**: a escolha entre as 2 versões foi feita pela duração.
-- **Ainda não está ligada no jogo** (`MUSIC_FILES` vazio). Para ligar, depois do OK do CEO, cole isto em `js/audio.js`:
+- **Ligada no jogo em 14/11/2026**, com o OK do CEO. A lista que está em `js/audio.js`:
 
 ```js
 export const MUSIC_FILES = {
