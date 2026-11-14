@@ -4,6 +4,7 @@
 // Anúncios (Google AdMob, intervalo + recompensa): GameAds.swift.
 import SwiftUI
 import WebKit
+import AVFoundation
 import UniformTypeIdentifiers
 
 @main
@@ -34,6 +35,9 @@ final class GameViewController: UIViewController, WKNavigationDelegate, WKUIDele
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        // som do jogo toca mesmo com o botão de silencioso ligado (como os jogos de iPhone em geral)
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
+        try? AVAudioSession.sharedInstance().setActive(true)
         let bg = UIColor(red: 11 / 255, green: 13 / 255, blue: 36 / 255, alpha: 1)
         view.backgroundColor = bg
 
@@ -192,6 +196,8 @@ final class BundleSchemeHandler: NSObject, WKURLSchemeHandler {
         case "woff2": return "font/woff2"
         case "woff": return "font/woff"
         case "ttf": return "font/ttf"
+        case "m4a": return "audio/mp4"
+        case "mp3": return "audio/mpeg"
         default: return UTType(filenameExtension: ext)?.preferredMIMEType ?? "application/octet-stream"
         }
     }
