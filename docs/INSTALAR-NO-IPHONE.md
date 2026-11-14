@@ -1,6 +1,6 @@
 # Instalar o Race Cities no seu iPhone (pelo cabo) — passo a passo
 
-Feito em 14/11/2026. Já testado no **Simulador** do Mac (menu, 12 pistas e corrida começam). **Ainda não testado no seu iPhone de verdade.**
+Feito em 14/11/2026. **Resultado em 14/11/2026:** instalado pelo Xcode no iPhone 17 Pro Max do CEO (v18). O CEO confirmou: abriu, funcionou e está fluido. Não conferido (o CEO não relatou): som, modo online com 2 aparelhos, e uso por mais tempo (aquecimento/bateria). Também testado no Simulador.
 O Mac já enxerga o seu "Iphone Marileo" (iPhone 17 Pro Max) e o Xcode já tem um Apple ID e um Team. Versão do jogo: v18 (menus novos).
 
 ## Antes (o assistente já deixou pronto)
