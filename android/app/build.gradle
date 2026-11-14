@@ -93,11 +93,12 @@ dependencies {
 
 // ---------- copia o jogo para dentro do APK ----------
 def buildWeb = tasks.register('buildWebGame', Exec) {
-    description = 'Copia o jogo (index.html, js, css, icons) e as bibliotecas para assets/www.'
+    description = 'Copia o jogo (index.html, js, css, icons, audio) e as bibliotecas para assets/www.'
     inputs.file(new File(gameRoot, 'index.html'))
     inputs.dir(new File(gameRoot, 'js'))
     inputs.dir(new File(gameRoot, 'css'))
     inputs.dir(new File(gameRoot, 'icons'))
+    inputs.dir(new File(gameRoot, 'audio'))
     inputs.file(new File(gameRoot, 'ios/build-web.mjs'))
     outputs.dir(webOut)
     def out = webOut.get().dir('www').asFile

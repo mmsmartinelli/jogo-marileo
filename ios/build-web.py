@@ -33,7 +33,7 @@ def replace_once(f, a, b):
 
 shutil.rmtree(www, ignore_errors=True)
 www.mkdir(parents=True)
-for item in ['index.html', 'css', 'js', 'icons']:
+for item in ['index.html', 'css', 'js', 'icons', 'audio']:
     src = root / item
     if src.is_dir(): shutil.copytree(src, www / item)
     else: shutil.copy2(src, www / item)

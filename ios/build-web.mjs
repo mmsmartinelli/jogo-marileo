@@ -32,7 +32,7 @@ const replaceOnce = (f, a, b) => {
 
 fs.rmSync(www, { recursive: true, force: true });
 fs.mkdirSync(www, { recursive: true });
-for (const item of ['index.html', 'css', 'js', 'icons']) fs.cpSync(path.join(root, item), path.join(www, item), { recursive: true });
+for (const item of ['index.html', 'css', 'js', 'icons', 'audio']) fs.cpSync(path.join(root, item), path.join(www, item), { recursive: true });
 
 // three.js e os complementos usados pelo jogo
 const addons = new Set();
