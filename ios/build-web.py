@@ -17,7 +17,7 @@ FONTS = 'https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&famil
 UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
 
 def get(url, out=None):
-    cmd = ['curl', '-sSfL', '--retry', '3', '-A', UA, url]
+    cmd = ['curl', '-sSfL', '--retry', '5', '--retry-all-errors', '-A', UA, url]
     if out:
         Path(out).parent.mkdir(parents=True, exist_ok=True)
         subprocess.run(cmd + ['-o', str(out)], check=True)
