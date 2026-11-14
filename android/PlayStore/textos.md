@@ -12,7 +12,7 @@ Corrida de kart 3D pelas cidades do mundo. Jogue com amigos, online ou offline!
 **Descrição completa:** usar o texto de `ios/AppStore/textos.md` (seção "Descrição"), trocando "Funciona sem internet" se quiser; já está sem a palavra "crianças".
 
 **Categoria:** Jogos → Corrida · **Tags sugeridas:** Corrida, Multijogador, Casual, Família
-**E-mail de contato:** [PREENCHER — e-mail do estúdio]
+**E-mail de contato:** mmsmartinelli@gmail.com
 **Política de privacidade (URL):** https://mmsmartinelli.github.io/jogo-marileo/privacidade.html (trocar pelo domínio próprio quando houver)
 
 ## English (United States)
