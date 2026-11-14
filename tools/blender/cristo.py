@@ -42,6 +42,10 @@ OUT = os.path.join(ROOT, 'assets', 'models', 'cristo.glb')
 if '--saida' in argv:
     OUT = os.path.abspath(argv[argv.index('--saida') + 1])
 SAVE_BLEND = '--salvar-blend' in argv
+# o jogo usa esta cópia em JavaScript (entra no site, nos apps e no modo offline sem baixar nada)
+OUT_JS = os.path.join(ROOT, 'js', 'models', 'cristo.js')
+if '--saida-js' in argv:
+    OUT_JS = os.path.abspath(argv[argv.index('--saida-js') + 1])
 
 # ---------------------------------------------------------------- cores (as mesmas do jogo)
 
@@ -338,13 +342,14 @@ def to_blender(p):
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 
-verts, faces, fcol, fmat, fflat = [], [], [], [], []
+verts, faces, fcol, fhex, fmat, fflat = [], [], [], [], [], []
 for part, color, mat, flat in parts:
     base = len(verts)
     verts += [to_blender(p) for p in part.v]
     for fc in part.f:
         faces.append(tuple(base + i for i in fc))
         fcol.append(lin(color))
+        fhex.append(color)
         fmat.append(MAT_ORDER.index(mat))
         fflat.append(flat)
 
@@ -409,6 +414,56 @@ bpy.context.scene.collection.objects.link(obj)
 
 tris = sum(len(p.vertices) - 2 for p in me.polygons)
 print(f'[cristo] {len(parts)} peças, {len(me.vertices)} vértices, {len(me.polygons)} faces, {tris} triângulos')
+
+# ---------------------------------------------------------------- cópia para o jogo (js/models/cristo.js)
+# Uma peça por (pintura, cor), cada uma com vértices, normais (com as quinas duras) e triângulos,
+# em números inteiros guardados em base64: posição em milésimos, normal de -127 a 127.
+
+
+def export_js(path):
+    import array
+    import base64
+    me.calc_loop_triangles()
+    try:
+        cn = [tuple(c.vector) for c in me.corner_normals]  # Blender 4.1+
+    except AttributeError:
+        me.calc_normals_split()
+        cn = [tuple(l.normal) for l in me.loops]
+    groups = {}
+    for lt in me.loop_triangles:
+        key = (MAT_ORDER[fmat[lt.polygon_index]], fhex[lt.polygon_index])
+        g = groups.setdefault(key, {'map': {}, 'pos': [], 'nor': [], 'idx': []})
+        for li in lt.loops:
+            bx, by, bz = me.vertices[me.loops[li].vertex_index].co
+            nx, ny, nz = cn[li]
+            # Blender (Z para cima, -Y frente) -> jogo (Y para cima, +Z frente)
+            pq = (round(bx * 1000), round(bz * 1000), round(-by * 1000))
+            nq = (round(nx * 127), round(nz * 127), round(-ny * 127))
+            k = pq + nq
+            if k not in g['map']:
+                g['map'][k] = len(g['map'])
+                g['pos'] += pq
+                g['nor'] += nq
+            g['idx'].append(g['map'][k])
+    b64 = lambda typ, data: base64.b64encode(array.array(typ, data).tobytes()).decode()  # Mac = little-endian, como o navegador
+    lines = []
+    nv = nt = 0
+    for (mat, hexc), g in sorted(groups.items()):
+        nv += len(g['map'])
+        nt += len(g['idx']) // 3
+        lines.append(f"  {{ m: '{mat}', c: 0x{hexc:06x}, p: '{b64('h', g['pos'])}', n: '{b64('b', g['nor'])}', i: '{b64('H', g['idx'])}' }},")
+    src = (
+        '// Cristo Redentor feito no Blender. ARQUIVO GERADO por tools/blender/cristo.py: não edite à mão.\n'
+        f'// {len(groups)} peças, {nv} vértices, {nt} triângulos. Leia com js/models/modelo.js.\n'
+        'export default [\n' + '\n'.join(lines) + '\n];\n'
+    )
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'w') as f:
+        f.write(src)
+    print(f'[cristo] salvo {path} ({len(src.encode()) / 1024:.1f} KB, {len(groups)} peças, {nt} triângulos)')
+
+
+export_js(OUT_JS)
 
 # ---------------------------------------------------------------- exporta
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
