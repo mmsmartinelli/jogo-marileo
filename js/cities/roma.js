@@ -14,7 +14,7 @@ const COBBLE = 0xb2a48e;
 
 // ---------- Posição dentro de um bairro ----------
 // z = { i, side }: a = metros ao longo da pista, l = metros para fora da beira da pista.
-function F(ctx, z, a, l) {
+export function F(ctx, z, a, l) {
   const tr = ctx.track;
   const j = tr.wrap(z.i + Math.round(a / tr.spacing));
   const L = ctx.e + l;
@@ -22,9 +22,10 @@ function F(ctx, z, a, l) {
   return { x, z: zz, y: tr.groundHeight(x, zz), rot: Math.atan2(-z.side * tr.rx[j], -z.side * tr.rz[j]) };
 }
 // Põe um objeto (frente +z virada para a pista) no saco da cidade.
+// (Também usado pelos bairros de Pequim.)
 // Segurança: se algum canto da base dele ficar perto de qualquer trecho da pista, não entra.
 const _box = new THREE.Box3(), _v = new THREE.Vector3();
-function put(ctx, obj, f, turn = 0) {
+export function put(ctx, obj, f, turn = 0) {
   _box.setFromObject(obj);
   obj.position.set(f.x, f.y, f.z);
   obj.rotation.y = f.rot + turn;
@@ -32,12 +33,12 @@ function put(ctx, obj, f, turn = 0) {
   const { min, max } = _box;
   for (const x of [min.x, (min.x + max.x) / 2, max.x]) for (const z of [min.z, (min.z + max.z) / 2, max.z]) {
     _v.set(x, 0, z).applyMatrix4(obj.matrix);
-    if (ctx.near(_v.x, _v.z).d < ctx.e + 2) { ctx.romaSkipped = (ctx.romaSkipped || 0) + 1; return; }
+    if (ctx.near(_v.x, _v.z).d < ctx.e + 2) { ctx.zoneSkipped = (ctx.zoneSkipped || 0) + 1; return; }
   }
   ctx.bag.add(obj);
 }
 // Faixa de chão (grama, calçamento) acompanhando a curva da pista.
-function strip(ctx, z, a0, a1, l0, l1, color, dy = 0.08) {
+export function strip(ctx, z, a0, a1, l0, l1, color, dy = 0.08) {
   const n = Math.max(1, Math.round((a1 - a0) / 5));
   const pos = [];
   for (let k = 0; k <= n; k++) {
@@ -55,7 +56,7 @@ function strip(ctx, z, a0, a1, l0, l1, color, dy = 0.08) {
 }
 
 // ---------- Peças ----------
-function lowPerson(ctx, x, z, shirt, skin, s = 1) {
+export function lowPerson(ctx, x, z, shirt, skin, s = 1) {
   const g = new THREE.Group();
   g.add(cyl(0.3 * s, 0.38 * s, 1.5 * s, ctx.P(shirt), 0, 0.75 * s, 0, 5));
   g.add(sphere(0.3 * s, ctx.P(skin, 'smooth'), 0, 1.8 * s, 0, 5, 3));
@@ -153,7 +154,7 @@ function church(ctx, W = 22, H = 15, dome = true, col = 0xf0e4c8) {
 }
 
 // ---------- Onde cabe um bairro ----------
-function findZone(ctx, len, depth, used, straight) {
+export function findZone(ctx, len, depth, used, straight) {
   const tr = ctx.track, N = ctx.N, e = ctx.e, sp = tr.spacing;
   const half = Math.round(len / 2 / sp);
   const stepK = Math.max(1, Math.round(6 / sp));
@@ -184,7 +185,7 @@ function findZone(ctx, len, depth, used, straight) {
   }
   return best;
 }
-function reserveZone(ctx, z) {
+export function reserveZone(ctx, z) {
   for (let a = -z.len / 2; a <= z.len / 2; a += 6) for (let l = 6; l <= 9 + z.depth; l += 6) {
     const f = F(ctx, z, a, l);
     ctx.reserve(f.x, f.z, 4.5);
@@ -393,7 +394,7 @@ export const ROMA_PROPS = {
       Z.build(ctx, z);
       (ctx.track.romaZones = ctx.track.romaZones || []).push({ id, i: z.i, side: z.side });
     }
-    if (ctx.romaSkipped) ctx.warn.push(`${ctx.romaSkipped} peças de Roma perto demais da pista (não colocadas)`);
+    if (ctx.zoneSkipped) ctx.warn.push(`${ctx.zoneSkipped} peças de Roma perto demais da pista (não colocadas)`);
     hillPines(ctx);
   },
   // Depois dos prédios: a vida da rua na calçada

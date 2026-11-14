@@ -354,7 +354,9 @@ const FACADES = {
   romano: { wall: '#fffaf2', win: '#2f2a2a', lit: 0.38, tall: true, shutters: '#5a8a5a', frame: '#f6efe2', balcony: '#3a3434', rail: true, closed: 0.2, flowers: 0.5, laundry: 0.1 },
   romano2: { wall: '#fff6ea', win: '#352e2a', lit: 0.32, arch: true, small: true, shutters: '#9a5a32', frame: '#fbf3e4', closed: 0.15, flowers: 0.25, laundry: 0.18 },
   indian: { wall: '#ffffff', win: '#3a2a2a', lit: 0.35, arch: true, frame: '#ffffff' },
-  chinese: { wall: '#9a9690', win: '#7a1a1a', lit: 0.45, frame: '#c8202a', small: true },
+  chinese: { wall: '#a8a49c', win: '#7a1a1a', lit: 0.45, frame: '#c8202a', small: true, lattice: '#e8b830' },
+  // Pequim: casa de beco (hutong) de tijolo cinza com janelas de treliça vermelha
+  hutong: { wall: '#8e9094', win: '#5a1a14', lit: 0.4, brick: '#7c7e82', frame: '#b8282a', small: true, lattice: '#d84a3a' },
   // Agra: casarão (haveli) com faixa pintada entre os andares e janelas com balcão (jharokha)
   haveli: { wall: '#fff4e2', win: '#3a2a22', lit: 0.35, arch: true, small: true, band: '#b8452e', shutters: '#2f8a7a' },
   jharokha: { wall: '#ffffff', win: '#3a2a2a', lit: 0.35, arch: true, jharokha: '#efdcbc' },
@@ -432,6 +434,10 @@ export function facadeTextures(kind, seed) {
       if (F.arch) {
         for (const ctx of [a, e]) { ctx.beginPath(); ctx.moveTo(wx, wy + wh); ctx.lineTo(wx, wy + ww / 2); ctx.arc(wx + ww / 2, wy + ww / 2, ww / 2, Math.PI, 0); ctx.lineTo(wx + ww, wy + wh); ctx.fill(); }
       } else { e.fillRect(wx, wy, ww, wh); a.fillRect(wx, wy, ww, wh); }
+    }
+    if (F.lattice) { // treliça chinesa por cima da janela (também apaga a luz atrás dela)
+      a.fillStyle = F.lattice; e.fillStyle = '#000';
+      for (let k = 1; k < 4; k++) for (const c of [a, e]) { c.fillRect(wx + k * ww / 4 - 1, wy, 2, wh); c.fillRect(wx, wy + k * wh / 4 - 1, ww, 2); }
     }
   }
   const tex = c => { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; return t; };
