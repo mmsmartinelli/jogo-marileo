@@ -177,6 +177,16 @@ button.back-top {
   font-family: var(--font-title); padding: 0 12px; border-radius: 10px; font-size: 18px;
 }
 .card .portrait { width: 100%; max-width: 180px; aspect-ratio: 1; border-radius: 16px; background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, .35), rgba(255, 255, 255, 0) 70%); }
+/* Pinturas do kart (desbloqueios): bolinhas de cor embaixo do retrato */
+.card .paints { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin: 2px 0 4px; }
+.card .paints button {
+  width: 20px; height: 20px; min-width: 0; padding: 0; border-radius: 50%; font-size: 10px; line-height: 20px;
+  background: linear-gradient(135deg, var(--a) 55%, var(--b) 56%); box-shadow: 0 0 0 2px rgba(0, 0, 0, .35);
+}
+.card .paints button.on { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--yellow); }
+.card .paints button.locked { filter: grayscale(1) brightness(.55); }
+.card .paints button:active { transform: none; }
+.chal .star.paintdot { display: inline-block; width: 26px; height: 26px; border-radius: 50%; filter: none; background: linear-gradient(135deg, var(--a) 55%, var(--b) 56%); box-shadow: 0 0 0 2px #fff; }
 .card .cname { font-family: var(--font-title); font-size: 22px; margin: 2px 0; }
 .card .pick { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .card .pick button { font-size: 20px; padding: 2px 12px; border-radius: 10px; }
@@ -217,6 +227,8 @@ button.back-top {
 /* Cidade Surpresa (pista gerada) */
 .track.surprise { position: relative; background: linear-gradient(180deg, rgba(180, 107, 255, .28), rgba(124, 58, 237, .14)); border-style: dashed; border-color: rgba(200, 160, 255, .6); }
 .track.surprise.on { border-style: solid; border-color: var(--yellow); }
+/* Desafio do Dia: mesmo cartão, em laranja */
+.track.daily { background: linear-gradient(180deg, rgba(255, 159, 26, .30), rgba(255, 95, 31, .14)); border-color: rgba(255, 190, 110, .7); }
 .track .sname { line-height: 1.1; min-height: 2.2em; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 14px; }
 .track .sname span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .track button.reroll {
@@ -559,3 +571,4 @@ body.touchmode #title .hint { display: none; }
   .on-safety button.big, .on-safety button.mid { min-width: 0; font-size: 16px; padding: 6px 18px; }
   .howsafe .safety-list { font-size: 13px; }
 }
+@media (max-height: 520px) { .card .paints { gap: 3px; margin: 0 0 2px; } .card .paints button { width: 16px; height: 16px; line-height: 16px; font-size: 8px; } }
