@@ -4,9 +4,12 @@ import { CHARACTERS } from './characters.js';
 import { WORLD_IDS, FANTASY_IDS, getTrack } from './tracks.js';
 import { audio } from './audio.js';
 import { GEN_PREFIX, randomSeed } from './trackgen.js';
+import { PAINTS, paintById, paintUnlocked } from './progress.js';
 
 export const MAX_PLAYERS = 8;
 const $ = s => document.querySelector(s);
+// pintura que veio de outro aparelho: só aceita nomes conhecidos (aparelho antigo = sem pintura)
+const cleanPaint = p => (PAINTS.some(x => x.id === p) ? p : 'classica');
 
 function load(key, def) {
   try { const v = JSON.parse(localStorage.getItem(key)); return v ?? def; } catch (e) { return def; }
@@ -31,8 +34,40 @@ export class Online {
     this.inRace = false;
     this.busy = false;
     const saved = load('marileo_online', {});
-    this.me = { name: saved.name || '', char: saved.char ?? 0 };
+    // pintura: a que o jogador já escolheu aqui ou, na primeira vez, a do Jogador 1
+    this.me = { name: saved.name || '', char: saved.char ?? 0, paint: cleanPaint(saved.paint || (app.settings.players[0] || {}).paint) };
     this._bind();
+  }
+
+  // pintura que vai para a sala (só se estiver liberada neste aparelho)
+  get myPaint() {
+    const p = paintById(this.me.paint);
+    return paintUnlocked(p, this.app._progressStats()) ? p.id : 'classica';
+  }
+
+  // Bolinhas de cor (as mesmas do cartão do piloto) embaixo das setas do personagem.
+  _renderPaints() {
+    let box = $('#onPaints');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'onPaints';
+      const pick = document.querySelector('.on-me-fields .pick');
+      if (!pick) return;
+      pick.after(box);
+    }
+    this.app._stats = this.app._progressStats();
+    box.innerHTML = this.app._paintRow({ char: this.me.char, paint: this.myPaint });
+    box.querySelectorAll('.paints button').forEach(b => b.addEventListener('click', () => this.pickPaint(b.dataset.p)));
+  }
+
+  pickPaint(id) {
+    const p = paintById(id);
+    if (!paintUnlocked(p, this.app._progressStats())) { audio.play('back'); this.app.toast(`🔒 ${p.name}: ${p.text}`); return; }
+    this.me.paint = p.id;
+    this._saveMe();
+    audio.play('select');
+    this._sendMe();
+    this.render();
   }
 
   get isHost() { return !!(this.net && this.net.isHost); }
@@ -113,10 +148,10 @@ export class Online {
     if (!this.net) return;
     if (this.isHost) {
       const m = this.members.find(m => m.id === this.net.id);
-      if (m) { m.char = this.me.char; m.name = this.myName; }
+      if (m) { m.char = this.me.char; m.name = this.myName; m.paint = this.myPaint; }
       this.broadcastLobby();
     } else {
-      this.net.send({ t: 'me', char: this.me.char, name: this.myName });
+      this.net.send({ t: 'me', char: this.me.char, name: this.myName, paint: this.myPaint });
     }
   }
 
@@ -142,7 +177,7 @@ export class Online {
     }
     this.net = net;
     this._hook();
-    this.members = [{ id: net.id, name: this.myName, char: this.me.char, host: true }];
+    this.members = [{ id: net.id, name: this.myName, char: this.me.char, paint: this.myPaint, host: true }];
     this._setBusy(false);
     this.render();
   }
@@ -166,7 +201,7 @@ export class Online {
     this.net = net;
     this._hook();
     this.members = [];
-    net.send({ t: 'hello', name: this.myName, char: this.me.char });
+    net.send({ t: 'hello', name: this.myName, char: this.me.char, paint: this.myPaint });
     // espera a lista da sala chegar
     this._joinTimer = setTimeout(() => {
       if (!this.members.length) { this.app.toast('A sala não respondeu. Tente de novo.'); this.leave(true); }
@@ -197,13 +232,13 @@ export class Online {
           this.net.kick(from);
           return;
         }
-        this.members.push({ id: from, name: String(m.name || 'Amigo').slice(0, 12), char: (m.char | 0) % CHARACTERS.length, waiting: this.inRace });
+        this.members.push({ id: from, name: String(m.name || 'Amigo').slice(0, 12), char: (m.char | 0) % CHARACTERS.length, paint: cleanPaint(m.paint), waiting: this.inRace });
         audio.play('coin');
         this.app.toast(`${String(m.name || 'Um amigo').slice(0, 12)} entrou na sala!`);
         this.broadcastLobby();
       } else if (m.t === 'me') {
         const mem = this.members.find(x => x.id === from);
-        if (mem) { mem.char = (m.char | 0) % CHARACTERS.length; mem.name = String(m.name || mem.name).slice(0, 12); this.broadcastLobby(); }
+        if (mem) { mem.char = (m.char | 0) % CHARACTERS.length; mem.paint = cleanPaint(m.paint); mem.name = String(m.name || mem.name).slice(0, 12); this.broadcastLobby(); }
       }
       return;
     }
@@ -283,7 +318,7 @@ export class Online {
     while (ai.length + humans.length < MAX_PLAYERS) ai.push(pool.length ? pool.shift() : Math.floor(Math.random() * CHARACTERS.length));
     const entries = [
       ...ai.map(char => ({ char, owner: 'ai', name: null })),
-      ...shuffled.map(m => ({ char: m.char, owner: m.id, name: m.name })),
+      ...shuffled.map(m => ({ char: m.char, owner: m.id, name: m.name, paint: cleanPaint(m.paint) })),
     ];
     const cfg = { mode: 'online', trackId: this.settings.trackId, laps: this.settings.laps, difficulty: this.settings.difficulty, entries };
     this.inRace = true;
@@ -337,7 +372,8 @@ export class Online {
     $('#onTopBack').textContent = inRoom ? '🚪 Sair' : '⬅ Menu';
     $('#onLobby').hidden = !inRoom;
     const ch = CHARACTERS[this.me.char];
-    $('#onPortrait').src = this.app.portraits[this.me.char] || '';
+    $('#onPortrait').src = this.app._portraitFor(this.me.char, this.myPaint) || '';
+    this._renderPaints();
     $('#onCharName').textContent = ch.name;
     $('#onSpecies').textContent = ch.species;
     if (document.activeElement !== $('#onName')) $('#onName').value = this.me.name;
@@ -356,7 +392,7 @@ export class Online {
         const me = m.id === this.net.id;
         el.className = 'on-player' + (me ? ' me' : '');
         const c = CHARACTERS[m.char] || CHARACTERS[0];
-        el.innerHTML = `<img src="${this.app.portraits[m.char] || ''}" alt=""><div><div class="n"></div><div class="s">${c.name}${m.host ? ' • 👑 anfitrião' : ''}${me ? ' • você' : ''}${m.waiting ? ' • próxima corrida' : ''}</div></div>`;
+        el.innerHTML = `<img src="${this.app._portraitFor(m.char, cleanPaint(m.paint)) || ''}" alt=""><div><div class="n"></div><div class="s">${c.name}${m.host ? ' • 👑 anfitrião' : ''}${me ? ' • você' : ''}${m.waiting ? ' • próxima corrida' : ''}</div></div>`;
         el.querySelector('.n').textContent = m.name;
         if (me) {
           const arrows = document.createElement('div');

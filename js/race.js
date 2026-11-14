@@ -66,7 +66,7 @@ export class Race {
     if (this.online) {
       const on = this.online;
       order = on.entries.map(e => ({
-        char: e.char, name: e.name, owner: e.owner,
+        char: e.char, name: e.name, owner: e.owner, paint: e.paint,
         human: e.owner === on.myId, playerIndex: 0, source: on.source,
         remote: e.owner !== on.myId && !(e.owner === 'ai' && on.role === 'host'),
       }));
