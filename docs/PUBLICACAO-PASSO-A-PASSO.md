@@ -11,6 +11,7 @@ Detalhes e fontes: `docs/PUBLICACAO.md`.
 - Textos da Google Play (PT e EN): `android/PlayStore/textos.md`.
 - Aviso de segurança do online já existe no jogo.
 - Anúncios estão **desligados** (seguro para publicar a 1ª versão sem anúncios).
+- Lição do Hub Martinelli: a Apple recusou por ele ser app de público restrito (diretriz 3.2.0). O Race Cities é jogo público, então não cai nisso; nas notas de revisão, diga que é para qualquer pessoa.
 
 ## O que ainda NÃO foi testado
 Nenhum app foi aberto em celular de verdade, e o robô nunca rodou com as suas chaves. Por isso o 1º envio é só para teste.
@@ -18,22 +19,20 @@ Nenhum app foi aberto em celular de verdade, e o robô nunca rodou com as suas c
 ---
 
 ## Passo 1 — Decidir (10 min)
-Responda estas 3 coisas ao diretor: **CPF ou CNPJ** nas lojas? **Que e-mail** de contato do estúdio? **Só Brasil** no início? (Recomendo: só Brasil, para ter menos regras.)
+Responda ao diretor: **que e-mail** de contato do estúdio no Race Cities, e se lança **só no Brasil**. (Como as contas já existem, o vendedor que aparece nas lojas já está definido.) Antes: **que e-mail** de contato do estúdio? **Só Brasil** no início? (Recomendo: só Brasil, para ter menos regras.)
 
-## Passo 2 — Conta Google Play (30 min + espera)
-1. Entre em https://play.google.com/console e clique em **Criar conta de desenvolvedor**.
-2. Escolha **Pessoal** (CPF) ou **Organização** (CNPJ + número D-U-N-S).
-3. Pague **US$ 25** (uma vez) e confirme sua identidade (documento com foto).
-4. Conta **pessoal nova** exige teste fechado com **12 testadores por 14 dias seguidos** (ver passo 6).
+## Passo 2 — Contas: você JÁ TEM as duas (nada a pagar)
+Apple Developer e Google Play Console são os mesmos do Teleprompter Easy e do Hub Martinelli (confirmado nas anotações dessas sessões em 13/11/2026). Então **não** precisa pagar US$ 25 nem US$ 99. O que fazer:
+- **Apple:** em appstoreconnect.apple.com → Apps → **+** → Novo app: nome **Race Cities**, ID `com.marileostudios.racecities`, SKU `racecities`. Se a Apple pedir para aceitar um novo contrato de licença, aceite (já aconteceu em 02/11).
+- **Google Play:** Play Console → **Criar app** → "Race Cities", jogo, grátis.
 
-## Passo 3 — Conta Apple (20 min + 1 a 2 dias de espera)
-1. https://developer.apple.com/programs/enroll → entre com seu Apple ID.
-2. Pague **US$ 99 por ano**. A aprovação demora de horas a uns 2 dias.
-3. Depois: appstoreconnect.apple.com → Apps → **+** → Novo app. Nome **Race Cities**, ID `com.marileostudios.racecities`, SKU `racecities`.
-4. appstoreconnect.apple.com → Usuários e Acesso → Integrações → **Chaves de API** → gerar chave com acesso "App Manager". Baixe o arquivo `AuthKey_XXXX.p8` (só baixa uma vez!). Anote o **Key ID** e o **Issuer ID**; o **Team ID** fica em developer.apple.com → Associação.
+## Passo 3 — A regra dos 12 testadores (o ponto mais importante)
+- No Teleprompter Easy a produção na Play só libera por volta de **18/11/2026** (12 testadores por 14 dias, anotação de 12/11).
+- ⚠️ **Não consegui confirmar** se a regra vale de novo para cada app novo da mesma conta pessoal (a página oficial fala "seu app"; relatos dizem que pode não valer depois da 1ª aprovação — fonte: https://support.google.com/googleplay/android-developer/answer/14151465). **Como saber:** ao criar o Race Cities, o painel mostra se pede teste fechado. Se pedir, reaproveite a lista "Testadores Teleprompter Easy" (29 e-mails): é só criar uma faixa de teste fechado no Race Cities e adicionar a mesma lista; cada pessoa precisa aceitar o novo link e instalar.
+- **iPhone não tem essa regra**: dá para sair primeiro na App Store.
 
 ## Passo 4 — Chave do Android (5 min, no Mac)
-No Terminal:
+Crie uma chave **só do Race Cities**; não reutilize nem mexa na do Teleprompter (`~/TeleprompterChaves`). Sugestão: guardar em `~/RaceCitiesChaves`. No Terminal:
 ```bash
 keytool -genkeypair -v -keystore race-cities.jks -alias racecities -keyalg RSA -keysize 4096 -validity 10000
 ```
@@ -55,6 +54,8 @@ Repositório jogo-marileo → Settings → Secrets and variables → Actions →
 | ASC_KEY_ID | Key ID |
 | ASC_ISSUER_ID | Issuer ID |
 | ASC_KEY_P8 | texto completo do arquivo `.p8` (abra no TextEdit e copie tudo) |
+
+(Se você já tem uma chave de API do App Store Connect de outro app, pode reaproveitar a mesma: ela vale para a conta toda. Alternativa sem GitHub: enviar o build pelo Xcode no Mac, como foi feito no Teleprompter.)
 
 **Nunca** cole senhas no chat; digite direto no GitHub.
 
