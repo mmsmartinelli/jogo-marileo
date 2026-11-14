@@ -267,8 +267,9 @@ export const KITS = {
       road: '#4c4a50', roadSpeckle: ['#5a585e', '#3e3c42', '#68666c'], curbA: '#e8262a', curbB: '#ffd23f', wallA: '#ffffff', wallB: '#e8262a',
       ground: PAVED, shoulder: ['#c0bab2', '#b4aea6', '#ccc6be'], sidewalk: 'tiles', terrainColor: '#9c9890', mountainColor: '#5f7a4a', clouds: true, hills: [180, 380, 80],
     },
-    buildings: { types: ['chinese', 'office', 'glass'], heights: [[8, 14], [16, 40], [30, 80]], far: [30, 90], roof: 'pagoda', density: 1.05 },
-    trees: 'broadleaf', lamps: 'lantern', props: ['lanternas'],
+    // perto da pista: casas antigas de telhado curvo; atrás, prédios médios; no fundo, torres de vidro
+    buildings: { types: ['hutong', 'chinese', 'office', 'glass'], rowTypes: [['hutong', 'chinese', 'hutong'], ['chinese', 'hutong', 'office'], ['office', 'glass', 'chinese']], heights: [[6, 12], [9, 24], [30, 80]], far: [28, 85], roof: 'pagoda', density: 1.05 },
+    trees: 'broadleaf', treeMix: ['broadleaf', 'willow', 'broadleaf', 'willow', 'pine'], lotTrees: 50, lamps: 'lantern', props: ['lanternas', 'pequimRua'], preProps: ['pequimBairros'],
     obstacles: { barrel: ['riquixa'], puddle: ['water', 'poop'], geyser: 'water', pigeons: 1 },
     landmarks: [{ id: 'muralha', hero: true }, { id: 'temploCeu' }, { id: 'portalChines' }],
     names: ['Circuito da Muralha', 'Volta do Templo do Céu', 'Grande Prêmio do Dragão', 'Avenida das Lanternas', 'Corrida do Panda'],

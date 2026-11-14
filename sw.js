@@ -10,7 +10,7 @@ const FILES = [
   'js/hud.js', 'js/input.js', 'js/touch.js', 'js/textures.js', 'js/utils.js',
   'js/net.js', 'js/netrace.js', 'js/online.js', 'js/pigeons.js', 'js/trackgen.js', 'js/progress.js', 'js/ads.js', 'js/ads-config.js', 'css/ads.css',
   'js/cities/kits.js', 'js/cities/build.js', 'js/cities/common.js', 'js/cities/landmarks.js', 'js/cities/osasco.js',
-  'js/cities/lm-west.js', 'js/cities/lm-east.js', 'js/cities/lm-polish.js', 'js/cities/shapes.js', 'js/cities/roma.js', 'js/cities/props.js', 'js/cities/vehicles.js',
+  'js/cities/lm-west.js', 'js/cities/lm-east.js', 'js/cities/lm-polish.js', 'js/cities/shapes.js', 'js/cities/roma.js', 'js/cities/pequim.js', 'js/cities/props.js', 'js/cities/vehicles.js',
   THREE + 'build/three.module.js',
   THREE + 'examples/jsm/geometries/RoundedBoxGeometry.js',
   THREE + 'examples/jsm/utils/BufferGeometryUtils.js',

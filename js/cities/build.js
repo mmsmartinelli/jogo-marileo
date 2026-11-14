@@ -32,6 +32,17 @@ export function prepareCity(track) {
 // Distância (com sinal) até a beira do mar: > 0 dentro da água.
 export const shoreS = (track, x, z) => (track.shore ? x * track.shore.nx + z * track.shore.nz - track.shore.d0 : -1e9);
 
+// Galhos caídos do salgueiro: cones finos de ponta para baixo em volta da copa (tamanhos diferentes).
+function willowFronds() {
+  const fr = [];
+  for (let k = 0; k < 11; k++) {
+    const a = (k / 11) * Math.PI * 2, r = k % 2 ? 2.5 : 2.0, h = [3.6, 2.6, 3.2, 2.2][k % 4];
+    const c = new THREE.ConeGeometry(0.6, h, 3).rotateX(Math.PI).translate(Math.cos(a) * r, 5.6 - h / 2, Math.sin(a) * r);
+    fr.push(c.index ? c.toNonIndexed() : c);
+  }
+  return mergeAll(fr);
+}
+
 // ---------- Contexto de montagem ----------
 export class CityCtx {
   constructor(track) {
@@ -316,6 +327,8 @@ export class CityCtx {
     const types = B.types;
     const dens = B.density || 1;
     const pickType = (row) => {
+      // kit.buildings.rowTypes: tipos de prédio por fileira (0 = beira da pista, 2 = fundo)
+      if (B.rowTypes) { const pool = B.rowTypes[row]; return pool[Math.floor(rand() * pool.length)]; }
       const glassy = types.filter(isGlassFacade), other = types.filter(t => !isGlassFacade(t));
       if (row >= 2 && glassy.length && rand() < 0.45) return glassy[Math.floor(rand() * glassy.length)];
       const pool = other.length ? other : types;
@@ -420,9 +433,47 @@ export class CityCtx {
         if (rand() < 0.6) g.add(cone(0.6, b.h * 0.18, P(0xdddddd, 'metal'), 0, b.h * 0.2 + b.h * 0.09, 0, 6));
       } else g.add(box(b.w + 0.3, 0.6, b.d + 0.3, P(0xb0aaa0), 0, 0.3, 0));
     } else if (style === 'pagoda') {
-      if (b.h < 16) {
+      const trad = b.type === 'hutong' || b.type === 'chinese';
+      const nb = this.near(b.x, b.z), farB = nb.d > this.e + 70; // longe da pista: telhado mais simples
+      if (b.h < 16 && trad) {
+        // Pequim: telhado curvo de telha (cinza nos becos, verde/vermelho/amarelo esmaltado
+        // nos outros), cumeeira com enfeites, pontas levantadas e beiral pintado
+        const hut = b.type === 'hutong';
+        const p = P(hut ? (rand() < 0.8 ? 0x4a4f58 : 0x5a5048) : [0x2f6a4a, 0x8a2a20, 0xd8a020, 0x2f4a6a][Math.floor(rand() * 4)]);
+        const W = b.w + 3, D = b.d + 3, rh = Math.min(3.6, Math.min(b.w, b.d) * 0.3);
+        g.add(box(b.w + 0.6, 0.8, b.d + 0.6, P(hut ? 0x6a6c70 : 0x1f6a8a), 0, -0.4, 0));
+        g.add(geoMesh(frustumGeo(W, D, rh, 0.38).translate(0, rh / 2, 0), p));
+        if (!farB) {
+          g.add(box(W * 0.38 + 1, 0.55, 0.6, p, 0, rh + 0.2, 0));
+          for (const s of [-1, 1]) g.add(box(0.5, 1.2, 0.7, p, s * (W * 0.19 + 0.5), rh + 0.55, 0));
+        }
+        for (const [sx, sz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+          const tip = cone(0.35, 2, p, sx * W / 2, 0.5, sz * D / 2, 4);
+          tip.rotation.set(sz * 0.9, 0, -sx * 0.9);
+          g.add(tip);
+        }
+        // quem fica de frente para a pista ganha porta vermelha e um par de lanternas
+        if (nb.d < this.e + 40) {
+          const i = nb.i, tr = this.track;
+          const s = Math.sign((tr.px[i] - b.x) * Math.cos(b.rot) - (tr.pz[i] - b.z) * Math.sin(b.rot)) || 1;
+          g.add(box(0.25, 3, 2.4, P(0x8e1c1c), s * (b.w / 2 + 0.1), -b.h + 1.5, 0));
+          g.add(box(0.4, 0.45, 3, P(0x1f6a8a), s * (b.w / 2 + 0.15), -b.h + 3.2, 0));
+          for (const k of [-1, 1]) {
+            const l = sphere(0.55, P(0xff2a1a, 'neon'), s * (b.w / 2 + 0.7), -b.h + 3.4, k * 1.9, 6, 4); l.scale.y = 1.2; g.add(l);
+          }
+        }
+      } else if (b.h < 16) {
         g.add(geoMesh(frustumGeo(b.w + 3, b.d + 3, 3.2, 0.35).translate(0, 1.6, 0), P(rand() < 0.6 ? 0x2f4a3f : 0x8a2a20)));
-      } else g.add(box(b.w + 0.3, 0.6, b.d + 0.3, P(0xa8a49c), 0, 0.3, 0));
+      } else {
+        g.add(box(b.w + 0.3, 0.6, b.d + 0.3, P(0xa8a49c), 0, 0.3, 0));
+        if (trad && !farB && rand() < 0.45) {
+          // pavilhãozinho de telhado verde no terraço
+          const px = (rand() - 0.5) * b.w * 0.3, pz = (rand() - 0.5) * b.d * 0.3, pr = P(0x2f6a4a);
+          for (const [a, c] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) g.add(box(0.4, 2.6, 0.4, P(0xc42a2a), px + a * 1.8, 1.9, pz + c * 1.8));
+          g.add(geoMesh(frustumGeo(6, 6, 1.6, 0.3).translate(0, 4, 0), pr, px, 0, pz));
+          for (const [sx, sz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) { const tip = cone(0.25, 1.4, pr, px + sx * 3, 3.6, pz + sz * 3, 4); tip.rotation.set(sz * 0.9, 0, -sx * 0.9); g.add(tip); }
+        }
+      }
     } else if (style === 'domes') {
       g.add(box(b.w + 0.4, 0.8, b.d + 0.4, P(0xf2e6d0), 0, 0.4, 0));
       if (rand() < 0.55) {
@@ -570,6 +621,13 @@ export class CityCtx {
           { geo: new THREE.IcosahedronGeometry(2.4, 0).translate(0, 4.6, 0), mat: leaf, colors: ['#ffb7d5', '#ffc8e0', '#ff9fc8', '#ffd6e8'] },
           { geo: new THREE.IcosahedronGeometry(1.7, 0).translate(1.1, 5.6, 0.4), mat: leaf, colors: ['#ffc0dc', '#ffa8cc'] },
           { geo: new THREE.IcosahedronGeometry(1.5, 0).translate(-1.2, 5.2, -0.5), mat: leaf, colors: ['#ffd0e6', '#ffb0d0'] },
+        ];
+      } else if (kind === 'willow') {
+        // salgueiro-chorão (Pequim): copa larga e uma "cortina" de galhos caindo
+        parts = [
+          { geo: new THREE.CylinderGeometry(0.3, 0.5, 4.4, 6).rotateZ(0.06).translate(0, 2.2, 0), mat: std(0x6a5a3a) },
+          { geo: new THREE.IcosahedronGeometry(2.3, 0).scale(1.2, 0.55, 1.2).translate(0, 5.6, 0), mat: leaf, colors: ['#7aa83e', '#86b046', '#6e9a38'] },
+          { geo: willowFronds(), mat: leaf, colors: ['#6e9c3a', '#7aa842', '#628e34'] },
         ];
       } else if (kind === 'plane') {
         parts = [
