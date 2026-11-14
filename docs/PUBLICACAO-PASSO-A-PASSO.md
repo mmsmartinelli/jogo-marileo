@@ -19,7 +19,7 @@ Nenhum app foi aberto em celular de verdade, e o robô nunca rodou com as suas c
 ---
 
 ## Passo 1 — Decidir (10 min)
-**E-mail de contato definido pelo CEO em 13/11/2026: mmsmartinelli@gmail.com** (vai aparecer público nas lojas e na política de privacidade). Falta responder ao diretor se lança **só no Brasil** (recomendo: menos regras). Como as contas já existem, o vendedor que aparece nas lojas já está definido.
+**E-mail de contato definido pelo CEO em 13/11/2026: mmsmartinelli@gmail.com** (vai aparecer público nas lojas e na política de privacidade). **Decisão do CEO em 13/11/2026: lançar só no Brasil** (menos regras de COPPA/GDPR). Nas lojas, marque apenas Brasil em "Países/regiões". Como as contas já existem, o vendedor que aparece nas lojas já está definido.
 
 ## Passo 2 — Contas: você JÁ TEM as duas (nada a pagar)
 Apple Developer e Google Play Console são os mesmos do Teleprompter Easy e do Hub Martinelli (confirmado nas anotações dessas sessões em 13/11/2026). Então **não** precisa pagar US$ 25 nem US$ 99. O que fazer:
